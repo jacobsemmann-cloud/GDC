@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bet Logger</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f2f2f7;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h2 { text-align: center; margin-top: 0; color: #1c1c1e; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        
+        /* Font size 16px is required to stop iOS Safari from auto-zooming on inputs */
+        input[type="text"], input[type="number"], input[type="date"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px; 
+            background-color: #fff;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
+        .checkbox-group label { margin-bottom: 0; font-size: 16px;}
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:active { background-color: #005bb5; }
+        #status { text-align: center; margin-top: 15px; font-weight: bold; display: none; }
+        .success { color: #34c759; }
+        .error { color: #ff3b30; }
+    </style>
+</head>
+<body>
+
+    <h2>Log a Bet</h2>
+
+    <div class="form-group">
+        <label>Sportsbook</label>
+        <select id="book">
+            <option value="DraftKings">DraftKings</option>
+            <option value="FanDuel">FanDuel</option>
+            <option value="Caesars">Caesars</option>
+            <option value="BetRivers">BetRivers</option>
+            <option value="MGM">MGM</option>
+            <option value="Bet365">Bet365</option>
+            <option value="PrizePicks">PrizePicks</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="date">
+    </div>
+
+    <div class="form-group">
+        <label>Sport</label>
+        <select id="sport">
+            <option value="NHL">NHL</option>
+            <option value="NFL">NFL</option>
+            <option value="NBA">NBA</option>
+            <option value="MLB">MLB</option>
+            <option value="NCAAB">NCAAB</option>
+            <option value="NCAAF">NCAAF</option>
+            <option value="TEN">TEN</option>
+            <option value="SOCCER">SOCCER</option>
+        </select>
+    </div>
+
+    <div class="form-group checkbox-group">
+        <input type="checkbox" id="parlay">
+        <label for="parlay">Parlay?</label>
+    </div>
+
+    <div class="form-group">
+        <label>Bet Type</label>
+        <select id="betType">
+            <option value="Moneyline">Moneyline</option>
+            <option value="Spread">Spread</option>
+            <option value="Total">Total</option>
+            <option value="Prop">Prop</option>
+            <option value="Future">Future</option>
+            <option value="Teaser">Teaser</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Player / Team 1</label>
+        <input type="text" id="team1" placeholder="e.g. Capitals">
+    </div>
+
+    <div class="form-group">
+        <label>Team 2 (Optional)</label>
+        <input type="text" id="team2" placeholder="e.g. Rangers">
+    </div>
+
+    <div class="form-group">
+        <label>Details</label>
+        <input type="text" id="details" placeholder="e.g. O 5.5 Goals">
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex: 1;">
+            <label>Odds</label>
+            <input type="number" id="odds" placeholder="-110">
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label>Wager ($)</label>
+            <input type="number" id="wager" placeholder="50" step="0.01">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Result</label>
+        <select id="result">
+            <option value="">Pending</option>
+            <option value="W">Win (W)</option>
+            <option value="L">Loss (L)</option>
+            <option value="P">Push (P)</option>
+        </select>
+    </div>
+
+    <button onclick="submitBet()" id="submitBtn">Log Bet to Tracker</button>
+    <div id="status"></div>
+
+    <script>
+        // Set today's date automatically
+        document.getElementById('date').valueAsDate = new Date();
+
+        function submitBet() {
+            // === PASTE YOUR GOOGLE WEB APP URL HERE ===
+            const WEB_APP_URL = "YOUR_COPIED_URL_HERE"; 
+
+            const btn = document.getElementById('submitBtn');
+            const statusDiv = document.getElementById('status');
+            
+            // Gather data
+            const payload = {
+                book: document.getElementById('book').value,
+                date: document.getElementById('date').value,
+                sport: document.getElementById('sport').value,
+                parlay: document.getElementById('parlay').checked,
+                betType: document.getElementById('betType').value,
+                team1: document.getElementById('team1').value,
+                team2: document.getElementById('team2').value,
+                details: document.getElementById('details').value,
+                odds: parseFloat(document.getElementById('odds').value),
+                wager: parseFloat(document.getElementById('wager').value),
+                result: document.getElementById('result').value
+            };
+
+            // Basic validation
+            if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) {
+                statusDiv.textContent = "Please fill out Team 1, Odds, and Wager.";
+                statusDiv.className = "error";
+                statusDiv.style.display = "block";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Sending...";
+            statusDiv.style.display = "none";
+
+            // Send to Google Sheets
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    statusDiv.textContent = "Bet Logged Successfully!";
+                    statusDiv.className = "success";
+                    // Reset text inputs
+                    document.getElementById('team1').value = "";
+                    document.getElementById('team2').value = "";
+                    document.getElementById('details').value = "";
+                    document.getElementById('odds').value = "";
+                    document.getElementById('wager').value = "";
+                    document.getElementById('result').value = "";
+                } else {
+                    statusDiv.textContent = "Error: " + data.message;
+                    statusDiv.className = "error";
+                }
+                statusDiv.style.display = "block";
+                btn.disabled = false;
+                btn.textContent = "Log Bet to Tracker";
+            })
+            .catch(error => {
+                statusDiv.textContent = "Network Error. Please try again.";
+                statusDiv.className = "error";
+                statusDiv.style.display = "block";
+                btn.disabled = false;
+                btn.textContent = "Log Bet to Tracker";
+            });
+        }
+    </script>
+</body>
+</html>
