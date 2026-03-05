@@ -16,7 +16,6 @@
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         
-        /* Font size 16px is required to stop iOS Safari from auto-zooming on inputs */
         input[type="text"], input[type="number"], input[type="date"], select {
             width: 100%;
             padding: 12px;
@@ -50,9 +49,9 @@
             margin-top: 10px;
         }
         button:active { background-color: #005bb5; }
-        #status { text-align: center; margin-top: 15px; font-weight: bold; display: none; }
-        .success { color: #34c759; }
-        .error { color: #ff3b30; }
+        #status { text-align: center; margin-top: 15px; font-weight: bold; display: none; padding: 10px; border-radius: 8px;}
+        .success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
     </style>
 </head>
 <body>
@@ -148,17 +147,15 @@
     <div id="status"></div>
 
     <script>
-        // Set today's date automatically
         document.getElementById('date').valueAsDate = new Date();
 
         function submitBet() {
-            // === PASTE YOUR GOOGLE WEB APP URL HERE ===
+            // Your exact live URL
             const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
 
             const btn = document.getElementById('submitBtn');
             const statusDiv = document.getElementById('status');
             
-            // Gather data
             const payload = {
                 book: document.getElementById('book').value,
                 date: document.getElementById('date').value,
@@ -173,7 +170,6 @@
                 result: document.getElementById('result').value
             };
 
-            // Basic validation
             if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) {
                 statusDiv.textContent = "Please fill out Team 1, Odds, and Wager.";
                 statusDiv.className = "error";
@@ -185,7 +181,6 @@
             btn.textContent = "Sending...";
             statusDiv.style.display = "none";
 
-            // Send to Google Sheets
             fetch(WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify(payload)
@@ -195,7 +190,6 @@
                 if (data.status === "success") {
                     statusDiv.textContent = "Bet Logged Successfully!";
                     statusDiv.className = "success";
-                    // Reset text inputs
                     document.getElementById('team1').value = "";
                     document.getElementById('team2').value = "";
                     document.getElementById('details').value = "";
