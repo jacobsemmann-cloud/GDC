@@ -159,6 +159,16 @@
                     <div id="tableBetTypeBook"></div>
                 </div>
 
+                <div class="dash-card">
+                    <h3 class="dash-title">Most Profitable</h3>
+                    <div id="tableMostProf"></div>
+                </div>
+
+                <div class="dash-card">
+                    <h3 class="dash-title">Least Profitable</h3>
+                    <div id="tableLeastProf"></div>
+                </div>
+
             </div>
         </div>
 
@@ -209,12 +219,10 @@
             return valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)';
         }
 
-        // Helper to build swipeable pivot tables
         function buildPivotTable(dataArray) {
             if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
             let html = '<div class="table-wrapper"><table><tr>';
             
-            // Count valid columns to ignore trailing blanks from the sheet
             let colCount = 0;
             dataArray[0].forEach(h => { if (h !== "") { html += `<th>${h}</th>`; colCount++; } });
             html += '</tr>';
@@ -227,6 +235,20 @@
                     html += `<td${style}>${cell}</td>`;
                 }
                 html += '</tr>';
+            }
+            html += '</table></div>';
+            return html;
+        }
+
+        // Custom builder for the Leaderboards so "Bets" stays neutral colored
+        function buildLbTable(lbData) {
+            if (!lbData || lbData.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
+            let html = '<div class="table-wrapper"><table><tr><th>Entity</th><th class="text-right">Bets</th><th class="text-right">P/L</th></tr>';
+            for (let i = 1; i < lbData.length; i++) {
+                let entity = lbData[i][0];
+                let bets = lbData[i][1];
+                let pl = lbData[i][2];
+                html += `<tr><td>${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(pl)}; font-weight:bold;">${pl}</td></tr>`;
             }
             html += '</table></div>';
             return html;
@@ -266,9 +288,12 @@
                     sHtml += '</table>';
                     document.getElementById('tableSports').innerHTML = sHtml;
 
-                    // Render New Pivot Tables
                     document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport);
                     document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
+
+                    // Render Leaderboards
+                    document.getElementById('tableMostProf').innerHTML = buildLbTable(data.mostProfitable);
+                    document.getElementById('tableLeastProf').innerHTML = buildLbTable(data.leastProfitable);
 
                     dailyPLData = data.dailyData || {};
                     dataFetched = true;
@@ -283,7 +308,6 @@
             }).catch(e => alert("Error fetching data. Check Web App URL deployment."));
         }
 
-        // --- CALENDAR LOGIC ---
         function changeMonth(dir) {
             currentMonth += dir;
             if(currentMonth > 11) { currentMonth = 0; currentYear++; }
