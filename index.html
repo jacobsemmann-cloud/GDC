@@ -1,372 +1,205 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <title>Bet Logger</title>
-    <style>
-        :root {
-            --bg-base: #f2f2f7;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --text-main: #333;
-            --text-label: #1b4d29;
-            --input-bg: #fff;
-            --input-border: #e0e0e0;
-            --panel-bg: #f8f9fa;
-            --border-accent: #1b4d29;
-        }
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('Betting Tracker')
+    .addItem('Generate / Update Tracker', 'createBettingTracker')
+    .addToUi();
+}
 
-        /* Default Dark Mode Styles */
-        body.dark-mode {
-            --bg-base: #121212;
-            --glass-bg: rgba(30, 30, 30, 0.95);
-            --text-main: #e0e0e0;
-            --text-label: #32CD32;
-            --input-bg: #2c2c2c;
-            --input-border: #444;
-            --panel-bg: #1e1e1e;
-            --border-accent: #32CD32;
-        }
+function createBettingTracker() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  
+  ss.toast("Starting script...", "Debug Tracker", 3);
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-base);
-            margin: 0;
-            padding: 20px;
-            color: var(--text-main);
-            min-height: 100vh;
-            transition: background-color 0.3s ease;
-        }
-        
-        .glass-container {
-            background-color: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 25px 20px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            max-width: 500px;
-            margin: 0 auto;
-            border-top: 4px solid var(--border-accent);
-            position: relative;
-        }
+  try {
+    var headers = ['Date', 'Sport', 'Parlay?', 'Bet Type', 'Player/Team 1', 'Team 2 (Opt)', 'Details', 'Odds', 'Wager', 'To Win', 'Result', 'P/L'];
+    var masterHeaders = ['Book', 'Date', 'Sport', 'Parlay?', 'Bet Type', 'Player/Team 1', 'Team 2 (Opt)', 'Details', 'Odds', 'Wager', 'To Win', 'Result', 'P/L'];
 
-        .theme-toggle {
-            position: absolute;
-            top: 25px;
-            right: 20px;
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-        }
+    // High-contrast palette for distinct sportsbooks
+    var palette = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#e0e0e0', '#ffeb99'];
+    function getSportColor(index) { return palette[index % palette.length]; }
+    function getBookColor(index) { return palette[(index + 5) % palette.length]; } 
 
-        h2 { 
-            text-align: left; 
-            margin-top: 0; 
-            margin-bottom: 20px;
-            color: var(--text-label); 
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+    // --- STEP 1: SETTINGS ---
+    var settingsName = 'Settings';
+    var settingsSheet = ss.getSheetByName(settingsName);
+    
+    if (!settingsSheet) {
+      settingsSheet = ss.insertSheet(settingsName);
+      settingsSheet.getRange("A1:C1").setValues([["Sportsbooks", "Sports", "Bet Types"]]).setFontWeight("bold").setBackground("#f3f3f3");
+      
+      var defaultBooks = [['DraftKings'], ['FanDuel'], ['Caesars'], ['BetRivers'], ['MGM'], ['Bet365'], ['PrizePicks']];
+      var defaultSports = [['NHL'], ['NFL'], ['NBA'], ['MLB'], ['NCAAB'], ['NCAAF'], ['TENNIS'], ['SOCCER'], ['GOLF']];
+      var defaultTypes = [['Moneyline'], ['Spread'], ['Total'], ['Prop'], ['Future'], ['Teaser']];
+      
+      settingsSheet.getRange(2, 1, defaultBooks.length, 1).setValues(defaultBooks);
+      settingsSheet.getRange(2, 2, defaultSports.length, 1).setValues(defaultSports);
+      settingsSheet.getRange(2, 3, defaultTypes.length, 1).setValues(defaultTypes);
+    }
 
-        .btn-secondary {
-            width: 100%;
-            padding: 12px;
-            background-color: transparent;
-            color: var(--text-label);
-            border: 2px solid var(--text-label);
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+    var numRows = Math.max(settingsSheet.getLastRow() - 1, 1); 
+    var books = settingsSheet.getRange(2, 1, numRows, 1).getValues().flat().filter(String);
+    var sportsList = settingsSheet.getRange(2, 2, numRows, 1).getValues().flat().filter(String);
+    var typeList = settingsSheet.getRange(2, 3, numRows, 1).getValues().flat().filter(String);
 
-        .stats-panel {
-            display: none; 
-            background-color: var(--panel-bg);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-left: 4px solid var(--text-label);
-        }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
-        .stat-label { font-weight: bold; color: var(--text-main); }
-        .stat-value { font-weight: bold; color: var(--text-label); }
-        
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
-        
-        input[type="text"], input[type="number"], input[type="date"], select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid var(--input-border);
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 16px; 
-            background-color: var(--input-bg);
-            color: var(--text-main);
-        }
+    var sportRule = SpreadsheetApp.newDataValidation().requireValueInList(sportsList, true).setAllowInvalid(false).build();
+    var typeRule = SpreadsheetApp.newDataValidation().requireValueInList(typeList, true).setAllowInvalid(false).build();
+    var resultRule = SpreadsheetApp.newDataValidation().requireValueInList(['W', 'L', 'P'], true).setAllowInvalid(false).build();
+    var parlayRule = SpreadsheetApp.newDataValidation().requireCheckbox().build(); 
 
-        input:focus, select:focus {
-            outline: none;
-            border-color: #32CD32; 
-            box-shadow: 0 0 8px rgba(50, 205, 50, 0.2);
-        }
+    // --- STEP 2: SPORTSBOOK TABS ---
+    books.forEach(function(book) {
+      var sheet = ss.getSheetByName(book);
+      if (!sheet) { sheet = ss.insertSheet(book); }
+      var bMax = sheet.getMaxRows(); 
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#f3f3f3");
+      
+      // Protect existing bets from being overwritten, just ensure formatting and formulas are correct
+      sheet.getRange("J2:J" + bMax).setFormula('=IF(H2="", "", IF(H2>0, (H2/100)*I2, (100/ABS(H2))*I2))');
+      sheet.getRange("L2:L" + bMax).setFormula('=IF(K2="", "", IF(K2="W", J2, IF(K2="L", -I2, 0)))');
+      sheet.getRange("B2:B" + bMax).setDataValidation(sportRule);
+      sheet.getRange("C2:C" + bMax).setDataValidation(parlayRule);
+      sheet.getRange("D2:D" + bMax).setDataValidation(typeRule);   
+      sheet.getRange("K2:K" + bMax).setDataValidation(resultRule);
+      sheet.getRange("I2:J" + bMax).setNumberFormat("$#,##0.00");
+      sheet.getRange("L2:L" + bMax).setNumberFormat("$#,##0.00");
+      
+      var bookRules = [];
+      bookRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('W').setBackground('#d9ead3').setFontColor('#274e13').setRanges([sheet.getRange("K2:K" + bMax)]).build());
+      bookRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('L').setBackground('#f4cccc').setFontColor('#cc0000').setRanges([sheet.getRange("K2:K" + bMax)]).build());
+      sportsList.forEach(function(s, i) {
+        bookRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(s).setBackground(getSportColor(i)).setRanges([sheet.getRange("B2:B" + bMax)]).build());
+      });
+      sheet.setConditionalFormatRules(bookRules);
+    });
 
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            background: var(--input-bg);
-            padding: 12px;
-            border-radius: 8px;
-            border: 2px solid var(--input-border);
-        }
-        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; accent-color: #32CD32; }
-        .checkbox-group label { margin-bottom: 0; font-size: 16px; color: var(--text-main);}
-        
-        .btn-primary {
-            width: 100%;
-            padding: 16px;
-            background-color: #1b4d29;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        body.dark-mode .btn-primary { background-color: #32CD32; color: #000; }
-        
-        #status { text-align: center; margin-top: 15px; font-weight: bold; display: none; padding: 12px; border-radius: 8px;}
-        .success { color: #1b4d29; background-color: #e8f5e9; border: 1px solid #c8e6c9; }
-        .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+    // --- STEP 3: ALL_BETS MASTER ---
+    var allBetsSheet = ss.getSheetByName('All_Bets') || ss.insertSheet('All_Bets');
+    allBetsSheet.clear().getRange(1, 1, 1, masterHeaders.length).setValues([masterHeaders]).setFontWeight("bold").setBackground("#f3f3f3");
+    
+    // The master formula that pulls from all book tabs dynamically
+    var vstackArrays = books.map(function(b) { return "{ARRAYFORMULA(IF('" + b + "'!A2:A<>\"\", \"" + b + "\", \"\")), '" + b + "'!A2:L}"; });
+    allBetsSheet.getRange("A2").setFormula('=IFERROR(QUERY(VSTACK(' + vstackArrays.join('; ') + '), "Select * where Col2 is not null order by Col2 desc"), "No bets logged.")');
+    
+    var aMax = Math.max(allBetsSheet.getMaxRows(), 100);
+    allBetsSheet.getRange("B2:B" + aMax).setNumberFormat("mm/dd/yyyy");
+    allBetsSheet.getRange("J2:K" + aMax).setNumberFormat("$#,##0.00");
+    allBetsSheet.getRange("M2:M" + aMax).setNumberFormat("$#,##0.00");
 
-        /* Style for the new toggle at the bottom */
-        .sticky-options {
-            margin-top: 20px;
-            border-top: 1px solid var(--input-border);
-            padding-top: 15px;
-        }
-    </style>
-</head>
-<body class="dark-mode"> <div class="glass-container">
-        <h2>Bet Logger</h2>
-        <button class="theme-toggle" onclick="toggleTheme()" id="themeIcon">🌓</button>
+    // --- STEP 4: MAIN DASHBOARD ---
+    var dashSheet = ss.getSheetByName('Main_Dashboard') || ss.insertSheet('Main_Dashboard');
+    dashSheet.clear().getRange("A1").setValue("Overall Performance").setFontWeight("bold").setFontSize(14);
+    dashSheet.getRange("A2:B5").setValues([["Total Wagered:", "=SUM(All_Bets!J:J)"], ["Total P/L:", "=SUM(All_Bets!M:M)"], ["Total ROI:", "=IFERROR(SUM(All_Bets!M:M)/SUM(All_Bets!J:J), 0)"], ["Record:", '=COUNTIFS(All_Bets!L:L,"W")&"-"&COUNTIFS(All_Bets!L:L,"L")&"-"&COUNTIFS(All_Bets!L:L,"P")']]);
+    dashSheet.getRange("B2:B3").setNumberFormat("$#,##0.00");
+    dashSheet.getRange("B4").setNumberFormat("0.00%");
 
-        <button type="button" class="btn-secondary" id="dashBtn" onclick="toggleDashboard()">View Live Stats</button>
-        
-        <div class="stats-panel" id="statsPanel">
-            <div class="stat-row"><span class="stat-label">Total P/L:</span><span class="stat-value" id="valPL">--</span></div>
-            <div class="stat-row"><span class="stat-label">Total Wagered:</span><span class="stat-value" id="valWagered">--</span></div>
-            <div class="stat-row"><span class="stat-label">Total ROI:</span><span class="stat-value" id="valROI">--</span></div>
-            <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valRecord">--</span></div>
-        </div>
+    dashSheet.getRange("A7").setValue("Bet Style Performance").setFontWeight("bold").setFontSize(14);
+    dashSheet.getRange("A8:B11").setValues([
+      ["Straight P/L:", "=SUMIFS(All_Bets!M:M, All_Bets!D:D, FALSE)"],
+      ["Straight Record:", '=COUNTIFS(All_Bets!D:D, FALSE, All_Bets!L:L, "W") & "-" & COUNTIFS(All_Bets!D:D, FALSE, All_Bets!L:L, "L") & "-" & COUNTIFS(All_Bets!D:D, FALSE, All_Bets!L:L, "P")'],
+      ["Parlay P/L:", "=SUMIFS(All_Bets!M:M, All_Bets!D:D, TRUE)"],
+      ["Parlay Record:", '=COUNTIFS(All_Bets!D:D, TRUE, All_Bets!L:L, "W") & "-" & COUNTIFS(All_Bets!D:D, TRUE, All_Bets!L:L, "L") & "-" & COUNTIFS(All_Bets!D:D, TRUE, All_Bets!L:L, "P")']
+    ]);
+    dashSheet.getRange("B8").setNumberFormat("$#,##0.00");
+    dashSheet.getRange("B10").setNumberFormat("$#,##0.00");
+    
+    dashSheet.getRange("D1").setValue("Performance by Book").setFontWeight("bold").setFontSize(14);
+    dashSheet.getRange("D2:F2").setValues([["Book", "P/L", "ROI"]]).setBackground("#f3f3f3");
+    var bookRows = books.map(function(b) { return [b, '=SUMIFS(All_Bets!M:M, All_Bets!A:A, "'+b+'")', '=IFERROR(SUMIFS(All_Bets!M:M, All_Bets!A:A, "'+b+'")/SUMIFS(All_Bets!J:J, All_Bets!A:A, "'+b+'"),0)']; });
+    dashSheet.getRange(3, 4, bookRows.length, 3).setValues(bookRows);
+    dashSheet.getRange(3, 5, bookRows.length, 1).setNumberFormat("$#,##0.00");
+    dashSheet.getRange(3, 6, bookRows.length, 1).setNumberFormat("0.00%");
 
-        <div class="form-group">
-            <label>Sportsbook</label>
-            <select id="book">
-                <option value="DraftKings">DraftKings</option>
-                <option value="FanDuel">FanDuel</option>
-                <option value="Caesars">Caesars</option>
-                <option value="BetRivers">BetRivers</option>
-                <option value="MGM">MGM</option>
-                <option value="Bet365">Bet365</option>
-                <option value="PrizePicks">PrizePicks</option>
-            </select>
-        </div>
+    dashSheet.getRange("H1").setValue("Performance by Sport").setFontWeight("bold").setFontSize(14);
+    dashSheet.getRange("H2:L2").setValues([["Sport", "Wagered", "P/L", "ROI", "Win %"]]).setBackground("#f3f3f3");
+    var sportRows = sportsList.map(function(s) { return [s, '=SUMIFS(All_Bets!J:J, All_Bets!C:C, "'+s+'")', '=SUMIFS(All_Bets!M:M, All_Bets!C:C, "'+s+'")', '=IFERROR(SUMIFS(All_Bets!M:M, All_Bets!C:C, "'+s+'")/SUMIFS(All_Bets!J:J, All_Bets!C:C, "'+s+'"),0)', '=IFERROR(COUNTIFS(All_Bets!C:C,"'+s+'",All_Bets!L:L,"W")/(COUNTIFS(All_Bets!C:C,"'+s+'",All_Bets!L:L,"W")+COUNTIFS(All_Bets!C:C,"'+s+'",All_Bets!L:L,"L")),0)']; });
+    dashSheet.getRange(3, 8, sportRows.length, 5).setValues(sportRows);
+    dashSheet.getRange(3, 9, sportRows.length, 2).setNumberFormat("$#,##0.00");
+    dashSheet.getRange(3, 11, sportRows.length, 2).setNumberFormat("0.00%");
 
-        <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="date">
-        </div>
+    dashSheet.getRange("A15").setValue("P/L by Bet Type (Per Sport)").setFontWeight("bold").setFontSize(14);
+    dashSheet.getRange("A16").setFormula('=IFERROR(QUERY(All_Bets!A:M, "Select C, SUM(M) where C is not null and C != \'Sport\' group by C pivot E", 1), "Awaiting Data...")');
+    dashSheet.getRange("A16:F16").setFontWeight("bold").setBackground("#f3f3f3"); 
 
-        <div class="form-group">
-            <label>Sport</label>
-            <select id="sport">
-                <option value="NHL">NHL</option>
-                <option value="NFL">NFL</option>
-                <option value="NBA">NBA</option>
-                <option value="MLB">MLB</option>
-                <option value="NCAAB">NCAAB</option>
-                <option value="NCAAF">NCAAF</option>
-                <option value="TENNIS">TENNIS</option>
-                <option value="SOCCER">SOCCER</option>
-                <option value="GOLF">GOLF</option>
-            </select>
-        </div>
+    dashSheet.getRange("H15").setValue("P/L by Bet Type (Per Book)").setFontWeight("bold").setFontSize(14);
+    dashSheet.getRange("H16").setFormula('=IFERROR(QUERY(All_Bets!A:M, "Select A, SUM(M) where A is not null and A != \'Book\' group by A pivot E", 1), "Awaiting Data...")');
+    dashSheet.getRange("H16:N16").setFontWeight("bold").setBackground("#f3f3f3");
 
-        <div class="form-group checkbox-group">
-            <input type="checkbox" id="parlay">
-            <label for="parlay">Parlay?</label>
-        </div>
+    dashSheet.getRange("A23").setValue("🔍 Player / Team Lookup:").setFontWeight("bold").setFontSize(14);
+    dashSheet.getRange("B23:D23").merge();
+    dashSheet.getRange("B23").setBackground("#fff2cc"); 
+    dashSheet.getRange("A24:C24").setValues([["Wagered", "Net P/L", "Record (W-L-P)"]]).setFontWeight("bold").setBackground("#f3f3f3");
+    dashSheet.getRange("A25").setFormula('=IF(B23="", "", SUMIFS(All_Bets!J:J, All_Bets!F:F, "*"&B23&"*") + SUMIFS(All_Bets!J:J, All_Bets!G:G, "*"&B23&"*"))');
+    dashSheet.getRange("B25").setFormula('=IF(B23="", "", SUMIFS(All_Bets!M:M, All_Bets!F:F, "*"&B23&"*") + SUMIFS(All_Bets!M:M, All_Bets!G:G, "*"&B23&"*"))');
+    dashSheet.getRange("C25").setFormula('=IF(B23="", "", (COUNTIFS(All_Bets!F:F, "*"&B23&"*", All_Bets!L:L, "W") + COUNTIFS(All_Bets!G:G, "*"&B23&"*", All_Bets!L:L, "W")) & "-" & (COUNTIFS(All_Bets!F:F, "*"&B23&"*", All_Bets!L:L, "L") + COUNTIFS(All_Bets!G:G, "*"&B23&"*", All_Bets!L:L, "L")) & "-" & (COUNTIFS(All_Bets!F:F, "*"&B23&"*", All_Bets!L:L, "P") + COUNTIFS(All_Bets!G:G, "*"&B23&"*", All_Bets!L:L, "P")))');
+    dashSheet.getRange("A25:B25").setNumberFormat("$#,##0.00");
 
-        <div class="form-group">
-            <label>Bet Type</label>
-            <select id="betType">
-                <option value="Moneyline">Moneyline</option>
-                <option value="Spread">Spread</option>
-                <option value="Total">Total</option>
-                <option value="Prop">Prop</option>
-                <option value="Future">Future</option>
-                <option value="Teaser">Teaser</option>
-            </select>
-        </div>
+    dashSheet.getRange("B17:F50").setNumberFormat("$#,##0.00");
+    dashSheet.getRange("I17:N50").setNumberFormat("$#,##0.00");
 
-        <div class="form-group">
-            <label>Player / Team 1</label>
-            <input type="text" id="team1" placeholder="e.g. Capitals">
-        </div>
+    // --- STEP 5: DAILY P/L ---
+    var dailySheet = ss.getSheetByName('Daily_PL') || ss.insertSheet('Daily_PL');
+    dailySheet.clear().getRange("A1").setValue("Daily Performance").setFontWeight("bold").setFontSize(14);
+    dailySheet.getRange("A2").setFormula('=QUERY(All_Bets!A:M, "Select B, SUM(M) where B is not null group by B label B \'Date\', SUM(M) \'Daily P/L\'", 1)');
+    dailySheet.getRange("B:B").setNumberFormat("$#,##0.00");
 
-        <div class="form-group">
-            <label>Team 2 (Optional)</label>
-            <input type="text" id="team2" placeholder="e.g. Rangers">
-        </div>
+    // --- STEP 6: LEADERBOARD ---
+    var lbSheet = ss.getSheetByName('Leaderboard') || ss.insertSheet('Leaderboard');
+    lbSheet.clear().getRange("A1").setValue("Most Profitable Entities").setFontWeight("bold").setFontSize(14);
+    lbSheet.getRange("A2").setFormula('=IFERROR(QUERY(VSTACK({All_Bets!F2:F, All_Bets!M2:M}; {All_Bets!G2:G, All_Bets!M2:M}), "Select Col1, COUNT(Col1), SUM(Col2) where Col1 is not null and Col1 != \'Player/Team 1\' and Col1 != \'Team 2 (Opt)\' group by Col1 order by SUM(Col2) desc label Col1 \'Entity\', COUNT(Col1) \'Bets\', SUM(Col2) \'P/L\'", 0), "Awaiting data")');
 
-        <div class="form-group">
-            <label>Details</label>
-            <input type="text" id="details" placeholder="e.g. O 5.5 Goals">
-        </div>
+    lbSheet.getRange("E1").setValue("Least Profitable Entities").setFontWeight("bold").setFontSize(14);
+    lbSheet.getRange("E2").setFormula('=IFERROR(QUERY(VSTACK({All_Bets!F2:F, All_Bets!M2:M}; {All_Bets!G2:G, All_Bets!M2:M}), "Select Col1, COUNT(Col1), SUM(Col2) where Col1 is not null and Col1 != \'Player/Team 1\' and Col1 != \'Team 2 (Opt)\' group by Col1 order by SUM(Col2) asc label Col1 \'Entity\', COUNT(Col1) \'Bets\', SUM(Col2) \'P/L\'", 0), "Awaiting data")');
 
-        <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex: 1;">
-                <label>Odds</label>
-                <input type="number" id="odds" placeholder="-110">
-            </div>
-            <div class="form-group" style="flex: 1;">
-                <label>Wager ($)</label>
-                <input type="number" id="wager" placeholder="50" step="0.01">
-            </div>
-        </div>
+    lbSheet.getRange("C:C").setNumberFormat("$#,##0.00");
+    lbSheet.getRange("G:G").setNumberFormat("$#,##0.00");
 
-        <div class="form-group">
-            <label>Result</label>
-            <select id="result">
-                <option value="">Pending</option>
-                <option value="W">Win (W)</option>
-                <option value="L">Loss (L)</option>
-                <option value="P">Push (P)</option>
-            </select>
-        </div>
+    // --- STEP 7: REORDER TABS ---
+    var order = ['Main_Dashboard', 'All_Bets', 'Daily_PL', 'Leaderboard'];
+    books.forEach(function(b) { order.push(b); });
+    order.push('Settings');
+    order.forEach(function(name, i) { var s = ss.getSheetByName(name); if(s) { ss.setActiveSheet(s); ss.moveActiveSheet(i+1); }});
+    ss.setActiveSheet(ss.getSheetByName('Main_Dashboard'));
+    ss.toast("Done!", "Success", 5);
 
-        <button onclick="submitBet()" id="submitBtn" class="btn-primary">Log Bet to Tracker</button>
-        <div id="status"></div>
+  } catch(e) { ui.alert("Error: " + e.message); }
+}
 
-        <div class="sticky-options">
-            <div class="form-group checkbox-group">
-                <input type="checkbox" id="keepSlip">
-                <label for="keepSlip">Keep Bet In Slip</label>
-            </div>
-        </div>
-    </div>
+// --- UPDATED POST: INSERTS AT TOP (ROW 2) ---
+function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var data = JSON.parse(e.postData.contents);
+    var sheet = ss.getSheetByName(data.book);
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify({"status": "error"})).setMimeType(ContentService.MimeType.JSON);
+    
+    // Insert new row at index 2 (pushes others down)
+    sheet.insertRowBefore(2);
+    var newRow = [data.date, data.sport, data.parlay, data.betType, data.team1, data.team2, data.details, data.odds, data.wager, "", data.result, ""];
+    sheet.getRange(2, 1, 1, 12).setValues([newRow]);
+    
+    // Set formulas for the new row
+    sheet.getRange("J2").setFormula('=IF(H2="", "", IF(H2>0, (H2/100)*I2, (100/ABS(H2))*I2))');
+    sheet.getRange("L2").setFormula('=IF(K2="", "", IF(K2="W", J2, IF(K2="L", -I2, 0)))');
+    
+    return ContentService.createTextOutput(JSON.stringify({"status": "success"})).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": error.message})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
 
-    <script>
-        document.getElementById('date').valueAsDate = new Date();
-
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
-
-        function toggleTheme() {
-            const body = document.body;
-            body.classList.toggle('dark-mode');
-            localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
-        }
-
-        window.onload = function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                document.body.classList.remove('dark-mode');
-            } else {
-                document.body.classList.add('dark-mode');
-            }
-        };
-
-        function toggleDashboard() {
-            const panel = document.getElementById('statsPanel');
-            const btn = document.getElementById('dashBtn');
-            if (panel.style.display === "block") {
-                panel.style.display = "none";
-                btn.textContent = "VIEW LIVE STATS";
-                return;
-            }
-            btn.textContent = "LOADING...";
-            fetch(WEB_APP_URL)
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "success") {
-                    document.getElementById('valPL').textContent = data.pl;
-                    document.getElementById('valWagered').textContent = data.wagered;
-                    document.getElementById('valROI').textContent = data.roi;
-                    document.getElementById('valRecord').textContent = data.record;
-                    document.getElementById('valPL').style.color = data.pl.includes('-') ? '#cc0000' : 'var(--text-label)';
-                    panel.style.display = "block";
-                    btn.textContent = "HIDE STATS";
-                }
-            });
-        }
-
-        function submitBet() {
-            const btn = document.getElementById('submitBtn');
-            const statusDiv = document.getElementById('status');
-            const keepSlip = document.getElementById('keepSlip').checked;
-            
-            const payload = {
-                book: document.getElementById('book').value,
-                date: document.getElementById('date').value,
-                sport: document.getElementById('sport').value,
-                parlay: document.getElementById('parlay').checked,
-                betType: document.getElementById('betType').value,
-                team1: document.getElementById('team1').value,
-                team2: document.getElementById('team2').value,
-                details: document.getElementById('details').value,
-                odds: parseFloat(document.getElementById('odds').value),
-                wager: parseFloat(document.getElementById('wager').value),
-                result: document.getElementById('result').value
-            };
-
-            if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) {
-                statusDiv.textContent = "Fill Team 1, Odds, and Wager.";
-                statusDiv.className = "error";
-                statusDiv.style.display = "block";
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = "SENDING...";
-
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "success") {
-                    statusDiv.textContent = "Bet Logged!";
-                    statusDiv.className = "success";
-                    
-                    // Logic for keeping or clearing form
-                    if (!keepSlip) {
-                        document.getElementById('team1').value = "";
-                        document.getElementById('team2').value = "";
-                        document.getElementById('details').value = "";
-                        document.getElementById('odds').value = "";
-                        document.getElementById('wager').value = "";
-                        document.getElementById('result').value = "";
-                    }
-                } else {
-                    statusDiv.textContent = "Error: " + data.message;
-                    statusDiv.className = "error";
-                }
-                statusDiv.style.display = "block";
-                btn.disabled = false;
-                btn.textContent = "LOG BET TO TRACKER";
-            });
-        }
-    </script>
-</body>
-</html>
+// --- SENDS STATS BACK TO THE MOBILE APP ---
+function doGet(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dash = ss.getSheetByName('Main_Dashboard');
+    var stats = {
+      status: "success",
+      wagered: dash.getRange("B2").getDisplayValue(),
+      pl: dash.getRange("B3").getDisplayValue(),
+      roi: dash.getRange("B4").getDisplayValue(),
+      record: dash.getRange("B5").getDisplayValue()
+    };
+    return ContentService.createTextOutput(JSON.stringify(stats)).setMimeType(ContentService.MimeType.JSON);
+  } catch (e) { return ContentService.createTextOutput(JSON.stringify({"status": "error"})).setMimeType(ContentService.MimeType.JSON); }
+}
