@@ -72,7 +72,6 @@
         .cal-nav { background: transparent; border: none; color: var(--text-label); font-size: 20px; font-weight: bold; cursor: pointer; padding: 5px 15px; }
         .cal-month { font-size: 18px; font-weight: bold; color: var(--text-main); }
         
-        /* NEW: Calendar Summary Cards */
         .cal-summary-cards { display: flex; gap: 8px; margin-bottom: 15px; }
         .cal-summary-box { flex: 1; background-color: var(--panel-bg); border-radius: 8px; padding: 10px 5px; text-align: center; border-bottom: 3px solid var(--text-label); }
         .cal-summary-label { font-size: 10px; font-weight: bold; color: var(--text-main); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.5px;}
@@ -143,7 +142,17 @@
                 </div>
 
                 <div class="cal-header"><button class="cal-nav" onclick="changeMonth(-1)">&#9664;</button><div class="cal-month" id="monthLabel">Month Year</div><button class="cal-nav" onclick="changeMonth(1)">&#9654;</button></div>
-                <div class="calendar-grid" id="calendarGrid"></div>
+                <div class="calendar-grid" id="calendarGrid" style="margin-bottom: 25px;"></div>
+
+                <div class="dash-card">
+                    <h3 class="dash-title">Hall of Fame</h3>
+                    <div class="stat-row"><span class="stat-label">Best Day:</span><span class="stat-value" id="hofBestDay">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Best Week:</span><span class="stat-value" id="hofBestWeek">--</span></div>
+                    
+                    <h4 style="color: var(--text-label); font-size: 13px; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Monster Hits (>$300)</h4>
+                    <div id="hofMonsterBets"></div>
+                </div>
+
             </div>
         </div>
 
@@ -229,7 +238,10 @@
             document.getElementById('themeBtn').textContent = isDark ? 'Light Mode' : 'Dark Mode';
             
             if(dataFetched && document.getElementById('viewDash').classList.contains('active')) fetchMasterData(); 
-            if(dataFetched && document.getElementById('viewCal').classList.contains('active')) updateCalendarSummaries(currentMonth, currentYear);
+            if(dataFetched && document.getElementById('viewCal').classList.contains('active')) {
+                updateCalendarSummaries(currentMonth, currentYear);
+                renderHallOfFame(); // Re-render to update colors
+            }
         }
 
         window.onload = function() {
@@ -329,13 +341,69 @@
             document.getElementById('tableMostProf').innerHTML = html;
         }
 
-        // --- NEW: Calculates and renders the Calendar Summaries ---
+        // --- NEW: HALL OF FAME RENDERER ---
+        function renderHallOfFame() {
+            let bestDay = null; let bestDayVal = -Infinity;
+            let weeklyTotals = {};
+
+            for (const [dateStr, pl] of Object.entries(dailyPLData)) {
+                if (pl > bestDayVal) { bestDayVal = pl; bestDay = dateStr; }
+
+                let d = new Date(dateStr + "T00:00:00");
+                let day = d.getDay();
+                let sunday = new Date(d);
+                sunday.setDate(d.getDate() - day);
+                let weekKey = `${sunday.getFullYear()}-${String(sunday.getMonth()+1).padStart(2,'0')}-${String(sunday.getDate()).padStart(2,'0')}`;
+                if(!weeklyTotals[weekKey]) weeklyTotals[weekKey] = 0;
+                weeklyTotals[weekKey] += pl;
+            }
+
+            let bestWeek = null; let bestWeekVal = -Infinity;
+            for (const [weekStr, pl] of Object.entries(weeklyTotals)) {
+                if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = weekStr; }
+            }
+
+            if (bestDayVal === -Infinity || bestDayVal <= 0) {
+                document.getElementById('hofBestDay').textContent = '--';
+            } else {
+                document.getElementById('hofBestDay').textContent = `${bestDay} (${formatPL(bestDayVal)})`;
+                document.getElementById('hofBestDay').style.color = getColor(formatPL(bestDayVal));
+            }
+
+            if (bestWeekVal === -Infinity || bestWeekVal <= 0) {
+                document.getElementById('hofBestWeek').textContent = '--';
+            } else {
+                document.getElementById('hofBestWeek').textContent = `Week of ${bestWeek} (${formatPL(bestWeekVal)})`;
+                document.getElementById('hofBestWeek').style.color = getColor(formatPL(bestWeekVal));
+            }
+
+            let monsters = rawBetsData.filter(b => b.pl >= 300).sort((a,b) => b.pl - a.pl);
+            if (monsters.length === 0) {
+                document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet. Time to hit a parlay!</p>';
+            } else {
+                let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Odds</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>';
+                monsters.forEach(m => {
+                    let wonText = formatPL(m.pl);
+                    let displayOdds = m.odds > 0 ? '+'+m.odds : m.odds;
+                    html += `<tr>
+                        <td>${m.date.substring(5)}</td>
+                        <td>${m.team1}</td>
+                        <td>${m.details}</td>
+                        <td class="text-right">${displayOdds}</td>
+                        <td class="text-right">$${m.wager.toFixed(2)}</td>
+                        <td class="text-right" style="color:var(--win-text); font-weight:bold;">${wonText}</td>
+                    </tr>`;
+                });
+                html += '</table></div>';
+                document.getElementById('hofMonsterBets').innerHTML = html;
+            }
+        }
+
         function updateCalendarSummaries(month, year) {
             let weekPl = 0;
             let monthPl = 0;
             let ytdPl = 0;
 
-            // 1. This Week (Calculate based on real-world today)
             const today = new Date();
             const dayOfWeek = today.getDay();
             for(let i=0; i<7; i++) {
@@ -345,7 +413,6 @@
                 if(dailyPLData[dStr]) weekPl += dailyPLData[dStr];
             }
 
-            // 2. Month & YTD (Calculate based on the month/year currently viewed on calendar)
             const viewMonthPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
             const viewYearPrefix = `${year}-`;
 
@@ -358,13 +425,10 @@
                 }
             }
 
-            // Apply to UI
             document.getElementById('calWeekPL').textContent = formatPL(weekPl);
             document.getElementById('calWeekPL').style.color = getColor(formatPL(weekPl));
-            
             document.getElementById('calMonthPL').textContent = formatPL(monthPl);
             document.getElementById('calMonthPL').style.color = getColor(formatPL(monthPl));
-            
             document.getElementById('calYtdPL').textContent = formatPL(ytdPl);
             document.getElementById('calYtdPL').style.color = getColor(formatPL(ytdPl));
         }
@@ -449,8 +513,8 @@
                 grid.innerHTML += `<div class="day-cell ${cls}"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
             }
 
-            // Update Summaries based on the newly rendered month
             updateCalendarSummaries(month, year);
+            renderHallOfFame(); // Render Hall of Fame when Calendar is active
         }
 
         function submitBet() {
