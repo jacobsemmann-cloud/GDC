@@ -7,88 +7,35 @@
     <title>Bet Logger</title>
     <style>
         :root {
-            --bg-base: #f2f2f7;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --text-main: #333;
-            --text-label: #1b4d29;
-            --input-bg: #fff;
-            --input-border: #e0e0e0;
-            --panel-bg: #f8f9fa;
-            --border-accent: #1b4d29;
-            --win-color: #e8f5e9;
-            --win-text: #1b4d29;
-            --loss-color: #f8d7da;
-            --loss-text: #721c24;
+            --bg-base: #f2f2f7; --glass-bg: rgba(255, 255, 255, 0.95); --text-main: #333; --text-label: #1b4d29;
+            --input-bg: #fff; --input-border: #e0e0e0; --panel-bg: #f8f9fa; --border-accent: #1b4d29;
+            --win-color: #e8f5e9; --win-text: #1b4d29; --loss-color: #f8d7da; --loss-text: #721c24;
         }
 
         body.dark-mode {
-            --bg-base: #121212;
-            --glass-bg: rgba(30, 30, 30, 0.95);
-            --text-main: #e0e0e0;
-            --text-label: #32CD32;
-            --input-bg: #2c2c2c;
-            --input-border: #444;
-            --panel-bg: #1e1e1e;
-            --border-accent: #32CD32;
-            --win-color: rgba(50, 205, 50, 0.2);
-            --win-text: #32CD32;
-            --loss-color: rgba(220, 53, 69, 0.2);
-            --loss-text: #ff6b6b;
+            --bg-base: #121212; --glass-bg: rgba(30, 30, 30, 0.95); --text-main: #e0e0e0; --text-label: #32CD32;
+            --input-bg: #2c2c2c; --input-border: #444; --panel-bg: #1e1e1e; --border-accent: #32CD32;
+            --win-color: rgba(50, 205, 50, 0.2); --win-text: #32CD32; --loss-color: rgba(220, 53, 69, 0.2); --loss-text: #ff6b6b;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-base);
-            margin: 0;
-            padding: 20px;
-            color: var(--text-main);
-            min-height: 100vh;
-            transition: background-color 0.3s ease;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-base); margin: 0; padding: 20px; color: var(--text-main); min-height: 100vh; transition: background-color 0.3s ease; }
         
-        .glass-container {
-            background-color: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 25px 20px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            max-width: 500px;
-            margin: 0 auto;
-            border-top: 4px solid var(--border-accent);
-            position: relative;
-        }
+        .glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 20px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative; }
 
-        /* App Header & Tabs */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h2 { margin: 0; color: var(--text-label); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         .theme-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 0; }
         
-        .tab-container { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn {
-            flex: 1; padding: 12px; background: transparent; border: 2px solid var(--text-label);
-            color: var(--text-label); border-radius: 8px; font-weight: bold; text-transform: uppercase; cursor: pointer;
-        }
+        .tab-container { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 10px 5px; background: transparent; border: 2px solid var(--text-label); color: var(--text-label); border-radius: 8px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 13px; transition: all 0.2s; }
         .tab-btn.active { background: var(--text-label); color: var(--bg-base); }
 
-        /* General UI */
         .view-section { display: none; }
         .view-section.active { display: block; }
 
-        /* Stats Panel */
-        .stats-panel {
-            background-color: var(--panel-bg); border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 4px solid var(--text-label);
-        }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
-        .stat-label { font-weight: bold; color: var(--text-main); }
-        .stat-value { font-weight: bold; color: var(--text-label); }
-        
-        /* Form Elements */
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
-        input[type="text"], input[type="number"], input[type="date"], select {
-            width: 100%; padding: 12px; border: 2px solid var(--input-border); border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: var(--input-bg); color: var(--text-main);
-        }
+        input[type="text"], input[type="number"], input[type="date"], select { width: 100%; padding: 12px; border: 2px solid var(--input-border); border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: var(--input-bg); color: var(--text-main); }
         input:focus, select:focus { outline: none; border-color: #32CD32; box-shadow: 0 0 8px rgba(50, 205, 50, 0.2); }
         
         .checkbox-group { display: flex; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 2px solid var(--input-border); }
@@ -102,23 +49,32 @@
         .error { color: var(--loss-text); background-color: var(--loss-color); border: 1px solid var(--loss-text); }
         .sticky-options { margin-top: 20px; border-top: 1px solid var(--input-border); padding-top: 15px; }
 
-        /* --- CALENDAR GRID UI --- */
+        /* --- DASHBOARD UI --- */
+        .dash-card { background-color: var(--panel-bg); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 4px solid var(--text-label); }
+        .dash-title { margin-top: 0; margin-bottom: 12px; color: var(--text-label); font-size: 15px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--input-border); padding-bottom: 5px; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
+        .stat-label { font-weight: bold; color: var(--text-main); }
+        .stat-value { font-weight: bold; color: var(--text-label); }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 5px; }
+        th, td { padding: 8px 4px; text-align: left; border-bottom: 1px solid var(--input-border); }
+        th { color: var(--text-label); font-weight: bold; text-transform: uppercase; font-size: 11px; }
+        .text-right { text-align: right; }
+
+        /* --- CALENDAR UI --- */
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .cal-nav { background: transparent; border: none; color: var(--text-label); font-size: 20px; font-weight: bold; cursor: pointer; padding: 5px 15px; }
         .cal-month { font-size: 18px; font-weight: bold; color: var(--text-main); }
-        
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .day-name { text-align: center; font-size: 12px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
         .day-cell { background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 4px; min-height: 60px; display: flex; flex-direction: column; justify-content: space-between; }
         .day-cell.empty { background: transparent; border: none; }
         .date-num { font-size: 12px; font-weight: bold; color: var(--text-main); }
         .pl-amt { font-size: 11px; font-weight: bold; text-align: center; margin-top: 5px; word-wrap: break-word; }
-        
         .profit { background-color: var(--win-color); border-color: var(--win-text); }
         .profit .pl-amt { color: var(--win-text); }
         .loss { background-color: var(--loss-color); border-color: var(--loss-text); }
         .loss .pl-amt { color: var(--loss-text); }
-        
         .loading-text { text-align: center; font-weight: bold; color: var(--text-label); margin: 20px 0; }
     </style>
 </head>
@@ -128,25 +84,16 @@
         
         <div class="app-header">
             <h2>Bet Logger</h2>
-            <button class="theme-toggle" onclick="toggleTheme()" id="themeIcon">🌓</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
         </div>
 
         <div class="tab-container">
-            <button class="tab-btn active" id="btnLog" onclick="switchTab('log')">Log Bet</button>
+            <button class="tab-btn active" id="btnLog" onclick="switchTab('log')">Log</button>
             <button class="tab-btn" id="btnCal" onclick="switchTab('cal')">Calendar</button>
+            <button class="tab-btn" id="btnDash" onclick="switchTab('dash')">Dashboard</button>
         </div>
 
         <div id="viewLog" class="view-section active">
-            
-            <button type="button" class="btn-primary" style="background:transparent; border:2px solid var(--text-label); color:var(--text-label); margin-top:0; margin-bottom:15px;" id="dashBtn" onclick="toggleDashboard()">Show Live Stats</button>
-            
-            <div class="stats-panel" id="statsPanel" style="display:none;">
-                <div class="stat-row"><span class="stat-label">Total P/L:</span><span class="stat-value" id="valPL">--</span></div>
-                <div class="stat-row"><span class="stat-label">Total Wagered:</span><span class="stat-value" id="valWagered">--</span></div>
-                <div class="stat-row"><span class="stat-label">Total ROI:</span><span class="stat-value" id="valROI">--</span></div>
-                <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valRecord">--</span></div>
-            </div>
-
             <div class="form-group"><label>Sportsbook</label><select id="book"><option value="DraftKings">DraftKings</option><option value="FanDuel">FanDuel</option><option value="Caesars">Caesars</option><option value="BetRivers">BetRivers</option><option value="MGM">MGM</option><option value="Bet365">Bet365</option><option value="PrizePicks">PrizePicks</option></select></div>
             <div class="form-group"><label>Date</label><input type="date" id="date"></div>
             <div class="form-group"><label>Sport</label><select id="sport"><option value="NHL">NHL</option><option value="NFL">NFL</option><option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option><option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option><option value="GOLF">GOLF</option></select></div>
@@ -160,21 +107,47 @@
 
             <button onclick="submitBet()" id="submitBtn" class="btn-primary">Log Bet to Tracker</button>
             <div id="status"></div>
-
-            <div class="sticky-options">
-                <div class="form-group checkbox-group"><input type="checkbox" id="keepSlip"><label for="keepSlip">Keep Bet In Slip</label></div>
-            </div>
+            <div class="sticky-options"><div class="form-group checkbox-group"><input type="checkbox" id="keepSlip"><label for="keepSlip">Keep Bet In Slip</label></div></div>
         </div>
 
         <div id="viewCal" class="view-section">
-            <div id="calLoader" class="loading-text">Fetching your data...</div>
+            <div id="calLoader" class="loading-text">Fetching data...</div>
             <div id="calContainer" style="display:none;">
-                <div class="cal-header">
-                    <button class="cal-nav" onclick="changeMonth(-1)">&#9664;</button>
-                    <div class="cal-month" id="monthLabel">Month Year</div>
-                    <button class="cal-nav" onclick="changeMonth(1)">&#9654;</button>
-                </div>
+                <div class="cal-header"><button class="cal-nav" onclick="changeMonth(-1)">&#9664;</button><div class="cal-month" id="monthLabel">Month Year</div><button class="cal-nav" onclick="changeMonth(1)">&#9654;</button></div>
                 <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+        </div>
+
+        <div id="viewDash" class="view-section">
+            <div id="dashLoader" class="loading-text">Fetching data...</div>
+            <div id="dashContainer" style="display:none;">
+                
+                <div class="dash-card">
+                    <h3 class="dash-title">Overall</h3>
+                    <div class="stat-row"><span class="stat-label">Total P/L:</span><span class="stat-value" id="valPL">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Total Wagered:</span><span class="stat-value" id="valWagered">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Total ROI:</span><span class="stat-value" id="valROI">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valRecord">--</span></div>
+                </div>
+
+                <div class="dash-card">
+                    <h3 class="dash-title">Bet Style</h3>
+                    <div class="stat-row"><span class="stat-label">Straight P/L:</span><span class="stat-value" id="valStrPL">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Straight Rec:</span><span class="stat-value" id="valStrRec">--</span></div>
+                    <div class="stat-row" style="margin-top:8px;"><span class="stat-label">Parlay P/L:</span><span class="stat-value" id="valParPL">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Parlay Rec:</span><span class="stat-value" id="valParRec">--</span></div>
+                </div>
+
+                <div class="dash-card">
+                    <h3 class="dash-title">By Book</h3>
+                    <div id="tableBooks"></div>
+                </div>
+
+                <div class="dash-card">
+                    <h3 class="dash-title">By Sport</h3>
+                    <div id="tableSports"></div>
+                </div>
+
             </div>
         </div>
 
@@ -193,73 +166,96 @@
             const body = document.body;
             body.classList.toggle('dark-mode');
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
+            if(dataFetched && document.getElementById('viewDash').classList.contains('active')) {
+                // Quick re-render of tables to update text colors based on theme
+                fetchMasterData(); 
+            }
         }
 
         window.onload = function() {
             if (localStorage.getItem('theme') === 'light') document.body.classList.remove('dark-mode');
         };
 
-        // --- TAB & DATA LOGIC ---
         function switchTab(tab) {
-            document.getElementById('viewLog').classList.remove('active');
-            document.getElementById('viewCal').classList.remove('active');
-            document.getElementById('btnLog').classList.remove('active');
-            document.getElementById('btnCal').classList.remove('active');
+            ['viewLog', 'viewCal', 'viewDash'].forEach(id => document.getElementById(id).classList.remove('active'));
+            ['btnLog', 'btnCal', 'btnDash'].forEach(id => document.getElementById(id).classList.remove('active'));
 
             if(tab === 'log') {
                 document.getElementById('viewLog').classList.add('active');
                 document.getElementById('btnLog').classList.add('active');
-            } else {
+            } else if (tab === 'cal') {
                 document.getElementById('viewCal').classList.add('active');
                 document.getElementById('btnCal').classList.add('active');
+                if(!dataFetched) fetchMasterData(); else renderCalendar(currentMonth, currentYear);
+            } else if (tab === 'dash') {
+                document.getElementById('viewDash').classList.add('active');
+                document.getElementById('btnDash').classList.add('active');
                 if(!dataFetched) fetchMasterData();
-                else renderCalendar(currentMonth, currentYear);
             }
         }
 
-        function toggleDashboard() {
-            const panel = document.getElementById('statsPanel');
-            const btn = document.getElementById('dashBtn');
-            if (panel.style.display === "block") {
-                panel.style.display = "none";
-                btn.textContent = "SHOW LIVE STATS";
-                return;
-            }
-            btn.textContent = "LOADING...";
-            fetchMasterData(true); 
+        function getColor(valStr) {
+            return valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)';
         }
 
-        function fetchMasterData(showStats = false) {
+        function fetchMasterData() {
+            document.getElementById('calLoader').style.display = 'block';
+            document.getElementById('dashLoader').style.display = 'block';
+            document.getElementById('calContainer').style.display = 'none';
+            document.getElementById('dashContainer').style.display = 'none';
+
             fetch(WEB_APP_URL)
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
-                    // Populate Stats
+                    
+                    // Populate Dashboard Overall & Bet Style
                     document.getElementById('valPL').textContent = data.pl;
+                    document.getElementById('valPL').style.color = getColor(data.pl);
                     document.getElementById('valWagered').textContent = data.wagered;
                     document.getElementById('valROI').textContent = data.roi;
                     document.getElementById('valRecord').textContent = data.record;
-                    document.getElementById('valPL').style.color = data.pl.includes('-') ? 'var(--loss-text)' : 'var(--text-label)';
-                    
-                    if(showStats) {
-                        document.getElementById('statsPanel').style.display = "block";
-                        document.getElementById('dashBtn').textContent = "HIDE STATS";
-                    }
 
-                    // Populate Calendar Data
+                    document.getElementById('valStrPL').textContent = data.straightPL;
+                    document.getElementById('valStrPL').style.color = getColor(data.straightPL);
+                    document.getElementById('valStrRec').textContent = data.straightRec;
+                    document.getElementById('valParPL').textContent = data.parlayPL;
+                    document.getElementById('valParPL').style.color = getColor(data.parlayPL);
+                    document.getElementById('valParRec').textContent = data.parlayRec;
+
+                    // Build Books Table
+                    let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>';
+                    data.books.forEach(b => {
+                        bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`;
+                    });
+                    bHtml += '</table>';
+                    document.getElementById('tableBooks').innerHTML = bHtml;
+
+                    // Build Sports Table
+                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>';
+                    data.sports.forEach(s => {
+                        sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`;
+                    });
+                    sHtml += '</table>';
+                    document.getElementById('tableSports').innerHTML = sHtml;
+
+                    // Calendar Data
                     dailyPLData = data.dailyData || {};
                     dataFetched = true;
                     
                     document.getElementById('calLoader').style.display = 'none';
+                    document.getElementById('dashLoader').style.display = 'none';
                     document.getElementById('calContainer').style.display = 'block';
+                    document.getElementById('dashContainer').style.display = 'block';
+                    
                     if(document.getElementById('viewCal').classList.contains('active')) {
                         renderCalendar(currentMonth, currentYear);
                     }
                 }
-            }).catch(e => alert("Error fetching data. Check your Web App URL deployment."));
+            }).catch(e => alert("Error fetching data. Check Web App URL deployment."));
         }
 
-        // --- CALENDAR RENDER LOGIC ---
+        // --- CALENDAR LOGIC ---
         function changeMonth(dir) {
             currentMonth += dir;
             if(currentMonth > 11) { currentMonth = 0; currentYear++; }
@@ -276,22 +272,14 @@
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
-            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => {
-                grid.innerHTML += `<div class="day-name">${d}</div>`;
-            });
-            
-            for (let i = 0; i < firstDay; i++) {
-                grid.innerHTML += `<div class="day-cell empty"></div>`;
-            }
+            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { grid.innerHTML += `<div class="day-name">${d}</div>`; });
+            for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="day-cell empty"></div>`; }
             
             for (let i = 1; i <= daysInMonth; i++) {
-                // Format YYYY-MM-DD to match the JSON key
                 const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                 let pl = dailyPLData[dStr] || 0;
-                
                 let plText = pl === 0 ? '-' : (pl > 0 ? `+$${pl.toFixed(2)}` : `-$${Math.abs(pl).toFixed(2)}`);
                 let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
-                
                 grid.innerHTML += `<div class="day-cell ${cls}"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
             }
         }
@@ -318,10 +306,8 @@
             .then(data => {
                 if (data.status === "success") {
                     statusDiv.textContent = "Bet Logged!"; statusDiv.className = "success";
-                    if (!keepSlip) {
-                        ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = "");
-                    }
-                    dataFetched = false; // Force a refresh of the calendar data next time they click it
+                    if (!keepSlip) { ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = ""); }
+                    dataFetched = false; 
                 } else {
                     statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error";
                 }
