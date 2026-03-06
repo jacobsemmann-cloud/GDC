@@ -6,7 +6,8 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <title>Green Dot City</title>
     <style>
-        * { box-sizing: border-box; }
+        /* BULLETPROOF SIZING FIXES */
+        *, *::before, *::after { box-sizing: border-box; }
 
         :root {
             --bg-base: #f2f2f7; --glass-bg: rgba(255, 255, 255, 0.95); --text-main: #333; --text-label: #1b4d29;
@@ -22,7 +23,8 @@
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-base); margin: 0; padding: 10px; color: var(--text-main); min-height: 100vh; transition: background-color 0.3s ease; overflow-x: hidden; }
         
-        .glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; width: 100%; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative; }
+        /* Added overflow:hidden to act as a strict wall against stretching */
+        .glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; width: 100%; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative; overflow: hidden; }
 
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h2 { margin: 0; color: var(--text-label); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 20px;}
@@ -37,13 +39,13 @@
         .view-section { display: none; }
         .view-section.active { display: block; }
 
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; min-width: 0; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
         
-        /* THE FIX: Added box-sizing, max-width, and inherit to force inputs inside their containers */
+        /* Force inputs to obey their container sizes */
         input[type="text"], input[type="number"], input[type="date"], select { 
             width: 100%; 
-            max-width: 100%; 
+            min-width: 0;
             box-sizing: border-box; 
             padding: 12px; 
             border: 2px solid var(--input-border); 
@@ -63,8 +65,6 @@
         .btn-primary { width: 100%; padding: 16px; background-color: #1b4d29; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
         body.dark-mode .btn-primary { background-color: #32CD32; color: #000; }
         #status { text-align: center; margin-top: 15px; font-weight: bold; display: none; padding: 12px; border-radius: 8px;}
-        .success { color: var(--win-text); background-color: var(--win-color); border: 1px solid var(--win-text); }
-        .error { color: var(--loss-text); background-color: var(--loss-color); border: 1px solid var(--loss-text); }
         .sticky-options { margin-top: 20px; border-top: 1px solid var(--input-border); padding-top: 15px; }
 
         /* --- DASHBOARD UI --- */
@@ -74,7 +74,7 @@
         .stat-label { font-weight: bold; color: var(--text-main); }
         .stat-value { font-weight: bold; color: var(--text-label); }
         
-        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; max-width: 100%; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; white-space: nowrap; }
         th, td { padding: 8px 4px; text-align: left; border-bottom: 1px solid var(--input-border); }
         th { color: var(--text-label); font-weight: bold; text-transform: uppercase; font-size: 10px; }
@@ -94,12 +94,15 @@
         .cal-summary-label { font-size: 9px; font-weight: bold; color: var(--text-main); text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0px;}
         .cal-summary-val { font-size: 12px; font-weight: bold; }
 
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; width: 100%; }
+        /* THE GRID FIX: minmax(0, 1fr) is the silver bullet that prevents Saturday from falling off */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
         .day-name { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
-        .day-cell { background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;}
+        
+        /* Added min-width: 0 and word-break: break-all to strictly force numbers into the box */
+        .day-cell { background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0; word-break: break-all;}
         .day-cell.empty { background: transparent; border: none; }
         .date-num { font-size: 11px; font-weight: bold; color: var(--text-main); }
-        .pl-amt { font-size: 9.5px; font-weight: bold; text-align: center; margin-top: 2px; word-wrap: break-word; overflow-wrap: anywhere; letter-spacing: -0.3px; line-height: 1.1;}
+        .pl-amt { font-size: 9.5px; font-weight: bold; text-align: center; margin-top: 2px; line-height: 1.1; overflow-wrap: break-word;}
         .profit { background-color: var(--win-color); border-color: var(--win-text); }
         .profit .pl-amt { color: var(--win-text); }
         .loss { background-color: var(--loss-color); border-color: var(--loss-text); }
@@ -134,7 +137,10 @@
             <div class="form-group"><label>Player / Team 1</label><input type="text" id="team1" placeholder="e.g. Capitals"></div>
             <div class="form-group"><label>Team 2 (Optional)</label><input type="text" id="team2" placeholder="e.g. Rangers"></div>
             <div class="form-group"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
-            <div style="display: flex; gap: 10px;"><div class="form-group" style="flex: 1;"><label>Odds</label><input type="number" id="odds" placeholder="-110"></div><div class="form-group" style="flex: 1;"><label>Wager ($)</label><input type="number" id="wager" placeholder="50" step="0.01"></div></div>
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 1;"><label>Odds</label><input type="number" id="odds" placeholder="-110"></div>
+                <div class="form-group" style="flex: 1;"><label>Wager ($)</label><input type="number" id="wager" placeholder="50" step="0.01"></div>
+            </div>
             <div class="form-group"><label>Result</label><select id="result"><option value="">Pending</option><option value="W">Win (W)</option><option value="L">Loss (L)</option><option value="P">Push (P)</option></select></div>
 
             <button onclick="submitBet()" id="submitBtn" class="btn-primary">Log Bet</button>
