@@ -15,9 +15,12 @@
             --input-border: #e0e0e0;
             --panel-bg: #f8f9fa;
             --border-accent: #1b4d29;
+            --win-color: #e8f5e9;
+            --win-text: #1b4d29;
+            --loss-color: #f8d7da;
+            --loss-text: #721c24;
         }
 
-        /* Default Dark Mode Styles */
         body.dark-mode {
             --bg-base: #121212;
             --glass-bg: rgba(30, 30, 30, 0.95);
@@ -27,6 +30,10 @@
             --input-border: #444;
             --panel-bg: #1e1e1e;
             --border-accent: #32CD32;
+            --win-color: rgba(50, 205, 50, 0.2);
+            --win-text: #32CD32;
+            --loss-color: rgba(220, 53, 69, 0.2);
+            --loss-text: #ff6b6b;
         }
 
         body {
@@ -52,227 +59,135 @@
             position: relative;
         }
 
-        .theme-toggle {
-            position: absolute;
-            top: 25px;
-            right: 20px;
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
+        /* App Header & Tabs */
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h2 { margin: 0; color: var(--text-label); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .theme-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 0; }
+        
+        .tab-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn {
+            flex: 1; padding: 12px; background: transparent; border: 2px solid var(--text-label);
+            color: var(--text-label); border-radius: 8px; font-weight: bold; text-transform: uppercase; cursor: pointer;
         }
+        .tab-btn.active { background: var(--text-label); color: var(--bg-base); }
 
-        h2 { 
-            text-align: left; 
-            margin-top: 0; 
-            margin-bottom: 20px;
-            color: var(--text-label); 
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        /* General UI */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
 
-        .btn-secondary {
-            width: 100%;
-            padding: 12px;
-            background-color: transparent;
-            color: var(--text-label);
-            border: 2px solid var(--text-label);
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
+        /* Stats Panel */
         .stats-panel {
-            display: none; 
-            background-color: var(--panel-bg);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-left: 4px solid var(--text-label);
+            background-color: var(--panel-bg); border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 4px solid var(--text-label);
         }
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
         .stat-label { font-weight: bold; color: var(--text-main); }
         .stat-value { font-weight: bold; color: var(--text-label); }
         
+        /* Form Elements */
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
-        
         input[type="text"], input[type="number"], input[type="date"], select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid var(--input-border);
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 16px; 
-            background-color: var(--input-bg);
-            color: var(--text-main);
+            width: 100%; padding: 12px; border: 2px solid var(--input-border); border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: var(--input-bg); color: var(--text-main);
         }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #32CD32; 
-            box-shadow: 0 0 8px rgba(50, 205, 50, 0.2);
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            background: var(--input-bg);
-            padding: 12px;
-            border-radius: 8px;
-            border: 2px solid var(--input-border);
-        }
+        input:focus, select:focus { outline: none; border-color: #32CD32; box-shadow: 0 0 8px rgba(50, 205, 50, 0.2); }
+        
+        .checkbox-group { display: flex; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 2px solid var(--input-border); }
         .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; accent-color: #32CD32; }
         .checkbox-group label { margin-bottom: 0; font-size: 16px; color: var(--text-main);}
         
-        .btn-primary {
-            width: 100%;
-            padding: 16px;
-            background-color: #1b4d29;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .btn-primary { width: 100%; padding: 16px; background-color: #1b4d29; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
         body.dark-mode .btn-primary { background-color: #32CD32; color: #000; }
-        
         #status { text-align: center; margin-top: 15px; font-weight: bold; display: none; padding: 12px; border-radius: 8px;}
-        .success { color: #1b4d29; background-color: #e8f5e9; border: 1px solid #c8e6c9; }
-        .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .success { color: var(--win-text); background-color: var(--win-color); border: 1px solid var(--win-text); }
+        .error { color: var(--loss-text); background-color: var(--loss-color); border: 1px solid var(--loss-text); }
+        .sticky-options { margin-top: 20px; border-top: 1px solid var(--input-border); padding-top: 15px; }
 
-        /* Style for the new toggle at the bottom */
-        .sticky-options {
-            margin-top: 20px;
-            border-top: 1px solid var(--input-border);
-            padding-top: 15px;
-        }
+        /* --- CALENDAR GRID UI --- */
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .cal-nav { background: transparent; border: none; color: var(--text-label); font-size: 20px; font-weight: bold; cursor: pointer; padding: 5px 15px; }
+        .cal-month { font-size: 18px; font-weight: bold; color: var(--text-main); }
+        
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .day-name { text-align: center; font-size: 12px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
+        .day-cell { background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 4px; min-height: 60px; display: flex; flex-direction: column; justify-content: space-between; }
+        .day-cell.empty { background: transparent; border: none; }
+        .date-num { font-size: 12px; font-weight: bold; color: var(--text-main); }
+        .pl-amt { font-size: 11px; font-weight: bold; text-align: center; margin-top: 5px; word-wrap: break-word; }
+        
+        .profit { background-color: var(--win-color); border-color: var(--win-text); }
+        .profit .pl-amt { color: var(--win-text); }
+        .loss { background-color: var(--loss-color); border-color: var(--loss-text); }
+        .loss .pl-amt { color: var(--loss-text); }
+        
+        .loading-text { text-align: center; font-weight: bold; color: var(--text-label); margin: 20px 0; }
     </style>
 </head>
-<body class="dark-mode"> <div class="glass-container">
-        <h2>Bet Logger</h2>
-        <button class="theme-toggle" onclick="toggleTheme()" id="themeIcon">🌓</button>
+<body class="dark-mode">
 
-        <button type="button" class="btn-secondary" id="dashBtn" onclick="toggleDashboard()">View Live Stats</button>
+    <div class="glass-container">
         
-        <div class="stats-panel" id="statsPanel">
-            <div class="stat-row"><span class="stat-label">Total P/L:</span><span class="stat-value" id="valPL">--</span></div>
-            <div class="stat-row"><span class="stat-label">Total Wagered:</span><span class="stat-value" id="valWagered">--</span></div>
-            <div class="stat-row"><span class="stat-label">Total ROI:</span><span class="stat-value" id="valROI">--</span></div>
-            <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valRecord">--</span></div>
+        <div class="app-header">
+            <h2>Bet Logger</h2>
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeIcon">🌓</button>
         </div>
 
-        <div class="form-group">
-            <label>Sportsbook</label>
-            <select id="book">
-                <option value="DraftKings">DraftKings</option>
-                <option value="FanDuel">FanDuel</option>
-                <option value="Caesars">Caesars</option>
-                <option value="BetRivers">BetRivers</option>
-                <option value="MGM">MGM</option>
-                <option value="Bet365">Bet365</option>
-                <option value="PrizePicks">PrizePicks</option>
-            </select>
+        <div class="tab-container">
+            <button class="tab-btn active" id="btnLog" onclick="switchTab('log')">Log Bet</button>
+            <button class="tab-btn" id="btnCal" onclick="switchTab('cal')">Calendar</button>
         </div>
 
-        <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="date">
-        </div>
-
-        <div class="form-group">
-            <label>Sport</label>
-            <select id="sport">
-                <option value="NHL">NHL</option>
-                <option value="NFL">NFL</option>
-                <option value="NBA">NBA</option>
-                <option value="MLB">MLB</option>
-                <option value="NCAAB">NCAAB</option>
-                <option value="NCAAF">NCAAF</option>
-                <option value="TENNIS">TENNIS</option>
-                <option value="SOCCER">SOCCER</option>
-                <option value="GOLF">GOLF</option>
-            </select>
-        </div>
-
-        <div class="form-group checkbox-group">
-            <input type="checkbox" id="parlay">
-            <label for="parlay">Parlay?</label>
-        </div>
-
-        <div class="form-group">
-            <label>Bet Type</label>
-            <select id="betType">
-                <option value="Moneyline">Moneyline</option>
-                <option value="Spread">Spread</option>
-                <option value="Total">Total</option>
-                <option value="Prop">Prop</option>
-                <option value="Future">Future</option>
-                <option value="Teaser">Teaser</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Player / Team 1</label>
-            <input type="text" id="team1" placeholder="e.g. Capitals">
-        </div>
-
-        <div class="form-group">
-            <label>Team 2 (Optional)</label>
-            <input type="text" id="team2" placeholder="e.g. Rangers">
-        </div>
-
-        <div class="form-group">
-            <label>Details</label>
-            <input type="text" id="details" placeholder="e.g. O 5.5 Goals">
-        </div>
-
-        <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex: 1;">
-                <label>Odds</label>
-                <input type="number" id="odds" placeholder="-110">
+        <div id="viewLog" class="view-section active">
+            
+            <button type="button" class="btn-primary" style="background:transparent; border:2px solid var(--text-label); color:var(--text-label); margin-top:0; margin-bottom:15px;" id="dashBtn" onclick="toggleDashboard()">Show Live Stats</button>
+            
+            <div class="stats-panel" id="statsPanel" style="display:none;">
+                <div class="stat-row"><span class="stat-label">Total P/L:</span><span class="stat-value" id="valPL">--</span></div>
+                <div class="stat-row"><span class="stat-label">Total Wagered:</span><span class="stat-value" id="valWagered">--</span></div>
+                <div class="stat-row"><span class="stat-label">Total ROI:</span><span class="stat-value" id="valROI">--</span></div>
+                <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valRecord">--</span></div>
             </div>
-            <div class="form-group" style="flex: 1;">
-                <label>Wager ($)</label>
-                <input type="number" id="wager" placeholder="50" step="0.01">
+
+            <div class="form-group"><label>Sportsbook</label><select id="book"><option value="DraftKings">DraftKings</option><option value="FanDuel">FanDuel</option><option value="Caesars">Caesars</option><option value="BetRivers">BetRivers</option><option value="MGM">MGM</option><option value="Bet365">Bet365</option><option value="PrizePicks">PrizePicks</option></select></div>
+            <div class="form-group"><label>Date</label><input type="date" id="date"></div>
+            <div class="form-group"><label>Sport</label><select id="sport"><option value="NHL">NHL</option><option value="NFL">NFL</option><option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option><option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option><option value="GOLF">GOLF</option></select></div>
+            <div class="form-group checkbox-group"><input type="checkbox" id="parlay"><label for="parlay">Parlay?</label></div>
+            <div class="form-group"><label>Bet Type</label><select id="betType"><option value="Moneyline">Moneyline</option><option value="Spread">Spread</option><option value="Total">Total</option><option value="Prop">Prop</option><option value="Future">Future</option><option value="Teaser">Teaser</option></select></div>
+            <div class="form-group"><label>Player / Team 1</label><input type="text" id="team1" placeholder="e.g. Capitals"></div>
+            <div class="form-group"><label>Team 2 (Optional)</label><input type="text" id="team2" placeholder="e.g. Rangers"></div>
+            <div class="form-group"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
+            <div style="display: flex; gap: 10px;"><div class="form-group" style="flex: 1;"><label>Odds</label><input type="number" id="odds" placeholder="-110"></div><div class="form-group" style="flex: 1;"><label>Wager ($)</label><input type="number" id="wager" placeholder="50" step="0.01"></div></div>
+            <div class="form-group"><label>Result</label><select id="result"><option value="">Pending</option><option value="W">Win (W)</option><option value="L">Loss (L)</option><option value="P">Push (P)</option></select></div>
+
+            <button onclick="submitBet()" id="submitBtn" class="btn-primary">Log Bet to Tracker</button>
+            <div id="status"></div>
+
+            <div class="sticky-options">
+                <div class="form-group checkbox-group"><input type="checkbox" id="keepSlip"><label for="keepSlip">Keep Bet In Slip</label></div>
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Result</label>
-            <select id="result">
-                <option value="">Pending</option>
-                <option value="W">Win (W)</option>
-                <option value="L">Loss (L)</option>
-                <option value="P">Push (P)</option>
-            </select>
-        </div>
-
-        <button onclick="submitBet()" id="submitBtn" class="btn-primary">Log Bet to Tracker</button>
-        <div id="status"></div>
-
-        <div class="sticky-options">
-            <div class="form-group checkbox-group">
-                <input type="checkbox" id="keepSlip">
-                <label for="keepSlip">Keep Bet In Slip</label>
+        <div id="viewCal" class="view-section">
+            <div id="calLoader" class="loading-text">Fetching your data...</div>
+            <div id="calContainer" style="display:none;">
+                <div class="cal-header">
+                    <button class="cal-nav" onclick="changeMonth(-1)">&#9664;</button>
+                    <div class="cal-month" id="monthLabel">Month Year</div>
+                    <button class="cal-nav" onclick="changeMonth(1)">&#9654;</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
             </div>
         </div>
+
     </div>
 
     <script>
         document.getElementById('date').valueAsDate = new Date();
-
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
+        
+        let dailyPLData = {};
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let dataFetched = false;
 
         function toggleTheme() {
             const body = document.body;
@@ -281,36 +196,104 @@
         }
 
         window.onload = function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                document.body.classList.remove('dark-mode');
-            } else {
-                document.body.classList.add('dark-mode');
-            }
+            if (localStorage.getItem('theme') === 'light') document.body.classList.remove('dark-mode');
         };
+
+        // --- TAB & DATA LOGIC ---
+        function switchTab(tab) {
+            document.getElementById('viewLog').classList.remove('active');
+            document.getElementById('viewCal').classList.remove('active');
+            document.getElementById('btnLog').classList.remove('active');
+            document.getElementById('btnCal').classList.remove('active');
+
+            if(tab === 'log') {
+                document.getElementById('viewLog').classList.add('active');
+                document.getElementById('btnLog').classList.add('active');
+            } else {
+                document.getElementById('viewCal').classList.add('active');
+                document.getElementById('btnCal').classList.add('active');
+                if(!dataFetched) fetchMasterData();
+                else renderCalendar(currentMonth, currentYear);
+            }
+        }
 
         function toggleDashboard() {
             const panel = document.getElementById('statsPanel');
             const btn = document.getElementById('dashBtn');
             if (panel.style.display === "block") {
                 panel.style.display = "none";
-                btn.textContent = "VIEW LIVE STATS";
+                btn.textContent = "SHOW LIVE STATS";
                 return;
             }
             btn.textContent = "LOADING...";
+            fetchMasterData(true); 
+        }
+
+        function fetchMasterData(showStats = false) {
             fetch(WEB_APP_URL)
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
+                    // Populate Stats
                     document.getElementById('valPL').textContent = data.pl;
                     document.getElementById('valWagered').textContent = data.wagered;
                     document.getElementById('valROI').textContent = data.roi;
                     document.getElementById('valRecord').textContent = data.record;
-                    document.getElementById('valPL').style.color = data.pl.includes('-') ? '#cc0000' : 'var(--text-label)';
-                    panel.style.display = "block";
-                    btn.textContent = "HIDE STATS";
+                    document.getElementById('valPL').style.color = data.pl.includes('-') ? 'var(--loss-text)' : 'var(--text-label)';
+                    
+                    if(showStats) {
+                        document.getElementById('statsPanel').style.display = "block";
+                        document.getElementById('dashBtn').textContent = "HIDE STATS";
+                    }
+
+                    // Populate Calendar Data
+                    dailyPLData = data.dailyData || {};
+                    dataFetched = true;
+                    
+                    document.getElementById('calLoader').style.display = 'none';
+                    document.getElementById('calContainer').style.display = 'block';
+                    if(document.getElementById('viewCal').classList.contains('active')) {
+                        renderCalendar(currentMonth, currentYear);
+                    }
                 }
+            }).catch(e => alert("Error fetching data. Check your Web App URL deployment."));
+        }
+
+        // --- CALENDAR RENDER LOGIC ---
+        function changeMonth(dir) {
+            currentMonth += dir;
+            if(currentMonth > 11) { currentMonth = 0; currentYear++; }
+            if(currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar(currentMonth, currentYear);
+        }
+
+        function renderCalendar(month, year) {
+            const grid = document.getElementById('calendarGrid');
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`;
+            grid.innerHTML = '';
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => {
+                grid.innerHTML += `<div class="day-name">${d}</div>`;
             });
+            
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div class="day-cell empty"></div>`;
+            }
+            
+            for (let i = 1; i <= daysInMonth; i++) {
+                // Format YYYY-MM-DD to match the JSON key
+                const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                let pl = dailyPLData[dStr] || 0;
+                
+                let plText = pl === 0 ? '-' : (pl > 0 ? `+$${pl.toFixed(2)}` : `-$${Math.abs(pl).toFixed(2)}`);
+                let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
+                
+                grid.innerHTML += `<div class="day-cell ${cls}"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
+            }
         }
 
         function submitBet() {
@@ -319,52 +302,30 @@
             const keepSlip = document.getElementById('keepSlip').checked;
             
             const payload = {
-                book: document.getElementById('book').value,
-                date: document.getElementById('date').value,
-                sport: document.getElementById('sport').value,
-                parlay: document.getElementById('parlay').checked,
-                betType: document.getElementById('betType').value,
-                team1: document.getElementById('team1').value,
-                team2: document.getElementById('team2').value,
-                details: document.getElementById('details').value,
-                odds: parseFloat(document.getElementById('odds').value),
-                wager: parseFloat(document.getElementById('wager').value),
-                result: document.getElementById('result').value
+                book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value,
+                parlay: document.getElementById('parlay').checked, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value,
+                team2: document.getElementById('team2').value, details: document.getElementById('details').value, odds: parseFloat(document.getElementById('odds').value),
+                wager: parseFloat(document.getElementById('wager').value), result: document.getElementById('result').value
             };
 
             if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) {
-                statusDiv.textContent = "Fill Team 1, Odds, and Wager.";
-                statusDiv.className = "error";
-                statusDiv.style.display = "block";
-                return;
+                statusDiv.textContent = "Fill Team 1, Odds, and Wager."; statusDiv.className = "error"; statusDiv.style.display = "block"; return;
             }
 
-            btn.disabled = true;
-            btn.textContent = "SENDING...";
-
+            btn.disabled = true; btn.textContent = "SENDING...";
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
-                    statusDiv.textContent = "Bet Logged!";
-                    statusDiv.className = "success";
-                    
-                    // Logic for keeping or clearing form
+                    statusDiv.textContent = "Bet Logged!"; statusDiv.className = "success";
                     if (!keepSlip) {
-                        document.getElementById('team1').value = "";
-                        document.getElementById('team2').value = "";
-                        document.getElementById('details').value = "";
-                        document.getElementById('odds').value = "";
-                        document.getElementById('wager').value = "";
-                        document.getElementById('result').value = "";
+                        ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = "");
                     }
+                    dataFetched = false; // Force a refresh of the calendar data next time they click it
                 } else {
-                    statusDiv.textContent = "Error: " + data.message;
-                    statusDiv.className = "error";
+                    statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error";
                 }
-                statusDiv.style.display = "block";
-                btn.disabled = false;
-                btn.textContent = "LOG BET TO TRACKER";
+                statusDiv.style.display = "block"; btn.disabled = false; btn.textContent = "LOG BET TO TRACKER";
             });
         }
     </script>
