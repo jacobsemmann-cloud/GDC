@@ -6,7 +6,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <title>Green Dot City</title>
     <style>
-        /* BULLETPROOF SIZING FIXES */
+        /* UNIFORMITY FIX: Force internal border math on all elements */
         *, *::before, *::after { box-sizing: border-box; }
 
         :root {
@@ -23,8 +23,8 @@
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-base); margin: 0; padding: 10px; color: var(--text-main); min-height: 100vh; transition: background-color 0.3s ease; overflow-x: hidden; }
         
-        /* Added overflow:hidden to act as a strict wall against stretching */
-        .glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; width: 100%; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative; overflow: hidden; }
+        /* RESTORED: Removed aggressive overflow wall, let container define width */
+        .glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; width: 100%; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative;}
 
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h2 { margin: 0; color: var(--text-label); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 20px;}
@@ -39,13 +39,15 @@
         .view-section { display: none; }
         .view-section.active { display: block; }
 
-        .form-group { margin-bottom: 15px; min-width: 0; }
+        .form-group { margin-bottom: 15px; width: 100%; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
         
-        /* Force inputs to obey their container sizes */
+        /* UNIFORMITY FIX: Force all inputs and selects to share same visual boundaries */
         input[type="text"], input[type="number"], input[type="date"], select { 
+            display: block;
             width: 100%; 
-            min-width: 0;
+            /* Added min-height to ensure uniformity across devices with native date pickers */
+            min-height: 46px; 
             box-sizing: border-box; 
             padding: 12px; 
             border: 2px solid var(--input-border); 
@@ -54,12 +56,15 @@
             font-family: inherit;
             background-color: var(--input-bg); 
             color: var(--text-main); 
+            /* AGGRESSIVE RESET: Strips native phone styling so border-radius works perfectly */
+            -webkit-appearance: none; 
+            appearance: none;
         }
         
         input:focus, select:focus { outline: none; border-color: #32CD32; box-shadow: 0 0 8px rgba(50, 205, 50, 0.2); }
         
         .checkbox-group { display: flex; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 2px solid var(--input-border); }
-        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; accent-color: #32CD32; }
+        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; accent-color: #32CD32; -webkit-appearance: checkbox; appearance: checkbox;}
         .checkbox-group label { margin-bottom: 0; font-size: 16px; color: var(--text-main);}
         
         .btn-primary { width: 100%; padding: 16px; background-color: #1b4d29; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
@@ -74,7 +79,7 @@
         .stat-label { font-weight: bold; color: var(--text-main); }
         .stat-value { font-weight: bold; color: var(--text-label); }
         
-        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; max-width: 100%; }
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; white-space: nowrap; }
         th, td { padding: 8px 4px; text-align: left; border-bottom: 1px solid var(--input-border); }
         th { color: var(--text-label); font-weight: bold; text-transform: uppercase; font-size: 10px; }
@@ -82,7 +87,7 @@
 
         .lb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 8px; margin-bottom: 12px; }
         .lb-header h3 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .lb-select { width: auto; padding: 4px; font-size: 12px; margin: 0; background-color: var(--bg-base); color: var(--text-main); border: 1px solid var(--input-border); border-radius: 4px; font-weight: bold;}
+        .lb-select { width: auto; padding: 4px; font-size: 12px; margin: 0; background-color: var(--bg-base); color: var(--text-main); border: 1px solid var(--input-border); border-radius: 4px; font-weight: bold; min-height: 0; -webkit-appearance: auto; appearance: auto;}
 
         /* --- CALENDAR UI --- */
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -94,11 +99,9 @@
         .cal-summary-label { font-size: 9px; font-weight: bold; color: var(--text-main); text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0px;}
         .cal-summary-val { font-size: 12px; font-weight: bold; }
 
-        /* THE GRID FIX: minmax(0, 1fr) is the silver bullet that prevents Saturday from falling off */
+        /* THE GRID FIX: minmax(0, 1fr) ensures Saturday stays on screen */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
         .day-name { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
-        
-        /* Added min-width: 0 and word-break: break-all to strictly force numbers into the box */
         .day-cell { background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0; word-break: break-all;}
         .day-cell.empty { background: transparent; border: none; }
         .date-num { font-size: 11px; font-weight: bold; color: var(--text-main); }
@@ -137,10 +140,7 @@
             <div class="form-group"><label>Player / Team 1</label><input type="text" id="team1" placeholder="e.g. Capitals"></div>
             <div class="form-group"><label>Team 2 (Optional)</label><input type="text" id="team2" placeholder="e.g. Rangers"></div>
             <div class="form-group"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex: 1;"><label>Odds</label><input type="number" id="odds" placeholder="-110"></div>
-                <div class="form-group" style="flex: 1;"><label>Wager ($)</label><input type="number" id="wager" placeholder="50" step="0.01"></div>
-            </div>
+            <div style="display: flex; gap: 10px;"><div class="form-group" style="flex: 1;"><label>Odds</label><input type="number" id="odds" placeholder="-110"></div><div class="form-group" style="flex: 1;"><label>Wager ($)</label><input type="number" id="wager" placeholder="50" step="0.01"></div></div>
             <div class="form-group"><label>Result</label><select id="result"><option value="">Pending</option><option value="W">Win (W)</option><option value="L">Loss (L)</option><option value="P">Push (P)</option></select></div>
 
             <button onclick="submitBet()" id="submitBtn" class="btn-primary">Log Bet</button>
@@ -249,8 +249,6 @@
 
     <script>
         document.getElementById('date').valueAsDate = new Date();
-        
-        // PASTE YOUR EXACT GOOGLE SCRIPT URL BELOW
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
         
         let dailyPLData = {};
