@@ -164,11 +164,6 @@
                     <div id="tableMostProf"></div>
                 </div>
 
-                <div class="dash-card">
-                    <h3 class="dash-title">Least Profitable</h3>
-                    <div id="tableLeastProf"></div>
-                </div>
-
             </div>
         </div>
 
@@ -240,7 +235,6 @@
             return html;
         }
 
-        // Custom builder for the Leaderboards so "Bets" stays neutral colored
         function buildLbTable(lbData) {
             if (!lbData || lbData.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
             let html = '<div class="table-wrapper"><table><tr><th>Entity</th><th class="text-right">Bets</th><th class="text-right">P/L</th></tr>';
@@ -291,9 +285,7 @@
                     document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport);
                     document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
 
-                    // Render Leaderboards
                     document.getElementById('tableMostProf').innerHTML = buildLbTable(data.mostProfitable);
-                    document.getElementById('tableLeastProf').innerHTML = buildLbTable(data.leastProfitable);
 
                     dailyPLData = data.dailyData || {};
                     dataFetched = true;
