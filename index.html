@@ -39,7 +39,21 @@
 
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
-        input[type="text"], input[type="number"], input[type="date"], select { width: 100%; padding: 12px; border: 2px solid var(--input-border); border-radius: 8px; font-size: 16px; background-color: var(--input-bg); color: var(--text-main); }
+        
+        /* THE FIX: Added box-sizing, max-width, and inherit to force inputs inside their containers */
+        input[type="text"], input[type="number"], input[type="date"], select { 
+            width: 100%; 
+            max-width: 100%; 
+            box-sizing: border-box; 
+            padding: 12px; 
+            border: 2px solid var(--input-border); 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-family: inherit;
+            background-color: var(--input-bg); 
+            color: var(--text-main); 
+        }
+        
         input:focus, select:focus { outline: none; border-color: #32CD32; box-shadow: 0 0 8px rgba(50, 205, 50, 0.2); }
         
         .checkbox-group { display: flex; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 2px solid var(--input-border); }
@@ -229,6 +243,8 @@
 
     <script>
         document.getElementById('date').valueAsDate = new Date();
+        
+        // PASTE YOUR EXACT GOOGLE SCRIPT URL BELOW
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
         
         let dailyPLData = {};
@@ -333,8 +349,6 @@
             let sorted = Object.keys(entities).map(key => {
                 return [key, entities[key].bets, entities[key].pl];
             }).sort((a, b) => b[2] - a[2]);
-
-            // REMOVED: sorted = sorted.slice(0, 50); - The leaderboard now shows all entries
 
             if (sorted.length === 0) {
                 document.getElementById('tableMostProf').innerHTML = '<p style="font-size:13px;">No bets logged for this sport yet.</p>';
