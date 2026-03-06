@@ -62,6 +62,11 @@
         th { color: var(--text-label); font-weight: bold; text-transform: uppercase; font-size: 11px; }
         .text-right { text-align: right; }
 
+        /* Leaderboard Dropdown */
+        .lb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 8px; margin-bottom: 12px; }
+        .lb-header h3 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .lb-select { width: auto; padding: 6px; font-size: 12px; margin: 0; background-color: var(--bg-base); color: var(--text-main); border: 1px solid var(--input-border); border-radius: 4px; font-weight: bold;}
+
         /* --- CALENDAR UI --- */
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .cal-nav { background: transparent; border: none; color: var(--text-label); font-size: 20px; font-weight: bold; cursor: pointer; padding: 5px 15px; }
@@ -160,7 +165,21 @@
                 </div>
 
                 <div class="dash-card">
-                    <h3 class="dash-title">Most Profitable</h3>
+                    <div class="lb-header">
+                        <h3 class="dash-title">Most Profitable</h3>
+                        <select id="lbSportFilter" class="lb-select" onchange="renderLeaderboard()">
+                            <option value="ALL">All Sports</option>
+                            <option value="NHL">NHL</option>
+                            <option value="NFL">NFL</option>
+                            <option value="NBA">NBA</option>
+                            <option value="MLB">MLB</option>
+                            <option value="NCAAB">NCAAB</option>
+                            <option value="NCAAF">NCAAF</option>
+                            <option value="TENNIS">TENNIS</option>
+                            <option value="SOCCER">SOCCER</option>
+                            <option value="GOLF">GOLF</option>
+                        </select>
+                    </div>
                     <div id="tableMostProf"></div>
                 </div>
 
@@ -174,6 +193,7 @@
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
         
         let dailyPLData = {};
+        let rawBetsData = []; 
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
         let dataFetched = false;
@@ -217,11 +237,9 @@
         function buildPivotTable(dataArray) {
             if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
             let html = '<div class="table-wrapper"><table><tr>';
-            
             let colCount = 0;
             dataArray[0].forEach(h => { if (h !== "") { html += `<th>${h}</th>`; colCount++; } });
             html += '</tr>';
-            
             for (let i = 1; i < dataArray.length; i++) {
                 html += '<tr>';
                 for (let j = 0; j < colCount; j++) {
@@ -235,17 +253,45 @@
             return html;
         }
 
-        function buildLbTable(lbData) {
-            if (!lbData || lbData.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
+        function renderLeaderboard() {
+            const filter = document.getElementById('lbSportFilter').value;
+            let entities = {};
+
+            rawBetsData.forEach(bet => {
+                if (filter !== 'ALL' && bet.sport !== filter) return;
+
+                ['team1', 'team2'].forEach(t => {
+                    let team = bet[t];
+                    if (team && team.trim() !== "") {
+                        if (!entities[team]) entities[team] = { bets: 0, pl: 0 };
+                        entities[team].bets += 1;
+                        entities[team].pl += bet.pl;
+                    }
+                });
+            });
+
+            let sorted = Object.keys(entities).map(key => {
+                return [key, entities[key].bets, entities[key].pl];
+            }).sort((a, b) => b[2] - a[2]);
+
+            sorted = sorted.slice(0, 50);
+
+            if (sorted.length === 0) {
+                document.getElementById('tableMostProf').innerHTML = '<p style="font-size:13px;">No bets logged for this sport yet.</p>';
+                return;
+            }
+
             let html = '<div class="table-wrapper"><table><tr><th>Entity</th><th class="text-right">Bets</th><th class="text-right">P/L</th></tr>';
-            for (let i = 1; i < lbData.length; i++) {
-                let entity = lbData[i][0];
-                let bets = lbData[i][1];
-                let pl = lbData[i][2];
-                html += `<tr><td>${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(pl)}; font-weight:bold;">${pl}</td></tr>`;
+            for (let i = 0; i < sorted.length; i++) {
+                let entity = sorted[i][0];
+                let bets = sorted[i][1];
+                let plNum = sorted[i][2];
+                let plText = plNum === 0 ? '$0.00' : (plNum > 0 ? `+$${plNum.toFixed(2)}` : `-$${Math.abs(plNum).toFixed(2)}`);
+                html += `<tr><td>${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`;
             }
             html += '</table></div>';
-            return html;
+            
+            document.getElementById('tableMostProf').innerHTML = html;
         }
 
         function fetchMasterData() {
@@ -285,7 +331,8 @@
                     document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport);
                     document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
 
-                    document.getElementById('tableMostProf').innerHTML = buildLbTable(data.mostProfitable);
+                    rawBetsData = data.rawBets || [];
+                    renderLeaderboard();
 
                     dailyPLData = data.dailyData || {};
                     dataFetched = true;
