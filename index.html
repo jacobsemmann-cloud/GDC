@@ -56,8 +56,9 @@
         .stat-label { font-weight: bold; color: var(--text-main); }
         .stat-value { font-weight: bold; color: var(--text-label); }
         
-        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 5px; }
-        th, td { padding: 8px 4px; text-align: left; border-bottom: 1px solid var(--input-border); }
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 5px; white-space: nowrap; }
+        th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid var(--input-border); }
         th { color: var(--text-label); font-weight: bold; text-transform: uppercase; font-size: 11px; }
         .text-right { text-align: right; }
 
@@ -148,6 +149,16 @@
                     <div id="tableSports"></div>
                 </div>
 
+                <div class="dash-card">
+                    <h3 class="dash-title">P/L By Bet Type (Sport)</h3>
+                    <div id="tableBetTypeSport"></div>
+                </div>
+
+                <div class="dash-card">
+                    <h3 class="dash-title">P/L By Bet Type (Book)</h3>
+                    <div id="tableBetTypeBook"></div>
+                </div>
+
             </div>
         </div>
 
@@ -167,7 +178,6 @@
             body.classList.toggle('dark-mode');
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
             if(dataFetched && document.getElementById('viewDash').classList.contains('active')) {
-                // Quick re-render of tables to update text colors based on theme
                 fetchMasterData(); 
             }
         }
@@ -195,7 +205,31 @@
         }
 
         function getColor(valStr) {
+            if(!valStr) return 'var(--text-main)';
             return valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)';
+        }
+
+        // Helper to build swipeable pivot tables
+        function buildPivotTable(dataArray) {
+            if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
+            let html = '<div class="table-wrapper"><table><tr>';
+            
+            // Count valid columns to ignore trailing blanks from the sheet
+            let colCount = 0;
+            dataArray[0].forEach(h => { if (h !== "") { html += `<th>${h}</th>`; colCount++; } });
+            html += '</tr>';
+            
+            for (let i = 1; i < dataArray.length; i++) {
+                html += '<tr>';
+                for (let j = 0; j < colCount; j++) {
+                    let cell = dataArray[i][j] || "";
+                    let style = (j > 0 && cell !== "") ? ` class="text-right" style="color:${getColor(cell)}; font-weight:bold;"` : (j > 0 ? ' class="text-right"' : '');
+                    html += `<td${style}>${cell}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</table></div>';
+            return html;
         }
 
         function fetchMasterData() {
@@ -209,7 +243,6 @@
             .then(data => {
                 if (data.status === "success") {
                     
-                    // Populate Dashboard Overall & Bet Style
                     document.getElementById('valPL').textContent = data.pl;
                     document.getElementById('valPL').style.color = getColor(data.pl);
                     document.getElementById('valWagered').textContent = data.wagered;
@@ -223,23 +256,20 @@
                     document.getElementById('valParPL').style.color = getColor(data.parlayPL);
                     document.getElementById('valParRec').textContent = data.parlayRec;
 
-                    // Build Books Table
                     let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>';
-                    data.books.forEach(b => {
-                        bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`;
-                    });
+                    data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; });
                     bHtml += '</table>';
                     document.getElementById('tableBooks').innerHTML = bHtml;
 
-                    // Build Sports Table
                     let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>';
-                    data.sports.forEach(s => {
-                        sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`;
-                    });
+                    data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; });
                     sHtml += '</table>';
                     document.getElementById('tableSports').innerHTML = sHtml;
 
-                    // Calendar Data
+                    // Render New Pivot Tables
+                    document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport);
+                    document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
+
                     dailyPLData = data.dailyData || {};
                     dataFetched = true;
                     
@@ -248,9 +278,7 @@
                     document.getElementById('calContainer').style.display = 'block';
                     document.getElementById('dashContainer').style.display = 'block';
                     
-                    if(document.getElementById('viewCal').classList.contains('active')) {
-                        renderCalendar(currentMonth, currentYear);
-                    }
+                    if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear);
                 }
             }).catch(e => alert("Error fetching data. Check Web App URL deployment."));
         }
