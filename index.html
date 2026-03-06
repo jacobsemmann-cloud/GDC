@@ -108,9 +108,9 @@
         <div id="viewLog" class="view-section active">
             <div class="form-group"><label>Sportsbook</label><select id="book"><option value="DraftKings">DraftKings</option><option value="FanDuel">FanDuel</option><option value="Caesars">Caesars</option><option value="BetRivers">BetRivers</option><option value="MGM">MGM</option><option value="Bet365">Bet365</option><option value="PrizePicks">PrizePicks</option></select></div>
             <div class="form-group"><label>Date</label><input type="date" id="date"></div>
-            <div class="form-group"><label>Sport</label><select id="sport"><option value="NHL">NHL</option><option value="NFL">NFL</option><option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option><option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option><option value="GOLF">GOLF</option></select></div>
+            <div class="form-group"><label>Sport</label><select id="sport"><option value="NHL">NHL</option><option value="NFL">NFL</option><option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option><option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option><option value="GOLF">GOLF</option><option value="MULTI">MULTI</option></select></div>
             <div class="form-group checkbox-group"><input type="checkbox" id="parlay"><label for="parlay">Parlay?</label></div>
-            <div class="form-group"><label>Bet Type</label><select id="betType"><option value="Moneyline">Moneyline</option><option value="Spread">Spread</option><option value="Total">Total</option><option value="Prop">Prop</option><option value="Future">Future</option><option value="Teaser">Teaser</option></select></div>
+            <div class="form-group"><label>Bet Type</label><select id="betType"><option value="Moneyline">Moneyline</option><option value="Spread">Spread</option><option value="Total">Total</option><option value="Prop">Prop</option><option value="Future">Future</option><option value="Teaser">Teaser</option><option value="Multi">Multi</option></select></div>
             <div class="form-group"><label>Player / Team 1</label><input type="text" id="team1" placeholder="e.g. Capitals"></div>
             <div class="form-group"><label>Team 2 (Optional)</label><input type="text" id="team2" placeholder="e.g. Rangers"></div>
             <div class="form-group"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
@@ -210,6 +210,7 @@
                             <option value="TENNIS">TENNIS</option>
                             <option value="SOCCER">SOCCER</option>
                             <option value="GOLF">GOLF</option>
+                            <option value="MULTI">MULTI</option>
                         </select>
                     </div>
                     <div id="tableMostProf"></div>
@@ -222,6 +223,7 @@
 
     <script>
         document.getElementById('date').valueAsDate = new Date();
+        // PASTE YOUR LIVE WEB APP URL HERE:
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
         
         let dailyPLData = {};
@@ -240,7 +242,7 @@
             if(dataFetched && document.getElementById('viewDash').classList.contains('active')) fetchMasterData(); 
             if(dataFetched && document.getElementById('viewCal').classList.contains('active')) {
                 updateCalendarSummaries(currentMonth, currentYear);
-                renderHallOfFame(); // Re-render to update colors
+                renderHallOfFame(); 
             }
         }
 
@@ -341,7 +343,6 @@
             document.getElementById('tableMostProf').innerHTML = html;
         }
 
-        // --- NEW: HALL OF FAME RENDERER ---
         function renderHallOfFame() {
             let bestDay = null; let bestDayVal = -Infinity;
             let weeklyTotals = {};
@@ -514,7 +515,7 @@
             }
 
             updateCalendarSummaries(month, year);
-            renderHallOfFame(); // Render Hall of Fame when Calendar is active
+            renderHallOfFame(); 
         }
 
         function submitBet() {
