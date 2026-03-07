@@ -41,21 +41,10 @@
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
         
         input[type="text"], input[type="number"], input[type="date"], select { 
-            display: block;
-            width: 100%; 
-            min-height: 46px; 
-            box-sizing: border-box; 
-            padding: 12px; 
-            border: 2px solid var(--input-border); 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-family: inherit;
-            background-color: var(--input-bg); 
-            color: var(--text-main); 
-            -webkit-appearance: none; 
-            appearance: none;
+            display: block; width: 100%; min-height: 46px; box-sizing: border-box; padding: 12px; border: 2px solid var(--input-border); 
+            border-radius: 8px; font-size: 16px; font-family: inherit; background-color: var(--input-bg); color: var(--text-main); 
+            -webkit-appearance: none; appearance: none;
         }
-        
         input:focus, select:focus { outline: none; border-color: #32CD32; box-shadow: 0 0 8px rgba(50, 205, 50, 0.2); }
         
         .checkbox-group { display: flex; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 2px solid var(--input-border); }
@@ -96,8 +85,11 @@
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
         .day-name { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
-        .day-cell { background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0; word-break: break-all;}
-        .day-cell.empty { background: transparent; border: none; }
+        
+        /* Added cursor: pointer so it feels clickable */
+        .day-cell { cursor: pointer; background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0; word-break: break-all;}
+        .day-cell:active { opacity: 0.7; }
+        .day-cell.empty { background: transparent; border: none; cursor: default; }
         .date-num { font-size: 11px; font-weight: bold; color: var(--text-main); }
         .pl-amt { font-size: 10.5px; font-weight: bold; text-align: center; margin-top: 2px; line-height: 1.1; overflow-wrap: break-word;}
         .profit { background-color: var(--win-color); border-color: var(--win-text); }
@@ -105,6 +97,17 @@
         .loss { background-color: var(--loss-color); border-color: var(--loss-text); }
         .loss .pl-amt { color: var(--loss-text); }
         .loading-text { text-align: center; font-weight: bold; color: var(--text-label); margin: 20px 0; }
+
+        /* --- DAY BETS MODAL --- */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);}
+        .modal-content { background: var(--glass-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 450px; max-height: 80vh; overflow-y: auto; border: 2px solid var(--border-accent); box-shadow: 0 10px 40px rgba(0,0,0,0.5);}
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; color: var(--text-label); font-size: 18px; text-transform: uppercase; }
+        .modal-close { background: transparent; border: none; color: var(--text-main); font-size: 28px; cursor: pointer; font-weight: bold; padding: 0 5px; line-height: 1; }
+        .bet-card { background: var(--panel-bg); border: 1px solid var(--input-border); border-left: 4px solid var(--text-label); border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; }
+        .bet-card-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: bold; color: var(--text-main); font-size: 14px;}
+        .bet-card-details { color: var(--text-main); margin-bottom: 8px; opacity: 0.8; font-size: 12px;}
+        .bet-card-footer { display: flex; justify-content: space-between; border-top: 1px dashed var(--input-border); padding-top: 8px; font-weight: bold; }
     </style>
 </head>
 <body class="dark-mode">
@@ -244,6 +247,16 @@
 
     </div>
 
+    <div id="dayModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalDateLabel">Date</h3>
+                <button class="modal-close" onclick="closeDayModal()">×</button>
+            </div>
+            <div id="modalBetsList"></div>
+        </div>
+    </div>
+
     <script>
         document.getElementById('date').valueAsDate = new Date();
         
@@ -312,6 +325,59 @@
             if (num === 0) return '$0.00';
             return num > 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`;
         }
+
+        // --- NEW: LOGIC TO POPULATE AND SHOW MODAL ---
+        function showDayBets(dateStr) {
+            const bets = rawBetsData.filter(b => b.date === dateStr);
+            const modal = document.getElementById('dayModal');
+            const label = document.getElementById('modalDateLabel');
+            const list = document.getElementById('modalBetsList');
+
+            const [y, m, d] = dateStr.split('-');
+            const dObj = new Date(y, m-1, d);
+            label.textContent = dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+
+            if (bets.length === 0) {
+                list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged for this day.</p>';
+            } else {
+                let html = '';
+                bets.forEach(b => {
+                    let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
+                    let plText = formatPL(b.pl);
+                    let plColor = getColor(plText);
+                    
+                    // Style border based on result
+                    let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)');
+                    
+                    html += `
+                    <div class="bet-card" style="border-left-color: ${borderCol}">
+                        <div class="bet-card-header">
+                            <span>${b.sport} | ${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</span>
+                            <span>${oddsText}</span>
+                        </div>
+                        <div class="bet-card-details">${b.details || 'Moneyline / No details provided'}</div>
+                        <div class="bet-card-footer">
+                            <span>Wager: $${b.wager.toFixed(2)}</span>
+                            <span style="color:${plColor}">${plText}</span>
+                        </div>
+                    </div>`;
+                });
+                list.innerHTML = html;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closeDayModal() {
+            document.getElementById('dayModal').style.display = 'none';
+        }
+        // Close modal if user taps outside the box
+        window.onclick = function(event) {
+            let modal = document.getElementById('dayModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+        // ---------------------------------------------
 
         function buildPivotTable(dataArray) {
             if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
@@ -543,11 +609,11 @@
                 const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                 let pl = dailyPLData[dStr] || 0;
                 
-                // FIXED: Removed decimals to cleanly fit inside the calendar view
                 let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`);
-                
                 let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
-                grid.innerHTML += `<div class="day-cell ${cls}"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
+                
+                // NEW: Added the onclick function to launch the day modal
+                grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
             }
 
             updateCalendarSummaries(month, year);
