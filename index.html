@@ -75,6 +75,8 @@
         th, td { padding: 8px 4px; text-align: left; border-bottom: 1px solid var(--input-border); }
         th { color: var(--text-label); font-weight: bold; text-transform: uppercase; font-size: 10px; }
         .text-right { text-align: right; }
+        .clickable-row { cursor: pointer; transition: background-color 0.2s; }
+        .clickable-row:active { background-color: rgba(128,128,128,0.2); }
 
         .lb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 8px; margin-bottom: 12px; }
         .lb-header h3 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
@@ -104,7 +106,7 @@
         .loss .pl-amt { color: var(--loss-text); }
         .loading-text { text-align: center; font-weight: bold; color: var(--text-label); margin: 20px 0; }
 
-        /* --- DAY BETS MODAL --- */
+        /* --- UNIVERSAL MODAL --- */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);}
         .modal-content { background: var(--glass-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 450px; max-height: 80vh; overflow-y: auto; border: 2px solid var(--border-accent); box-shadow: 0 10px 40px rgba(0,0,0,0.5);}
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 10px; margin-bottom: 15px; }
@@ -255,11 +257,11 @@
 
     </div>
 
-    <div id="dayModal" class="modal-overlay">
+    <div id="betsModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modalDateLabel">Date</h3>
-                <button class="modal-close" onclick="closeDayModal()">×</button>
+                <h3 id="modalTitle">Title</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
             </div>
             <div id="modalBetsList"></div>
         </div>
@@ -284,11 +286,9 @@
             } else {
                 document.getElementById('themeBtn').textContent = 'Light Mode';
             }
-            // Silently fetch data on background load so autocomplete has a history to search
             fetchMasterData(true); 
         };
 
-        // --- NEW: AUTOCOMPLETE LOGIC ---
         function getUniqueEntities() {
             let entities = new Set();
             rawBetsData.forEach(bet => {
@@ -302,7 +302,6 @@
             inp.addEventListener("input", function(e) {
                 let a, b, i, val = this.value;
                 closeAllLists();
-                // Wait for 3 characters before suggesting
                 if (!val || val.length < 3) return false;
                 
                 a = document.createElement("DIV");
@@ -315,7 +314,7 @@
                 
                 for (i = 0; i < uniqueTeams.length; i++) {
                     if (uniqueTeams[i].toUpperCase().includes(val.toUpperCase())) {
-                        if (count >= 6) break; // Limit to top 6 matches
+                        if (count >= 6) break; 
                         b = document.createElement("DIV");
                         
                         let matchIdx = uniqueTeams[i].toUpperCase().indexOf(val.toUpperCase());
@@ -342,16 +341,11 @@
                     }
                 }
             }
-            
-            document.addEventListener("click", function (e) {
-                closeAllLists(e.target);
-            });
+            document.addEventListener("click", function (e) { closeAllLists(e.target); });
         }
 
-        // Attach autocomplete to Team 1 and Team 2 inputs
         setupAutocomplete(document.getElementById("team1"));
         setupAutocomplete(document.getElementById("team2"));
-        // -------------------------------
 
         function forceRefresh() {
             document.getElementById('refreshBtn').textContent = "⏳...";
@@ -401,10 +395,11 @@
             return num > 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`;
         }
 
+        // --- CALENDAR DAY MODAL ---
         function showDayBets(dateStr) {
             const bets = rawBetsData.filter(b => b.date === dateStr);
-            const modal = document.getElementById('dayModal');
-            const label = document.getElementById('modalDateLabel');
+            const modal = document.getElementById('betsModal');
+            const label = document.getElementById('modalTitle');
             const list = document.getElementById('modalBetsList');
 
             const [y, m, d] = dateStr.split('-');
@@ -414,7 +409,6 @@
             if (bets.length === 0) {
                 list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged for this day.</p>';
             } else {
-                
                 let sportSummary = {};
                 bets.forEach(b => {
                     if (!sportSummary[b.sport]) sportSummary[b.sport] = 0;
@@ -457,10 +451,71 @@
             modal.style.display = 'flex';
         }
 
-        function closeDayModal() { document.getElementById('dayModal').style.display = 'none'; }
+        // --- NEW: LEADERBOARD ENTITY MODAL ---
+        function showEntityBets(entity) {
+            // Filter bets by entity and sort by newest first
+            const bets = rawBetsData.filter(b => b.team1 === entity || b.team2 === entity)
+                                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            const modal = document.getElementById('betsModal');
+            const label = document.getElementById('modalTitle');
+            const list = document.getElementById('modalBetsList');
+
+            label.textContent = entity + " History";
+
+            let totalPL = 0; let wins = 0; let losses = 0; let pushes = 0;
+            bets.forEach(b => {
+                totalPL += b.pl;
+                if(b.pl > 0) wins++;
+                else if(b.pl < 0) losses++;
+                else pushes++;
+            });
+
+            let summaryColor = totalPL > 0 ? 'var(--win-text)' : (totalPL < 0 ? 'var(--loss-text)' : 'var(--text-main)');
+            
+            // Generate Summary Header
+            let html = `
+            <div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border); font-size: 14px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                    <strong>Record:</strong> <span>${wins}W - ${losses}L - ${pushes}P</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <strong>Net Profit:</strong> <span style="color:${summaryColor}; font-weight:bold;">${formatPL(totalPL)}</span>
+                </div>
+            </div>`;
+
+            // Generate individual bet cards
+            bets.forEach(b => {
+                let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
+                let plText = formatPL(b.pl);
+                let plColor = getColor(plText);
+                let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)');
+                
+                // Format date for the card header
+                let dStr = b.date ? b.date.substring(5).replace('-', '/') : '';
+                
+                html += `
+                <div class="bet-card" style="border-left-color: ${borderCol}">
+                    <div class="bet-card-header">
+                        <span>${dStr} | ${b.sport}</span>
+                        <span>${oddsText}</span>
+                    </div>
+                    <div class="bet-card-details" style="font-weight:bold; color:var(--text-label);">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div>
+                    <div class="bet-card-details">${b.details || 'Moneyline'}</div>
+                    <div class="bet-card-footer">
+                        <span>Wager: $${b.wager.toFixed(2)}</span>
+                        <span style="color:${plColor}">${plText}</span>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('betsModal').style.display = 'none'; }
         
         window.onclick = function(event) {
-            let modal = document.getElementById('dayModal');
+            let modal = document.getElementById('betsModal');
             if (event.target == modal) modal.style.display = "none";
         }
 
@@ -515,7 +570,14 @@
                 let bets = sorted[i][1];
                 let plNum = sorted[i][2];
                 let plText = formatPL(plNum);
-                html += `<tr><td>${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`;
+                
+                // ADDED: Clickable row to launch entity history modal
+                let safeEntity = entity.replace(/'/g, "\\'"); 
+                html += `<tr class="clickable-row" onclick="showEntityBets('${safeEntity}')">
+                            <td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td>
+                            <td class="text-right">${bets}</td>
+                            <td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td>
+                         </tr>`;
             }
             html += '</table></div>';
             
@@ -731,7 +793,6 @@
                     statusDiv.textContent = "Bet Logged!"; statusDiv.className = "success";
                     if (!keepSlip) { ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = ""); }
                     dataFetched = false; 
-                    // Update autocomplete list in the background
                     fetchMasterData(true);
                 } else {
                     statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error";
