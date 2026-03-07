@@ -6,8 +6,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <title>Green Dot City</title>
     <style>
-        /* UNIFORMITY FIX: Force internal border math on all elements */
-        *, *::before, *::after { box-sizing: border-box; }
+        * { box-sizing: border-box; }
 
         :root {
             --bg-base: #f2f2f7; --glass-bg: rgba(255, 255, 255, 0.95); --text-main: #333; --text-label: #1b4d29;
@@ -23,7 +22,6 @@
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-base); margin: 0; padding: 10px; color: var(--text-main); min-height: 100vh; transition: background-color 0.3s ease; overflow-x: hidden; }
         
-        /* RESTORED: Removed aggressive overflow wall, let container define width */
         .glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; width: 100%; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative;}
 
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -42,11 +40,9 @@
         .form-group { margin-bottom: 15px; width: 100%; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
         
-        /* UNIFORMITY FIX: Force all inputs and selects to share same visual boundaries */
         input[type="text"], input[type="number"], input[type="date"], select { 
             display: block;
             width: 100%; 
-            /* Added min-height to ensure uniformity across devices with native date pickers */
             min-height: 46px; 
             box-sizing: border-box; 
             padding: 12px; 
@@ -56,7 +52,6 @@
             font-family: inherit;
             background-color: var(--input-bg); 
             color: var(--text-main); 
-            /* AGGRESSIVE RESET: Strips native phone styling so border-radius works perfectly */
             -webkit-appearance: none; 
             appearance: none;
         }
@@ -99,13 +94,12 @@
         .cal-summary-label { font-size: 9px; font-weight: bold; color: var(--text-main); text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0px;}
         .cal-summary-val { font-size: 12px; font-weight: bold; }
 
-        /* THE GRID FIX: minmax(0, 1fr) ensures Saturday stays on screen */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
         .day-name { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
         .day-cell { background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0; word-break: break-all;}
         .day-cell.empty { background: transparent; border: none; }
         .date-num { font-size: 11px; font-weight: bold; color: var(--text-main); }
-        .pl-amt { font-size: 9.5px; font-weight: bold; text-align: center; margin-top: 2px; line-height: 1.1; overflow-wrap: break-word;}
+        .pl-amt { font-size: 10.5px; font-weight: bold; text-align: center; margin-top: 2px; line-height: 1.1; overflow-wrap: break-word;}
         .profit { background-color: var(--win-color); border-color: var(--win-text); }
         .profit .pl-amt { color: var(--win-text); }
         .loss { background-color: var(--loss-color); border-color: var(--loss-text); }
@@ -140,7 +134,10 @@
             <div class="form-group"><label>Player / Team 1</label><input type="text" id="team1" placeholder="e.g. Capitals"></div>
             <div class="form-group"><label>Team 2 (Optional)</label><input type="text" id="team2" placeholder="e.g. Rangers"></div>
             <div class="form-group"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
-            <div style="display: flex; gap: 10px;"><div class="form-group" style="flex: 1;"><label>Odds</label><input type="number" id="odds" placeholder="-110"></div><div class="form-group" style="flex: 1;"><label>Wager ($)</label><input type="number" id="wager" placeholder="50" step="0.01"></div></div>
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 1;"><label>Odds</label><input type="number" id="odds" placeholder="-110"></div>
+                <div class="form-group" style="flex: 1;"><label>Wager ($)</label><input type="number" id="wager" placeholder="50" step="0.01"></div>
+            </div>
             <div class="form-group"><label>Result</label><select id="result"><option value="">Pending</option><option value="W">Win (W)</option><option value="L">Loss (L)</option><option value="P">Push (P)</option></select></div>
 
             <button onclick="submitBet()" id="submitBtn" class="btn-primary">Log Bet</button>
@@ -249,6 +246,8 @@
 
     <script>
         document.getElementById('date').valueAsDate = new Date();
+        
+        // PASTE YOUR EXACT GOOGLE SCRIPT URL BELOW
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
         
         let dailyPLData = {};
@@ -543,7 +542,10 @@
             for (let i = 1; i <= daysInMonth; i++) {
                 const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                 let pl = dailyPLData[dStr] || 0;
-                let plText = pl === 0 ? '-' : (pl > 0 ? `+$${pl.toFixed(2)}` : `-$${Math.abs(pl).toFixed(2)}`);
+                
+                // FIXED: Removed decimals to cleanly fit inside the calendar view
+                let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`);
+                
                 let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
                 grid.innerHTML += `<div class="day-cell ${cls}"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
             }
