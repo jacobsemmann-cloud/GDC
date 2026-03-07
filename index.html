@@ -86,7 +86,6 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
         .day-name { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
         
-        /* Added cursor: pointer so it feels clickable */
         .day-cell { cursor: pointer; background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0; word-break: break-all;}
         .day-cell:active { opacity: 0.7; }
         .day-cell.empty { background: transparent; border: none; cursor: default; }
@@ -261,7 +260,7 @@
         document.getElementById('date').valueAsDate = new Date();
         
         // PASTE YOUR EXACT GOOGLE SCRIPT URL BELOW
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
+        const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE"; 
         
         let dailyPLData = {};
         let rawBetsData = []; 
@@ -326,7 +325,7 @@
             return num > 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`;
         }
 
-        // --- NEW: LOGIC TO POPULATE AND SHOW MODAL ---
+        // --- UPDATED: DAY MODAL LOGIC WITH SPORT SUMMARY ---
         function showDayBets(dateStr) {
             const bets = rawBetsData.filter(b => b.date === dateStr);
             const modal = document.getElementById('dayModal');
@@ -340,13 +339,32 @@
             if (bets.length === 0) {
                 list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged for this day.</p>';
             } else {
-                let html = '';
+                
+                // Calculate P/L grouped by sport for the day
+                let sportSummary = {};
+                bets.forEach(b => {
+                    if (!sportSummary[b.sport]) sportSummary[b.sport] = 0;
+                    sportSummary[b.sport] += b.pl;
+                });
+
+                // Generate HTML for Sport Summary Badges
+                let html = '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border);">';
+                for (const [sport, pl] of Object.entries(sportSummary)) {
+                    let plText = formatPL(pl);
+                    let plColor = getColor(plText);
+                    let borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)');
+                    
+                    html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">
+                        ${sport}: <span style="color:${plColor}">${plText}</span>
+                    </div>`;
+                }
+                html += '</div>';
+
+                // Generate HTML for individual bets
                 bets.forEach(b => {
                     let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
                     let plText = formatPL(b.pl);
                     let plColor = getColor(plText);
-                    
-                    // Style border based on result
                     let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)');
                     
                     html += `
@@ -370,14 +388,14 @@
         function closeDayModal() {
             document.getElementById('dayModal').style.display = 'none';
         }
-        // Close modal if user taps outside the box
+        
+        // Closes modal if clicking outside the window
         window.onclick = function(event) {
             let modal = document.getElementById('dayModal');
             if (event.target == modal) {
                 modal.style.display = "none";
             }
         }
-        // ---------------------------------------------
 
         function buildPivotTable(dataArray) {
             if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
@@ -612,7 +630,6 @@
                 let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`);
                 let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
                 
-                // NEW: Added the onclick function to launch the day modal
                 grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
             }
 
@@ -653,4 +670,3 @@
     </script>
 </body>
 </html>
-
