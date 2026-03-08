@@ -215,15 +215,19 @@
                 <div class="dash-card">
                     <h3 class="dash-title">Specialty Tracking</h3>
                     
-                    <h4 style="color: var(--text-label); font-size: 13px; margin-top: 5px; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Goal Props (All-Encompassing)</h4>
-                    <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valGoalPL">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valGoalRecord">--</span></div>
-                    <div class="stat-row"><span class="stat-label">ROI:</span><span class="stat-value" id="valGoalROI">--</span></div>
+                    <div class="clickable-row" onclick="showSpecialtyBets('GOAL')" style="padding: 8px 6px; margin-bottom: 5px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
+                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Goal Props (All) <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
+                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valGoalPL">--</span></div>
+                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valGoalRecord">--</span></div>
+                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valGoalROI">--</span></div>
+                    </div>
 
-                    <h4 style="color: var(--text-label); font-size: 13px; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Empty Net Goals (ENG Only)</h4>
-                    <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valEngPL">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valEngRecord">--</span></div>
-                    <div class="stat-row"><span class="stat-label">ROI:</span><span class="stat-value" id="valEngROI">--</span></div>
+                    <div class="clickable-row" onclick="showSpecialtyBets('ENG')" style="padding: 8px 6px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
+                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Empty Net Goals <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
+                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valEngPL">--</span></div>
+                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valEngRecord">--</span></div>
+                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valEngROI">--</span></div>
+                    </div>
                 </div>
 
                 <div class="dash-card">
@@ -519,6 +523,83 @@
             modal.style.display = 'flex';
         }
 
+        // --- NEW: SPECIALTY TRACKER MODAL ---
+        function showSpecialtyBets(type) {
+            let bets = [];
+            let title = "";
+            const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
+
+            if (type === 'ENG') {
+                bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG'));
+                title = "ENG Tracker History";
+            } else if (type === 'GOAL') {
+                bets = rawBetsData.filter(b => {
+                    if (!b.details) return false;
+                    let dUp = b.details.toUpperCase();
+                    return goalKeywords.some(kw => dUp.includes(kw));
+                });
+                title = "Goal Props History";
+            }
+
+            bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const modal = document.getElementById('betsModal');
+            const label = document.getElementById('modalTitle');
+            const list = document.getElementById('modalBetsList');
+
+            label.textContent = title;
+
+            if (bets.length === 0) {
+                list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged in this category yet.</p>';
+                modal.style.display = 'flex';
+                return;
+            }
+
+            let totalPL = 0; let wins = 0; let losses = 0; let pushes = 0;
+            bets.forEach(b => {
+                totalPL += b.pl;
+                if(b.pl > 0) wins++;
+                else if(b.pl < 0) losses++;
+                else pushes++;
+            });
+
+            let summaryColor = totalPL > 0 ? 'var(--win-text)' : (totalPL < 0 ? 'var(--loss-text)' : 'var(--text-main)');
+            
+            let html = `
+            <div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border); font-size: 14px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                    <strong>Record:</strong> <span>${wins}W - ${losses}L - ${pushes}P</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <strong>Net Profit:</strong> <span style="color:${summaryColor}; font-weight:bold;">${formatPL(totalPL)}</span>
+                </div>
+            </div>`;
+
+            bets.forEach(b => {
+                let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
+                let plText = formatPL(b.pl);
+                let plColor = getColor(plText);
+                let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)');
+                let dStr = b.date ? b.date.substring(5).replace('-', '/') : '';
+                
+                html += `
+                <div class="bet-card" style="border-left-color: ${borderCol}">
+                    <div class="bet-card-header">
+                        <span>${dStr} | ${b.sport}</span>
+                        <span>${oddsText}</span>
+                    </div>
+                    <div class="bet-card-details" style="font-weight:bold; color:var(--text-label);">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div>
+                    <div class="bet-card-details">${b.details}</div>
+                    <div class="bet-card-footer">
+                        <span>Wager: $${b.wager.toFixed(2)}</span>
+                        <span style="color:${plColor}">${plText}</span>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+
         function closeModal() { document.getElementById('betsModal').style.display = 'none'; }
         
         window.onclick = function(event) {
@@ -724,7 +805,6 @@
 
                     rawBetsData = data.rawBets || [];
                     
-                    // --- NEW: SPECIALTY TRACKERS LOGIC ---
                     let engPL = 0, engWagered = 0, engW = 0, engL = 0, engP = 0;
                     let goalPL = 0, goalWagered = 0, goalW = 0, goalL = 0, goalP = 0;
                     
@@ -752,7 +832,6 @@
                         }
                     });
 
-                    // Update ENG
                     let engROIVal = engWagered > 0 ? (engPL / engWagered * 100) : 0;
                     document.getElementById('valEngPL').textContent = formatPL(engPL);
                     document.getElementById('valEngPL').style.color = getColor(formatPL(engPL));
@@ -760,14 +839,12 @@
                     document.getElementById('valEngROI').textContent = (engROIVal > 0 ? '+' : '') + engROIVal.toFixed(2) + '%';
                     document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));
 
-                    // Update Goals
                     let goalROIVal = goalWagered > 0 ? (goalPL / goalWagered * 100) : 0;
                     document.getElementById('valGoalPL').textContent = formatPL(goalPL);
                     document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL));
                     document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`;
                     document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%';
                     document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
-                    // -------------------------------------
 
                     renderLeaderboard();
 
