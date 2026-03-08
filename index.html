@@ -213,6 +213,12 @@
                 </div>
 
                 <div class="dash-card">
+                    <h3 class="dash-title">Specialty Tracking (ENG)</h3>
+                    <div class="stat-row"><span class="stat-label">ENG P/L:</span><span class="stat-value" id="valEngPL">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Total Bets:</span><span class="stat-value" id="valEngCount">--</span></div>
+                </div>
+
+                <div class="dash-card">
                     <h3 class="dash-title">By Book</h3>
                     <div id="tableBooks"></div>
                 </div>
@@ -395,7 +401,6 @@
             return num > 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`;
         }
 
-        // --- CALENDAR DAY MODAL ---
         function showDayBets(dateStr) {
             const bets = rawBetsData.filter(b => b.date === dateStr);
             const modal = document.getElementById('betsModal');
@@ -451,9 +456,7 @@
             modal.style.display = 'flex';
         }
 
-        // --- NEW: LEADERBOARD ENTITY MODAL ---
         function showEntityBets(entity) {
-            // Filter bets by entity and sort by newest first
             const bets = rawBetsData.filter(b => b.team1 === entity || b.team2 === entity)
                                     .sort((a, b) => new Date(b.date) - new Date(a.date));
             
@@ -473,7 +476,6 @@
 
             let summaryColor = totalPL > 0 ? 'var(--win-text)' : (totalPL < 0 ? 'var(--loss-text)' : 'var(--text-main)');
             
-            // Generate Summary Header
             let html = `
             <div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border); font-size: 14px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
@@ -484,14 +486,11 @@
                 </div>
             </div>`;
 
-            // Generate individual bet cards
             bets.forEach(b => {
                 let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
                 let plText = formatPL(b.pl);
                 let plColor = getColor(plText);
                 let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)');
-                
-                // Format date for the card header
                 let dStr = b.date ? b.date.substring(5).replace('-', '/') : '';
                 
                 html += `
@@ -571,7 +570,6 @@
                 let plNum = sorted[i][2];
                 let plText = formatPL(plNum);
                 
-                // ADDED: Clickable row to launch entity history modal
                 let safeEntity = entity.replace(/'/g, "\\'"); 
                 html += `<tr class="clickable-row" onclick="showEntityBets('${safeEntity}')">
                             <td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td>
@@ -717,6 +715,20 @@
                     document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
 
                     rawBetsData = data.rawBets || [];
+                    
+                    // NEW: CALCULATE ENG TRACKER
+                    let engPL = 0;
+                    let engCount = 0;
+                    rawBetsData.forEach(bet => {
+                        if (bet.details && bet.details.toUpperCase().includes('ENG')) {
+                            engPL += bet.pl;
+                            engCount++;
+                        }
+                    });
+                    document.getElementById('valEngPL').textContent = formatPL(engPL);
+                    document.getElementById('valEngPL').style.color = getColor(formatPL(engPL));
+                    document.getElementById('valEngCount').textContent = engCount;
+
                     renderLeaderboard();
 
                     dailyPLData = data.dailyData || {};
