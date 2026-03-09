@@ -143,12 +143,28 @@
                 <div class="calendar-grid" id="calendarGrid"></div>
                 
                 <div class="dash-card" style="margin-top:15px; padding-bottom:10px;">
-                    <h3 class="dash-title">Cumulative P/L (This Month)</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">
+                        <h3 class="dash-title" style="margin: 0; padding: 0; border: none;">Cumulative P/L</h3>
+                        <select id="chartSportFilter" class="lb-select" onchange="renderCalendar(currentMonth, currentYear)">
+                            <option value="ALL">All Sports</option><option value="NHL">NHL</option><option value="NFL">NFL</option>
+                            <option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option>
+                            <option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option>
+                            <option value="GOLF">GOLF</option><option value="MULTI">MULTI</option>
+                        </select>
+                    </div>
                     <div style="position:relative; height:180px; width:100%;"><canvas id="plChart"></canvas></div>
                 </div>
 
                 <div class="dash-card">
-                    <h3 class="dash-title">Custom Date Range</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">
+                        <h3 class="dash-title" style="margin: 0; padding: 0; border: none;">Custom Date Range</h3>
+                        <select id="rangeSportFilter" class="lb-select" onchange="calcRange()">
+                            <option value="ALL">All Sports</option><option value="NHL">NHL</option><option value="NFL">NFL</option>
+                            <option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option>
+                            <option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option>
+                            <option value="GOLF">GOLF</option><option value="MULTI">MULTI</option>
+                        </select>
+                    </div>
                     <div style="display:flex; gap:10px; margin-bottom:12px;">
                         <div style="flex:1;"><label style="font-size:12px; margin-bottom:4px;">Start Date</label><input type="date" id="startDate" onchange="calcRange()" style="min-height:36px; padding:8px; font-size:13px;"></div>
                         <div style="flex:1;"><label style="font-size:12px; margin-bottom:4px;">End Date</label><input type="date" id="endDate" onchange="calcRange()" style="min-height:36px; padding:8px; font-size:13px;"></div>
@@ -286,7 +302,6 @@
             document.body.classList.toggle('dark-mode'); const isDark = document.body.classList.contains('dark-mode');
             localStorage.setItem('theme', isDark ? 'dark' : 'light'); document.getElementById('themeBtn').textContent = isDark ? 'Light Mode' : 'Dark Mode';
             if(dataFetched && document.getElementById('viewDash').classList.contains('active')) fetchMasterData(false); 
-            // Re-render calendar so the chart redraws with correct theme colors
             if(dataFetched && document.getElementById('viewCal').classList.contains('active')) { renderCalendar(currentMonth, currentYear); }
         }
 
@@ -301,16 +316,25 @@
         function getColor(valStr) { return (!valStr) ? 'var(--text-main)' : (valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)'); }
         function formatPL(num) { return num === 0 ? '$0.00' : (num > 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`); }
 
-        // --- CHART JS LOGIC ---
+        // --- NEW: CHART LOGIC WITH FILTER ---
         function updateChart(m, y, dim) {
             if(plChart) plChart.destroy();
             let ctx = document.getElementById('plChart').getContext('2d');
+            let filter = document.getElementById('chartSportFilter').value;
             let labels=[], data=[], cum=0;
+            
             for(let i=1; i<=dim; i++) {
                 labels.push(i);
                 let dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                cum += (dailyPLData[dStr] || 0); data.push(cum);
+                let dailySum = 0;
+                if (filter === 'ALL') {
+                    dailySum = dailyPLData[dStr] || 0;
+                } else {
+                    rawBetsData.forEach(b => { if (b.date === dStr && b.sport === filter) dailySum += b.pl; });
+                }
+                cum += dailySum; data.push(cum);
             }
+            
             let isDk = document.body.classList.contains('dark-mode'), line = isDk?'#32CD32':'#1b4d29', grid = isDk?'#444444':'#e0e0e0', txt = isDk?'#e0e0e0':'#333333';
             plChart = new Chart(ctx, {
                 type: 'line', data: { labels: labels, datasets: [{ data: data, borderColor: line, backgroundColor: line+'33', borderWidth: 2, fill: true, tension: 0.2, pointRadius: 1 }] },
@@ -318,14 +342,17 @@
             });
         }
 
-        // --- CUSTOM DATE RANGE LOGIC ---
+        // --- NEW: DATE RANGE LOGIC WITH FILTER ---
         function calcRange() {
             let s = document.getElementById('startDate').value, e = document.getElementById('endDate').value;
+            let filter = document.getElementById('rangeSportFilter').value;
             if(!s || !e) return;
             let pl=0, wag=0, w=0, l=0, p=0;
             rawBetsData.forEach(b => {
                 if(b.date && b.date >= s && b.date <= e) {
-                    pl+=b.pl; wag+=b.wager; if(b.pl>0)w++; else if(b.pl<0)l++; else p++;
+                    if (filter === 'ALL' || b.sport === filter) {
+                        pl+=b.pl; wag+=b.wager; if(b.pl>0)w++; else if(b.pl<0)l++; else p++;
+                    }
                 }
             });
             let roi = wag > 0 ? (pl/wag*100) : 0;
