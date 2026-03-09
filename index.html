@@ -1,583 +1,621 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <title>Green Dot City</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { box-sizing: border-box; }
-        :root { --bg-base: #f2f2f7; --glass-bg: rgba(255, 255, 255, 0.95); --text-main: #333; --text-label: #1b4d29; --input-bg: #fff; --input-border: #e0e0e0; --panel-bg: #f8f9fa; --border-accent: #1b4d29; --win-color: #e8f5e9; --win-text: #1b4d29; --loss-color: #f8d7da; --loss-text: #721c24; }
-        body.dark-mode { --bg-base: #121212; --glass-bg: rgba(30, 30, 30, 0.95); --text-main: #e0e0e0; --text-label: #32CD32; --input-bg: #2c2c2c; --input-border: #444; --panel-bg: #1e1e1e; --border-accent: #32CD32; --win-color: rgba(50, 205, 50, 0.2); --win-text: #32CD32; --loss-color: rgba(220, 53, 69, 0.2); --loss-text: #ff6b6b; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-base); margin: 0; padding: 10px; color: var(--text-main); min-height: 100vh; transition: background-color 0.3s ease; overflow-x: hidden; }
-        .glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; width: 100%; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative;}
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        h2 { margin: 0; color: var(--text-label); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 20px;}
-        .header-buttons { display: flex; gap: 6px; }
-        .theme-toggle { background: transparent; border: 2px solid var(--text-label); color: var(--text-label); font-size: 10px; font-weight: bold; cursor: pointer; padding: 6px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;}
-        .theme-toggle:active { background: var(--text-label); color: var(--bg-base); }
-        .tab-container { display: flex; gap: 6px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 10px 2px; background: transparent; border: 2px solid var(--text-label); color: var(--text-label); border-radius: 8px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 13px; transition: all 0.2s; }
-        .tab-btn.active { background: var(--text-label); color: var(--bg-base); }
-        .chart-btn { flex: 1; padding: 6px 2px; background: transparent; border: 1px solid var(--text-label); color: var(--text-label); border-radius: 6px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 10px; transition: all 0.2s; }
-        .chart-btn.active { background: var(--text-label); color: var(--bg-base); }
-        .view-section { display: none; }
-        .view-section.active { display: block; }
-        .form-group { margin-bottom: 15px; width: 100%; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }
-        input[type="text"], input[type="number"], input[type="date"], select { display: block; width: 100%; min-height: 46px; box-sizing: border-box; padding: 12px; border: 2px solid var(--input-border); border-radius: 8px; font-size: 16px; font-family: inherit; background-color: var(--input-bg); color: var(--text-main); -webkit-appearance: none; appearance: none; }
-        input:focus, select:focus { outline: none; border-color: #32CD32; box-shadow: 0 0 8px rgba(50, 205, 50, 0.2); }
-        .checkbox-group { display: flex; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 2px solid var(--input-border); }
-        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; accent-color: #32CD32; -webkit-appearance: checkbox; appearance: checkbox;}
-        .checkbox-group label { margin-bottom: 0; font-size: 16px; color: var(--text-main);}
-        .btn-primary { width: 100%; padding: 16px; background-color: #1b4d29; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
-        body.dark-mode .btn-primary { background-color: #32CD32; color: #000; }
-        #status { text-align: center; margin-top: 15px; font-weight: bold; display: none; padding: 12px; border-radius: 8px;}
-        .sticky-options { margin-top: 20px; border-top: 1px solid var(--input-border); padding-top: 15px; }
-        .autocomplete-wrapper { position: relative; }
-        .autocomplete-items { position: absolute; border: 2px solid var(--border-accent); border-top: none; z-index: 99; top: 100%; left: 0; right: 0; border-radius: 0 0 8px 8px; background-color: var(--glass-bg); box-shadow: 0 4px 8px rgba(0,0,0,0.3); max-height: 200px; overflow-y: auto; }
-        .autocomplete-items div { padding: 12px; cursor: pointer; border-bottom: 1px solid var(--input-border); color: var(--text-main); font-size: 15px; font-weight: bold; }
-        .autocomplete-items div:last-child { border-bottom: none; }
-        .autocomplete-items div:hover { background-color: var(--win-color); color: var(--win-text); }
-        .dash-card { background-color: var(--panel-bg); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 4px solid var(--text-label); }
-        .dash-title { margin-top: 0; margin-bottom: 12px; color: var(--text-label); font-size: 15px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--input-border); padding-bottom: 5px; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
-        .stat-label { font-weight: bold; color: var(--text-main); }
-        .stat-value { font-weight: bold; color: var(--text-label); }
-        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; white-space: nowrap; }
-        th, td { padding: 8px 4px; text-align: left; border-bottom: 1px solid var(--input-border); }
-        th { color: var(--text-label); font-weight: bold; text-transform: uppercase; font-size: 10px; }
-        .text-right { text-align: right; }
-        .clickable-row { cursor: pointer; transition: background-color 0.2s; }
-        .clickable-row:active { background-color: rgba(128,128,128,0.2); }
-        .lb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 8px; margin-bottom: 12px; }
-        .lb-header h3 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .lb-select { width: auto; padding: 4px; font-size: 12px; margin: 0; background-color: var(--bg-base); color: var(--text-main); border: 1px solid var(--input-border); border-radius: 4px; font-weight: bold; min-height: 0; -webkit-appearance: auto; appearance: auto;}
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .cal-nav { background: transparent; border: none; color: var(--text-label); font-size: 20px; font-weight: bold; cursor: pointer; padding: 5px 10px; }
-        .cal-month { font-size: 16px; font-weight: bold; color: var(--text-main); }
-        .cal-summary-cards { display: flex; gap: 4px; margin-bottom: 15px; }
-        .cal-summary-box { flex: 1; background-color: var(--panel-bg); border-radius: 8px; padding: 8px 2px; text-align: center; border-bottom: 3px solid var(--text-label); }
-        .cal-summary-label { font-size: 9px; font-weight: bold; color: var(--text-main); text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0px;}
-        .cal-summary-val { font-size: 12px; font-weight: bold; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
-        .day-name { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
-        .day-cell { cursor: pointer; background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0; word-break: break-all;}
-        .day-cell:active { opacity: 0.7; }
-        .day-cell.empty { background: transparent; border: none; cursor: default; }
-        .date-num { font-size: 11px; font-weight: bold; color: var(--text-main); }
-        .pl-amt { font-size: 10.5px; font-weight: bold; text-align: center; margin-top: 2px; line-height: 1.1; overflow-wrap: break-word;}
-        .profit { background-color: var(--win-color); border-color: var(--win-text); }
-        .profit .pl-amt { color: var(--win-text); }
-        .loss { background-color: var(--loss-color); border-color: var(--loss-text); }
-        .loss .pl-amt { color: var(--loss-text); }
-        .loading-text { text-align: center; font-weight: bold; color: var(--text-label); margin: 20px 0; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);}
-        .modal-content { background: var(--glass-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 450px; max-height: 80vh; overflow-y: auto; border: 2px solid var(--border-accent); box-shadow: 0 10px 40px rgba(0,0,0,0.5);}
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 10px; margin-bottom: 15px; }
-        .modal-header h3 { margin: 0; color: var(--text-label); font-size: 18px; text-transform: uppercase; }
-        .modal-close { background: transparent; border: none; color: var(--text-main); font-size: 28px; cursor: pointer; font-weight: bold; padding: 0 5px; line-height: 1; }
-        .bet-card { background: var(--panel-bg); border: 1px solid var(--input-border); border-left: 4px solid var(--text-label); border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; }
-        .bet-card-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: bold; color: var(--text-main); font-size: 14px;}
-        .bet-card-details { color: var(--text-main); margin-bottom: 8px; opacity: 0.8; font-size: 12px;}
-        .bet-card-footer { display: flex; justify-content: space-between; border-top: 1px dashed var(--input-border); padding-top: 8px; font-weight: bold; }
-    </style>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2685.4">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
 </head>
-<body class="dark-mode">
-    <div class="glass-container">
-        
-        <div class="app-header">
-            <h2>Green Dot City</h2>
-            <div class="header-buttons">
-                <button class="theme-toggle" id="refreshBtn" onclick="forceRefresh()">⟳ Refresh</button>
-                <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">Light Mode</button>
-            </div>
-        </div>
-
-        <div class="tab-container">
-            <button class="tab-btn active" id="btnLog" onclick="switchTab('log')">Log</button>
-            <button class="tab-btn" id="btnCal" onclick="switchTab('cal')">Calendar</button>
-            <button class="tab-btn" id="btnDash" onclick="switchTab('dash')">Dashboard</button>
-        </div>
-
-        <div id="viewLog" class="view-section active">
-            <div class="form-group"><label>Sportsbook</label><select id="book"><option value="DraftKings">DraftKings</option><option value="FanDuel">FanDuel</option><option value="Caesars">Caesars</option><option value="BetRivers">BetRivers</option><option value="MGM">MGM</option><option value="Bet365">Bet365</option><option value="PrizePicks">PrizePicks</option></select></div>
-            <div class="form-group"><label>Date</label><input type="date" id="date"></div>
-            <div class="form-group"><label>Sport</label><select id="sport"><option value="NHL">NHL</option><option value="NFL">NFL</option><option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option><option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option><option value="GOLF">GOLF</option><option value="MULTI">MULTI</option></select></div>
-            <div class="form-group checkbox-group"><input type="checkbox" id="parlay"><label for="parlay">Parlay?</label></div>
-            <div class="form-group"><label>Bet Type</label><select id="betType"><option value="Moneyline">Moneyline</option><option value="Spread">Spread</option><option value="Total">Total</option><option value="Prop">Prop</option><option value="Future">Future</option><option value="Teaser">Teaser</option><option value="Multi">Multi</option></select></div>
-            
-            <div class="form-group autocomplete-wrapper"><label>Player / Team 1</label><input type="text" id="team1" placeholder="e.g. Capitals" autocomplete="off"></div>
-            <div class="form-group autocomplete-wrapper"><label>Team 2 (Optional)</label><input type="text" id="team2" placeholder="e.g. Rangers" autocomplete="off"></div>
-            
-            <div class="form-group"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex: 1;"><label>Odds</label><input type="number" id="odds" placeholder="-110"></div>
-                <div class="form-group" style="flex: 1;"><label>Wager ($)</label><input type="number" id="wager" placeholder="50" step="0.01"></div>
-            </div>
-            <div class="form-group"><label>Result</label><select id="result"><option value="">Pending</option><option value="W">Win (W)</option><option value="L">Loss (L)</option><option value="P">Push (P)</option></select></div>
-
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button onclick="submitBet()" id="submitBtn" class="btn-primary" style="margin-top: 0; flex: 1;">LOG BET</button>
-                <button onclick="cancelEdit()" id="cancelEditBtn" class="btn-primary" style="display: none; background-color: var(--loss-color); color: var(--loss-text); border: 1px solid var(--loss-text); margin-top: 0; width: 30%;">CANCEL</button>
-            </div>
-            
-            <div id="status"></div>
-            <div class="sticky-options"><div class="form-group checkbox-group"><input type="checkbox" id="keepSlip"><label for="keepSlip">Keep Bet In Slip</label></div></div>
-
-            <div style="margin-top: 25px;">
-                <h3 style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--input-border); color: var(--text-label); font-size: 14px; text-transform: uppercase;">Recent Bets (Tap to Edit)</h3>
-                <div id="recentBetsContainer"></div>
-            </div>
-        </div>
-
-        <div id="viewCal" class="view-section">
-            <div id="calLoader" class="loading-text">Fetching data...</div>
-            <div id="calContainer" style="display:none;">
-                <div class="cal-summary-cards">
-                    <div class="cal-summary-box"><div class="cal-summary-label">This Week</div><div class="cal-summary-val" id="calWeekPL">--</div></div>
-                    <div class="cal-summary-box"><div class="cal-summary-label">Month P/L</div><div class="cal-summary-val" id="calMonthPL">--</div></div>
-                    <div class="cal-summary-box"><div class="cal-summary-label">YTD</div><div class="cal-summary-val" id="calYtdPL">--</div></div>
-                </div>
-                <div class="cal-header"><button class="cal-nav" onclick="changeMonth(-1)">&#9664;</button><div class="cal-month" id="monthLabel">Month Year</div><button class="cal-nav" onclick="changeMonth(1)">&#9654;</button></div>
-                <div class="calendar-grid" id="calendarGrid"></div>
-                
-                <div class="dash-card" style="margin-top:15px; padding-bottom:10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">
-                        <h3 class="dash-title" style="margin: 0; padding: 0; border: none;">Cumulative P/L</h3>
-                        <select id="chartSportFilter" class="lb-select" onchange="drawChart()">
-                            <option value="ALL">All Sports</option><option value="NHL">NHL</option><option value="NFL">NFL</option>
-                            <option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option>
-                            <option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option>
-                            <option value="GOLF">GOLF</option><option value="MULTI">MULTI</option>
-                        </select>
-                    </div>
-                    <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-                        <button id="btnChartMONTH" class="chart-btn active" onclick="setChartRange('MONTH')">Month</button>
-                        <button id="btnChart7D" class="chart-btn" onclick="setChartRange('7D')">7 Days</button>
-                        <button id="btnChart30D" class="chart-btn" onclick="setChartRange('30D')">30 Days</button>
-                        <button id="btnChartALL" class="chart-btn" onclick="setChartRange('ALL')">All Time</button>
-                    </div>
-                    <div style="position:relative; height:180px; width:100%;"><canvas id="plChart"></canvas></div>
-                </div>
-
-                <div class="dash-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">
-                        <h3 class="dash-title" style="margin: 0; padding: 0; border: none;">Custom Date Range</h3>
-                        <select id="rangeSportFilter" class="lb-select" onchange="calcRange()">
-                            <option value="ALL">All Sports</option><option value="NHL">NHL</option><option value="NFL">NFL</option>
-                            <option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option>
-                            <option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option>
-                            <option value="GOLF">GOLF</option><option value="MULTI">MULTI</option>
-                        </select>
-                    </div>
-                    <div style="display:flex; gap:10px; margin-bottom:12px;">
-                        <div style="flex:1;"><label style="font-size:12px; margin-bottom:4px;">Start Date</label><input type="date" id="startDate" onchange="calcRange()" style="min-height:36px; padding:8px; font-size:13px;"></div>
-                        <div style="flex:1;"><label style="font-size:12px; margin-bottom:4px;">End Date</label><input type="date" id="endDate" onchange="calcRange()" style="min-height:36px; padding:8px; font-size:13px;"></div>
-                    </div>
-                    <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="rngPL">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="rngRec">--</span></div>
-                    <div class="stat-row"><span class="stat-label">ROI:</span><span class="stat-value" id="rngROI">--</span></div>
-                </div>
-
-                <div class="dash-card">
-                    <h3 class="dash-title">Hall of Fame</h3>
-                    <div class="stat-row"><span class="stat-label">Best Day:</span><span class="stat-value" id="hofBestDay">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Best Week:</span><span class="stat-value" id="hofBestWeek">--</span></div>
-                    <h4 style="color: var(--text-label); font-size: 13px; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Monster Hits (>$300)</h4>
-                    <div id="hofMonsterBets"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="viewDash" class="view-section">
-            <div id="dashLoader" class="loading-text">Fetching data...</div>
-            <div id="dashContainer" style="display:none;">
-                <div class="dash-card">
-                    <h3 class="dash-title">Overall</h3>
-                    <div class="stat-row"><span class="stat-label">Total P/L:</span><span class="stat-value" id="valPL">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Total Wagered:</span><span class="stat-value" id="valWagered">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Total ROI:</span><span class="stat-value" id="valROI">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valRecord">--</span></div>
-                </div>
-
-                <div class="dash-card">
-                    <h3 class="dash-title">Bet Style</h3>
-                    <div class="stat-row"><span class="stat-label">Straight P/L:</span><span class="stat-value" id="valStrPL">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Straight Rec:</span><span class="stat-value" id="valStrRec">--</span></div>
-                    <div class="stat-row" style="margin-top:8px;"><span class="stat-label">Parlay P/L:</span><span class="stat-value" id="valParPL">--</span></div>
-                    <div class="stat-row"><span class="stat-label">Parlay Rec:</span><span class="stat-value" id="valParRec">--</span></div>
-                </div>
-
-                <div class="dash-card">
-                    <h3 class="dash-title">Specialty Tracking</h3>
-                    <div class="clickable-row" onclick="showSpecialtyBets('GOAL')" style="padding: 8px 6px; margin-bottom: 5px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
-                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Goal Props (All) <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
-                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valGoalPL">--</span></div>
-                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valGoalRecord">--</span></div>
-                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valGoalROI">--</span></div>
-                    </div>
-                    <div class="clickable-row" onclick="showSpecialtyBets('ENG')" style="padding: 8px 6px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
-                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Empty Net Goals <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
-                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valEngPL">--</span></div>
-                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valEngRecord">--</span></div>
-                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valEngROI">--</span></div>
-                    </div>
-                </div>
-
-                <div class="dash-card"><h3 class="dash-title">By Book</h3><div id="tableBooks"></div></div>
-                <div class="dash-card"><h3 class="dash-title">By Sport</h3><div id="tableSports"></div></div>
-                <div class="dash-card"><h3 class="dash-title">P/L By Bet Type (Sport)</h3><div id="tableBetTypeSport"></div></div>
-                <div class="dash-card"><h3 class="dash-title">P/L By Bet Type (Book)</h3><div id="tableBetTypeBook"></div></div>
-                
-                <div class="dash-card">
-                    <div class="lb-header">
-                        <h3 class="dash-title">Most Profitable</h3>
-                        <select id="lbSportFilter" class="lb-select" onchange="renderLeaderboard()">
-                            <option value="ALL">All Sports</option><option value="NHL">NHL</option><option value="NFL">NFL</option>
-                            <option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option>
-                            <option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option>
-                            <option value="GOLF">GOLF</option><option value="MULTI">MULTI</option>
-                        </select>
-                    </div>
-                    <div id="tableMostProf"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="betsModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Title</h3>
-                <button class="modal-close" onclick="closeModal()">×</button>
-            </div>
-            <div id="modalBetsList"></div>
-        </div>
-    </div>
-
-    <script>
-        document.getElementById('date').valueAsDate = new Date();
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
-        
-        let dailyPLData = {}; let rawBetsData = []; 
-        let currentMonth = new Date().getMonth(); let currentYear = new Date().getFullYear();
-        let dataFetched = false; let editingBet = null; let plChart = null; let currentChartRange = 'MONTH';
-
-        window.onload = function() {
-            if (localStorage.getItem('theme') === 'light') { document.body.classList.remove('dark-mode'); document.getElementById('themeBtn').textContent = 'Dark Mode'; }
-            fetchMasterData(true); 
-        };
-
-        function getUniqueEntities() {
-            let entities = new Set();
-            rawBetsData.forEach(bet => {
-                if (bet.team1 && bet.team1.trim() !== "") entities.add(bet.team1.trim());
-                if (bet.team2 && bet.team2.trim() !== "") entities.add(bet.team2.trim());
-            });
-            return Array.from(entities);
-        }
-
-        function setupAutocomplete(inp) {
-            inp.addEventListener("input", function(e) {
-                let a, b, i, val = this.value; closeAllLists();
-                if (!val || val.length < 3) return false;
-                a = document.createElement("DIV"); a.setAttribute("id", this.id + "autocomplete-list"); a.setAttribute("class", "autocomplete-items"); this.parentNode.appendChild(a);
-                let uniqueTeams = getUniqueEntities(); let count = 0;
-                for (i = 0; i < uniqueTeams.length; i++) {
-                    if (uniqueTeams[i].toUpperCase().includes(val.toUpperCase())) {
-                        if (count >= 6) break; 
-                        b = document.createElement("DIV"); let matchIdx = uniqueTeams[i].toUpperCase().indexOf(val.toUpperCase());
-                        b.innerHTML = uniqueTeams[i].substring(0, matchIdx) + "<span style='color:var(--text-label);'>" + uniqueTeams[i].substring(matchIdx, matchIdx + val.length) + "</span>" + uniqueTeams[i].substring(matchIdx + val.length) + "<input type='hidden' value='" + uniqueTeams[i].replace(/'/g, "&apos;") + "'>";
-                        b.addEventListener("click", function(e) { inp.value = this.getElementsByTagName("input")[0].value; closeAllLists(); });
-                        a.appendChild(b); count++;
-                    }
-                }
-            });
-            function closeAllLists(elmnt) {
-                var x = document.getElementsByClassName("autocomplete-items");
-                for (var i = 0; i < x.length; i++) { if (elmnt != x[i] && elmnt != inp) { x[i].parentNode.removeChild(x[i]); } }
-            }
-            document.addEventListener("click", function (e) { closeAllLists(e.target); });
-        }
-        setupAutocomplete(document.getElementById("team1")); setupAutocomplete(document.getElementById("team2"));
-
-        function forceRefresh() { document.getElementById('refreshBtn').textContent = "⏳..."; dataFetched = false; fetchMasterData(false); }
-        
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode'); const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light'); document.getElementById('themeBtn').textContent = isDark ? 'Light Mode' : 'Dark Mode';
-            if(dataFetched && document.getElementById('viewDash').classList.contains('active')) fetchMasterData(false); 
-            if(dataFetched && document.getElementById('viewCal').classList.contains('active')) drawChart(); 
-        }
-
-        function switchTab(tab) {
-            ['viewLog', 'viewCal', 'viewDash'].forEach(id => document.getElementById(id).classList.remove('active'));
-            ['btnLog', 'btnCal', 'btnDash'].forEach(id => document.getElementById(id).classList.remove('active'));
-            if(tab === 'log') { document.getElementById('viewLog').classList.add('active'); document.getElementById('btnLog').classList.add('active'); }
-            else if (tab === 'cal') { document.getElementById('viewCal').classList.add('active'); document.getElementById('btnCal').classList.add('active'); if(!dataFetched) fetchMasterData(false); else renderCalendar(currentMonth, currentYear); }
-            else if (tab === 'dash') { document.getElementById('viewDash').classList.add('active'); document.getElementById('btnDash').classList.add('active'); if(!dataFetched) fetchMasterData(false); }
-        }
-
-        function getColor(valStr) { return (!valStr) ? 'var(--text-main)' : (valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)'); }
-        function formatPL(num) { return num === 0 ? '$0.00' : (num > 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`); }
-
-        // --- NEW: TIMELINE GRAPH LOGIC ---
-        function formatDateObj(obj) {
-            let y = obj.getFullYear(); let m = String(obj.getMonth() + 1).padStart(2, '0'); let d = String(obj.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        }
-        function getDates(startStr, endStr) {
-            let dates = []; let curr = new Date(startStr + "T00:00:00"); let end = new Date(endStr + "T00:00:00");
-            while(curr <= end) { dates.push(formatDateObj(curr)); curr.setDate(curr.getDate() + 1); }
-            return dates;
-        }
-        function setChartRange(range) {
-            currentChartRange = range;
-            ['MONTH', '7D', '30D', 'ALL'].forEach(id => {
-                let el = document.getElementById('btnChart' + id);
-                if(el) { if(id === range) el.classList.add('active'); else el.classList.remove('active'); }
-            });
-            drawChart();
-        }
-        function drawChart() {
-            if(plChart) plChart.destroy();
-            let ctx = document.getElementById('plChart').getContext('2d');
-            let filter = document.getElementById('chartSportFilter').value;
-            let dates = [], todayObj = new Date(), todayStr = formatDateObj(todayObj);
-
-            if (currentChartRange === 'MONTH') {
-                let firstDay = new Date(currentYear, currentMonth, 1), lastDay = new Date(currentYear, currentMonth + 1, 0);
-                dates = getDates(formatDateObj(firstDay), formatDateObj(lastDay));
-            } else if (currentChartRange === '7D') {
-                let startObj = new Date(); startObj.setDate(startObj.getDate() - 6); dates = getDates(formatDateObj(startObj), todayStr);
-            } else if (currentChartRange === '30D') {
-                let startObj = new Date(); startObj.setDate(startObj.getDate() - 29); dates = getDates(formatDateObj(startObj), todayStr);
-            } else if (currentChartRange === 'ALL') {
-                if (rawBetsData.length > 0) {
-                    let earliest = rawBetsData.reduce((min, b) => b.date < min ? b.date : min, rawBetsData[0].date);
-                    dates = getDates(earliest || todayStr, todayStr);
-                } else { dates = [todayStr]; }
-            }
-
-            let labels = [], data = [], cum = 0;
-            dates.forEach(dStr => {
-                let parts = dStr.split('-');
-                labels.push(`${parts[1]}/${parts[2]}`);
-                let dailySum = 0;
-                if (filter === 'ALL') { dailySum = dailyPLData[dStr] || 0; } 
-                else { rawBetsData.forEach(b => { if (b.date === dStr && b.sport === filter) dailySum += b.pl; }); }
-                cum += dailySum; data.push(cum);
-            });
-
-            let isDk = document.body.classList.contains('dark-mode'), line = isDk?'#32CD32':'#1b4d29', grid = isDk?'#444444':'#e0e0e0', txt = isDk?'#e0e0e0':'#333333';
-            plChart = new Chart(ctx, {
-                type: 'line', data: { labels: labels, datasets: [{ data: data, borderColor: line, backgroundColor: line+'33', borderWidth: 2, fill: true, tension: 0.2, pointRadius: 1 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: grid }, ticks: { color: txt, maxTicksLimit: 10 } }, y: { grid: { color: grid }, ticks: { color: txt } } } }
-            });
-        }
-
-        function calcRange() {
-            let s = document.getElementById('startDate').value, e = document.getElementById('endDate').value;
-            let filter = document.getElementById('rangeSportFilter').value;
-            if(!s || !e) return;
-            let pl=0, wag=0, w=0, l=0, p=0;
-            rawBetsData.forEach(b => {
-                if(b.date && b.date >= s && b.date <= e) {
-                    if (filter === 'ALL' || b.sport === filter) { pl+=b.pl; wag+=b.wager; if(b.pl>0)w++; else if(b.pl<0)l++; else p++; }
-                }
-            });
-            let roi = wag > 0 ? (pl/wag*100) : 0;
-            document.getElementById('rngPL').textContent = formatPL(pl); document.getElementById('rngPL').style.color = getColor(formatPL(pl));
-            document.getElementById('rngRec').textContent = `${w}W - ${l}L - ${p}P`;
-            document.getElementById('rngROI').textContent = (roi>0?'+':'')+roi.toFixed(2)+'%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
-        }
-
-        function renderRecentBets() {
-            const container = document.getElementById('recentBetsContainer');
-            if (rawBetsData.length === 0) { container.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center;">No bets logged yet.</p>'; return; }
-            const recent = rawBetsData.slice(0, 10); let html = '';
-            recent.forEach((b, idx) => {
-                let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
-                let plText = formatPL(b.pl); let plColor = getColor(plText);
-                let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)');
-                let dStr = b.date ? b.date.substring(5).replace('-', '/') : '';
-                let resText = (b.result === 'W' || b.result === 'L' || b.result === 'P') ? b.result + ': ' + plText : 'Pending';
-                
-                html += `<div class="bet-card clickable-row" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
-                    <div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;"><span>${dStr} | ${b.book} | ${b.sport}</span><span>${oddsText}</span></div>
-                    <div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div>
-                    <div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;"><span>$${b.wager.toFixed(2)}</span><span style="color:${plColor}">${resText}</span></div>
-                </div>`;
-            });
-            container.innerHTML = html;
-        }
-
-        function editBet(idx) {
-            editingBet = rawBetsData[idx];
-            document.getElementById('book').value = editingBet.book; document.getElementById('date').value = editingBet.date; document.getElementById('sport').value = editingBet.sport; document.getElementById('parlay').checked = editingBet.parlay; document.getElementById('betType').value = editingBet.betType; document.getElementById('team1').value = editingBet.team1; document.getElementById('team2').value = editingBet.team2; document.getElementById('details').value = editingBet.details; document.getElementById('odds').value = editingBet.odds; document.getElementById('wager').value = editingBet.wager; document.getElementById('result').value = editingBet.result;
-            document.getElementById('submitBtn').textContent = "UPDATE BET"; document.getElementById('cancelEditBtn').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function cancelEdit() {
-            editingBet = null; document.getElementById('date').valueAsDate = new Date();
-            ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = "");
-            document.getElementById('parlay').checked = false; document.getElementById('submitBtn').textContent = "LOG BET"; document.getElementById('cancelEditBtn').style.display = "none";
-        }
-
-        function openModal(title, bets, isDayView) {
-            const modal = document.getElementById('betsModal'); document.getElementById('modalTitle').textContent = title; const list = document.getElementById('modalBetsList');
-            if (bets.length === 0) { list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged.</p>'; modal.style.display = 'flex'; return; }
-            let html = '';
-            if (isDayView) {
-                let sportSummary = {}; bets.forEach(b => { sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; });
-                html += '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border);">';
-                for (const [s, pl] of Object.entries(sportSummary)) { let plText = formatPL(pl), borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">${s}: <span style="color:${getColor(plText)}">${plText}</span></div>`; }
-                html += '</div>';
-            } else {
-                let totalPL = 0, w=0, l=0, p=0; bets.forEach(b => { totalPL += b.pl; if(b.pl>0)w++; else if(b.pl<0)l++; else p++; });
-                let sumColor = totalPL > 0 ? 'var(--win-text)' : (totalPL < 0 ? 'var(--loss-text)' : 'var(--text-main)');
-                html += `<div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border); font-size: 14px;"><div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><strong>Record:</strong> <span>${w}W - ${l}L - ${p}P</span></div><div style="display:flex; justify-content:space-between;"><strong>Net Profit:</strong> <span style="color:${sumColor}; font-weight:bold;">${formatPL(totalPL)}</span></div></div>`;
-            }
-            bets.forEach(b => {
-                let odds = b.odds > 0 ? `+${b.odds}` : b.odds; let plText = formatPL(b.pl); let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); let headerDStr = isDayView ? b.sport : `${(b.date||'').substring(5).replace('-','/')} | ${b.sport}`;
-                html += `<div class="bet-card" style="border-left-color: ${borderCol}"><div class="bet-card-header"><span>${headerDStr}</span><span>${odds}</span></div><div class="bet-card-details" style="font-weight:bold; color:var(--text-label);">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div><div class="bet-card-details">${b.details || 'Moneyline'}</div><div class="bet-card-footer"><span>Wager: $${b.wager.toFixed(2)}</span><span style="color:${getColor(plText)}">${plText}</span></div></div>`;
-            });
-            list.innerHTML = html; modal.style.display = 'flex';
-        }
-
-        function showDayBets(dateStr) {
-            const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d);
-            openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true);
-        }
-
-        function showEntityBets(entity) {
-            const bets = rawBetsData.filter(b => b.team1 === entity || b.team2 === entity).sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(entity + " History", bets, false);
-        }
-
-        function showSpecialtyBets(type) {
-            let bets = [], title = ""; const goalKws = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
-            if (type === 'ENG') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG')); title = "ENG Tracker History"; } 
-            else if (type === 'GOAL') { bets = rawBetsData.filter(b => b.details && goalKws.some(kw => b.details.toUpperCase().includes(kw))); title = "Goal Props History"; }
-            bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(title, bets, false);
-        }
-
-        function closeModal() { document.getElementById('betsModal').style.display = 'none'; }
-        window.onclick = function(e) { if (e.target == document.getElementById('betsModal')) closeModal(); }
-
-        function buildPivotTable(dataArray) {
-            if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
-            let html = '<div class="table-wrapper"><table><tr>'; let colCount = 0; dataArray[0].forEach(h => { if (h !== "") { html += `<th>${h}</th>`; colCount++; } }); html += '</tr>';
-            for (let i = 1; i < dataArray.length; i++) {
-                html += '<tr>'; for (let j = 0; j < colCount; j++) { let cell = dataArray[i][j] || "", style = (j > 0 && cell !== "") ? ` class="text-right" style="color:${getColor(cell)}; font-weight:bold;"` : (j > 0 ? ' class="text-right"' : ''); html += `<td${style}>${cell}</td>`; } html += '</tr>';
-            }
-            html += '</table></div>'; return html;
-        }
-
-        function renderLeaderboard() {
-            const filter = document.getElementById('lbSportFilter').value; let entities = {};
-            rawBetsData.forEach(bet => {
-                if (filter !== 'ALL' && bet.sport !== filter) return;
-                ['team1', 'team2'].forEach(t => { let team = bet[t]; if (team && team.trim() !== "") { if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; entities[team].bets += 1; entities[team].pl += bet.pl; } });
-            });
-            let sorted = Object.keys(entities).map(k => [k, entities[k].bets, entities[k].pl]).sort((a, b) => b[2] - a[2]);
-            if (sorted.length === 0) { document.getElementById('tableMostProf').innerHTML = '<p style="font-size:13px;">No bets logged.</p>'; return; }
-            let html = '<div class="table-wrapper"><table><tr><th>Player/Team</th><th class="text-right">Bets</th><th class="text-right">P/L</th></tr>';
-            for (let i = 0; i < sorted.length; i++) { let entity = sorted[i][0], bets = sorted[i][1], plText = formatPL(sorted[i][2]); html += `<tr class="clickable-row" onclick="showEntityBets('${entity.replace(/'/g, "\\'")}')"><td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`; }
-            document.getElementById('tableMostProf').innerHTML = html + '</table></div>';
-        }
-
-        function renderHallOfFame() {
-            let bestDay = null, bestDayVal = -Infinity, weeklyTotals = {};
-            for (const [dateStr, pl] of Object.entries(dailyPLData)) {
-                if (pl > bestDayVal) { bestDayVal = pl; bestDay = dateStr; }
-                let d = new Date(dateStr + "T00:00:00"), day = d.getDay(), sun = new Date(d); sun.setDate(d.getDate() - day);
-                let weekKey = `${sun.getFullYear()}-${String(sun.getMonth()+1).padStart(2,'0')}-${String(sun.getDate()).padStart(2,'0')}`; weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + pl;
-            }
-            let bestWeek = null, bestWeekVal = -Infinity;
-            for (const [w, pl] of Object.entries(weeklyTotals)) { if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = w; } }
-            document.getElementById('hofBestDay').textContent = bestDayVal > 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; document.getElementById('hofBestDay').style.color = bestDayVal > 0 ? getColor(formatPL(bestDayVal)) : ''; document.getElementById('hofBestWeek').textContent = bestWeekVal > 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; document.getElementById('hofBestWeek').style.color = bestWeekVal > 0 ? getColor(formatPL(bestWeekVal)) : '';
-            let monsters = rawBetsData.filter(b => b.pl >= 300).sort((a,b) => b.pl - a.pl);
-            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } 
-            else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${m.details}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
-        }
-
-        function updateCalendarSummaries(month, year) {
-            let weekPl = 0, monthPl = 0, ytdPl = 0; const today = new Date(), dayOfWeek = today.getDay();
-            for(let i=0; i<7; i++) { let d = new Date(today); d.setDate(today.getDate() - dayOfWeek + i); let dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; if(dailyPLData[dStr]) weekPl += dailyPLData[dStr]; }
-            const viewMonthPrefix = `${year}-${String(month+1).padStart(2,'0')}`, viewYearPrefix = `${year}-`;
-            for (const [dateStr, pl] of Object.entries(dailyPLData)) { if (dateStr.startsWith(viewYearPrefix)) { ytdPl += pl; if (dateStr.startsWith(viewMonthPrefix)) monthPl += pl; } }
-            document.getElementById('calWeekPL').textContent = formatPL(weekPl); document.getElementById('calWeekPL').style.color = getColor(formatPL(weekPl)); document.getElementById('calMonthPL').textContent = formatPL(monthPl); document.getElementById('calMonthPL').style.color = getColor(formatPL(monthPl)); document.getElementById('calYtdPL').textContent = formatPL(ytdPl); document.getElementById('calYtdPL').style.color = getColor(formatPL(ytdPl));
-        }
-
-        function fetchMasterData(isSilent = false) {
-            if (!isSilent) { document.getElementById('calLoader').style.display = 'block'; document.getElementById('dashLoader').style.display = 'block'; document.getElementById('calContainer').style.display = 'none'; document.getElementById('dashContainer').style.display = 'none'; }
-            fetch(WEB_APP_URL).then(res => res.json()).then(data => {
-                document.getElementById('refreshBtn').textContent = "⟳ Refresh";
-                if (data.status === "success") {
-                    document.getElementById('valPL').textContent = data.pl; document.getElementById('valPL').style.color = getColor(data.pl); document.getElementById('valWagered').textContent = data.wagered; document.getElementById('valROI').textContent = data.roi; document.getElementById('valRecord').textContent = data.record;
-                    document.getElementById('valStrPL').textContent = data.straightPL; document.getElementById('valStrPL').style.color = getColor(data.straightPL); document.getElementById('valStrRec').textContent = data.straightRec; document.getElementById('valParPL').textContent = data.parlayPL; document.getElementById('valParPL').style.color = getColor(data.parlayPL); document.getElementById('valParRec').textContent = data.parlayRec;
-                    let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; }); document.getElementById('tableBooks').innerHTML = bHtml + '</table>';
-                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; }); document.getElementById('tableSports').innerHTML = sHtml + '</table>';
-                    document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
-
-                    rawBetsData = data.rawBets || []; let engPL=0, engWagered=0, engW=0, engL=0, engP=0; let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0;
-                    const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
-                    rawBetsData.forEach(bet => {
-                        if (bet.details) { let dUp = bet.details.toUpperCase();
-                            if (dUp.includes('ENG')) { engPL += bet.pl; engWagered += bet.wager; if (bet.pl>0) engW++; else if (bet.pl<0) engL++; else engP++; }
-                            if (goalKeywords.some(kw => dUp.includes(kw))) { goalPL += bet.pl; goalWagered += bet.wager; if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; }
-                        }
-                    });
-                    
-                    let engROIVal = engWagered > 0 ? (engPL / engWagered * 100) : 0; document.getElementById('valEngPL').textContent = formatPL(engPL); document.getElementById('valEngPL').style.color = getColor(formatPL(engPL)); document.getElementById('valEngRecord').textContent = `${engW}W - ${engL}L - ${engP}P`; document.getElementById('valEngROI').textContent = (engROIVal > 0 ? '+' : '') + engROIVal.toFixed(2) + '%'; document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));
-                    let goalROIVal = goalWagered > 0 ? (goalPL / goalWagered * 100) : 0; document.getElementById('valGoalPL').textContent = formatPL(goalPL); document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL)); document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
-
-                    renderLeaderboard(); renderRecentBets(); dailyPLData = data.dailyData || {}; dataFetched = true;
-                    if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
-                }
-            }).catch(e => {
-                document.getElementById('refreshBtn').textContent = "⟳ Refresh"; if(!isSilent) alert("Error reading data. Check script deployment.");
-                document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block';
-            });
-        }
-
-        function changeMonth(dir) { currentMonth += dir; if(currentMonth > 11) { currentMonth = 0; currentYear++; } if(currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentMonth, currentYear); }
-
-        function renderCalendar(month, year) {
-            const grid = document.getElementById('calendarGrid'); const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`; grid.innerHTML = '';
-            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
-            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { grid.innerHTML += `<div class="day-name">${d}</div>`; });
-            for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="day-cell empty"></div>`; }
-            for (let i = 1; i <= daysInMonth; i++) {
-                const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; let pl = dailyPLData[dStr] || 0;
-                let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`); let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
-                grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
-            }
-            updateCalendarSummaries(month, year); renderHallOfFame(); 
-            // Reset to month view when changing calendar
-            setChartRange('MONTH');
-        }
-
-        function submitBet() {
-            const btn = document.getElementById('submitBtn'), statusDiv = document.getElementById('status'), keepSlip = document.getElementById('keepSlip').checked;
-            const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: document.getElementById('parlay').checked, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: document.getElementById('details').value, odds: parseFloat(document.getElementById('odds').value), wager: parseFloat(document.getElementById('wager').value), result: document.getElementById('result').value };
-            if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) { statusDiv.textContent = "Fill Team 1, Odds, and Wager."; statusDiv.className = "error"; statusDiv.style.display = "block"; return; }
-            let finalData = editingBet ? { action: "edit", old: editingBet, new: payload } : { action: "log", ...payload };
-
-            btn.disabled = true; btn.textContent = "SENDING...";
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) }).then(res => res.json()).then(data => {
-                if (data.status === "success") {
-                    statusDiv.textContent = editingBet ? "Bet Updated!" : "Bet Logged!"; statusDiv.className = "success";
-                    if (editingBet || !keepSlip) { cancelEdit(); }
-                    dataFetched = false; fetchMasterData(true);
-                } else { statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error"; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; }
-                statusDiv.style.display = "block"; btn.disabled = false; 
-            });
-        }
-    </script>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;link rel="apple-touch-icon" href="apple-touch-icon.png"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Green Dot City&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.jsdelivr.net/npm/chart.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>* { box-sizing: border-box; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>:root { --bg-base: #f2f2f7; --glass-bg: rgba(255, 255, 255, 0.95); --text-main: #333; --text-label: #1b4d29; --input-bg: #fff; --input-border: #e0e0e0; --panel-bg: #f8f9fa; --border-accent: #1b4d29; --win-color: #e8f5e9; --win-text: #1b4d29; --loss-color: #f8d7da; --loss-text: #721c24; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body.dark-mode { --bg-base: #121212; --glass-bg: rgba(30, 30, 30, 0.95); --text-main: #e0e0e0; --text-label: #32CD32; --input-bg: #2c2c2c; --input-border: #444; --panel-bg: #1e1e1e; --border-accent: #32CD32; --win-color: rgba(50, 205, 50, 0.2); --win-text: #32CD32; --loss-color: rgba(220, 53, 69, 0.2); --loss-text: #ff6b6b; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-base); margin: 0; padding: 10px; color: var(--text-main); min-height: 100vh; transition: background-color 0.3s ease; overflow-x: hidden; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; width: 100%; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>h2 { margin: 0; color: var(--text-label); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 20px;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.header-buttons { display: flex; gap: 6px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.theme-toggle { background: transparent; border: 2px solid var(--text-label); color: var(--text-label); font-size: 10px; font-weight: bold; cursor: pointer; padding: 6px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.theme-toggle:active { background: var(--text-label); color: var(--bg-base); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.tab-container { display: flex; gap: 6px; margin-bottom: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.tab-btn { flex: 1; padding: 10px 2px; background: transparent; border: 2px solid var(--text-label); color: var(--text-label); border-radius: 8px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 13px; transition: all 0.2s; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.tab-btn.active { background: var(--text-label); color: var(--bg-base); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.chart-btn { flex: 1; padding: 6px 2px; background: transparent; border: 1px solid var(--text-label); color: var(--text-label); border-radius: 6px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 10px; transition: all 0.2s; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.chart-btn.active { background: var(--text-label); color: var(--bg-base); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.view-section { display: none; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.view-section.active { display: block; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.form-group { margin-bottom: 15px; width: 100%; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--text-label); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>input[type="text"], input[type="number"], input[type="date"], select { display: block; width: 100%; min-height: 46px; box-sizing: border-box; padding: 12px; border: 2px solid var(--input-border); border-radius: 8px; font-size: 16px; font-family: inherit; background-color: var(--input-bg); color: var(--text-main); -webkit-appearance: none; appearance: none; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>input:focus, select:focus { outline: none; border-color: #32CD32; box-shadow: 0 0 8px rgba(50, 205, 50, 0.2); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.checkbox-group { display: flex; align-items: center; background: var(--input-bg); padding: 12px; border-radius: 8px; border: 2px solid var(--input-border); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.checkbox-group input { margin-right: 10px; width: 20px; height: 20px; accent-color: #32CD32; -webkit-appearance: checkbox; appearance: checkbox;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.checkbox-group label { margin-bottom: 0; font-size: 16px; color: var(--text-main);}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.btn-primary { width: 100%; padding: 16px; background-color: #1b4d29; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body.dark-mode .btn-primary { background-color: #32CD32; color: #000; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#status { text-align: center; margin-top: 15px; font-weight: bold; display: none; padding: 12px; border-radius: 8px;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.sticky-options { margin-top: 20px; border-top: 1px solid var(--input-border); padding-top: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.autocomplete-wrapper { position: relative; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.autocomplete-items { position: absolute; border: 2px solid var(--border-accent); border-top: none; z-index: 99; top: 100%; left: 0; right: 0; border-radius: 0 0 8px 8px; background-color: var(--glass-bg); box-shadow: 0 4px 8px rgba(0,0,0,0.3); max-height: 200px; overflow-y: auto; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.autocomplete-items div { padding: 12px; cursor: pointer; border-bottom: 1px solid var(--input-border); color: var(--text-main); font-size: 15px; font-weight: bold; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.autocomplete-items div:last-child { border-bottom: none; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.autocomplete-items div:hover { background-color: var(--win-color); color: var(--win-text); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.dash-card { background-color: var(--panel-bg); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 4px solid var(--text-label); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.dash-title { margin-top: 0; margin-bottom: 12px; color: var(--text-label); font-size: 15px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--input-border); padding-bottom: 5px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.stat-label { font-weight: bold; color: var(--text-main); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.stat-value { font-weight: bold; color: var(--text-label); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; white-space: nowrap; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>th, td { padding: 8px 4px; text-align: left; border-bottom: 1px solid var(--input-border); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>th { color: var(--text-label); font-weight: bold; text-transform: uppercase; font-size: 10px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.text-right { text-align: right; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.clickable-row { cursor: pointer; transition: background-color 0.2s; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.clickable-row:active { background-color: rgba(128,128,128,0.2); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.lb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 8px; margin-bottom: 12px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.lb-header h3 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.lb-select { width: auto; padding: 4px; font-size: 12px; margin: 0; background-color: var(--bg-base); color: var(--text-main); border: 1px solid var(--input-border); border-radius: 4px; font-weight: bold; min-height: 0; -webkit-appearance: auto; appearance: auto;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.cal-nav { background: transparent; border: none; color: var(--text-label); font-size: 20px; font-weight: bold; cursor: pointer; padding: 5px 10px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.cal-month { font-size: 16px; font-weight: bold; color: var(--text-main); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.cal-summary-cards { display: flex; gap: 4px; margin-bottom: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.cal-summary-box { flex: 1; background-color: var(--panel-bg); border-radius: 8px; padding: 8px 2px; text-align: center; border-bottom: 3px solid var(--text-label); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.cal-summary-label { font-size: 9px; font-weight: bold; color: var(--text-main); text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0px;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.cal-summary-val { font-size: 12px; font-weight: bold; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.day-name { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.day-cell { cursor: pointer; background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0; word-break: break-all;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.day-cell:active { opacity: 0.7; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.day-cell.empty { background: transparent; border: none; cursor: default; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.date-num { font-size: 11px; font-weight: bold; color: var(--text-main); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.pl-amt { font-size: 10.5px; font-weight: bold; text-align: center; margin-top: 2px; line-height: 1.1; overflow-wrap: break-word;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.profit { background-color: var(--win-color); border-color: var(--win-text); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.profit .pl-amt { color: var(--win-text); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.loss { background-color: var(--loss-color); border-color: var(--loss-text); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.loss .pl-amt { color: var(--loss-text); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.loading-text { text-align: center; font-weight: bold; color: var(--text-label); margin: 20px 0; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.modal-content { background: var(--glass-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 450px; max-height: 80vh; overflow-y: auto; border: 2px solid var(--border-accent); box-shadow: 0 10px 40px rgba(0,0,0,0.5);}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 10px; margin-bottom: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.modal-header h3 { margin: 0; color: var(--text-label); font-size: 18px; text-transform: uppercase; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.modal-close { background: transparent; border: none; color: var(--text-main); font-size: 28px; cursor: pointer; font-weight: bold; padding: 0 5px; line-height: 1; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bet-card { background: var(--panel-bg); border: 1px solid var(--input-border); border-left: 4px solid var(--text-label); border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bet-card-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: bold; color: var(--text-main); font-size: 14px;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bet-card-details { color: var(--text-main); margin-bottom: 8px; opacity: 0.8; font-size: 12px;}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bet-card-footer { display: flex; justify-content: space-between; border-top: 1px dashed var(--input-border); padding-top: 8px; font-weight: bold; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body class="dark-mode"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="glass-container"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="app-header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h2&gt;Green Dot City&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="header-buttons"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button class="theme-toggle" id="refreshBtn" onclick="forceRefresh()"&gt;⟳ Refresh&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button class="theme-toggle" id="themeBtn" onclick="toggleTheme()"&gt;Light Mode&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="tab-container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="tab-btn active" id="btnLog" onclick="switchTab('log')"&gt;Log&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="tab-btn" id="btnCal" onclick="switchTab('cal')"&gt;Calendar&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="tab-btn" id="btnDash" onclick="switchTab('dash')"&gt;Dashboard&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="viewLog" class="view-section active"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group"&gt;&lt;label&gt;Sportsbook&lt;/label&gt;&lt;select id="book"&gt;&lt;option value="DraftKings"&gt;DraftKings&lt;/option&gt;&lt;option value="FanDuel"&gt;FanDuel&lt;/option&gt;&lt;option value="Caesars"&gt;Caesars&lt;/option&gt;&lt;option value="BetRivers"&gt;BetRivers&lt;/option&gt;&lt;option value="MGM"&gt;MGM&lt;/option&gt;&lt;option value="Bet365"&gt;Bet365&lt;/option&gt;&lt;option value="PrizePicks"&gt;PrizePicks&lt;/option&gt;&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group"&gt;&lt;label&gt;Date&lt;/label&gt;&lt;input type="date" id="date"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group"&gt;&lt;label&gt;Sport&lt;/label&gt;&lt;select id="sport"&gt;&lt;option value="NHL"&gt;NHL&lt;/option&gt;&lt;option value="NFL"&gt;NFL&lt;/option&gt;&lt;option value="NBA"&gt;NBA&lt;/option&gt;&lt;option value="MLB"&gt;MLB&lt;/option&gt;&lt;option value="NCAAB"&gt;NCAAB&lt;/option&gt;&lt;option value="NCAAF"&gt;NCAAF&lt;/option&gt;&lt;option value="TENNIS"&gt;TENNIS&lt;/option&gt;&lt;option value="SOCCER"&gt;SOCCER&lt;/option&gt;&lt;option value="GOLF"&gt;GOLF&lt;/option&gt;&lt;option value="MULTI"&gt;MULTI&lt;/option&gt;&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group checkbox-group"&gt;&lt;input type="checkbox" id="parlay"&gt;&lt;label for="parlay"&gt;Parlay?&lt;/label&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group"&gt;&lt;label&gt;Bet Type&lt;/label&gt;&lt;select id="betType"&gt;&lt;option value="Moneyline"&gt;Moneyline&lt;/option&gt;&lt;option value="Spread"&gt;Spread&lt;/option&gt;&lt;option value="Total"&gt;Total&lt;/option&gt;&lt;option value="Prop"&gt;Prop&lt;/option&gt;&lt;option value="Future"&gt;Future&lt;/option&gt;&lt;option value="Teaser"&gt;Teaser&lt;/option&gt;&lt;option value="Multi"&gt;Multi&lt;/option&gt;&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group autocomplete-wrapper"&gt;&lt;label&gt;Player / Team 1&lt;/label&gt;&lt;input type="text" id="team1" placeholder="e.g. Capitals" autocomplete="off"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group autocomplete-wrapper"&gt;&lt;label&gt;Team 2 (Optional)&lt;/label&gt;&lt;input type="text" id="team2" placeholder="e.g. Rangers" autocomplete="off"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group"&gt;&lt;label&gt;Details&lt;/label&gt;&lt;input type="text" id="details" placeholder="e.g. O 5.5 Goals"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div style="display: flex; gap: 10px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="form-group" style="flex: 1;"&gt;&lt;label&gt;Odds&lt;/label&gt;&lt;input type="number" id="odds" placeholder="-110"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="form-group" style="flex: 1;"&gt;&lt;label&gt;Wager ($)&lt;/label&gt;&lt;input type="number" id="wager" placeholder="50" step="0.01"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="form-group"&gt;&lt;label&gt;Result&lt;/label&gt;&lt;select id="result"&gt;&lt;option value=""&gt;Pending&lt;/option&gt;&lt;option value="W"&gt;Win (W)&lt;/option&gt;&lt;option value="L"&gt;Loss (L)&lt;/option&gt;&lt;option value="P"&gt;Push (P)&lt;/option&gt;&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div style="display: flex; gap: 10px; margin-top: 15px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button onclick="submitBet()" id="submitBtn" class="btn-primary" style="margin-top: 0; flex: 1;"&gt;LOG BET&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button onclick="cancelEdit()" id="cancelEditBtn" class="btn-primary" style="display: none; background-color: var(--loss-color); color: var(--loss-text); border: 1px solid var(--loss-text); margin-top: 0; width: 30%;"&gt;CANCEL&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="status"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="sticky-options"&gt;&lt;div class="form-group checkbox-group"&gt;&lt;input type="checkbox" id="keepSlip"&gt;&lt;label for="keepSlip"&gt;Keep Bet In Slip&lt;/label&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div style="margin-top: 25px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;h3 style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--input-border); color: var(--text-label); font-size: 14px; text-transform: uppercase;"&gt;Pending Bets (Tap to Edit)&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div id="pendingBetsContainer"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div style="margin-top: 20px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;h3 style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--input-border); color: var(--text-label); font-size: 14px; text-transform: uppercase;"&gt;Last 10 Settled Bets&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div id="recentBetsContainer"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="viewCal" class="view-section"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="calLoader" class="loading-text"&gt;Fetching data...&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="calContainer" style="display:none;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="cal-summary-cards"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="cal-summary-box"&gt;&lt;div class="cal-summary-label"&gt;This Week&lt;/div&gt;&lt;div class="cal-summary-val" id="calWeekPL"&gt;--&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="cal-summary-box"&gt;&lt;div class="cal-summary-label"&gt;Month P/L&lt;/div&gt;&lt;div class="cal-summary-val" id="calMonthPL"&gt;--&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="cal-summary-box"&gt;&lt;div class="cal-summary-label"&gt;YTD&lt;/div&gt;&lt;div class="cal-summary-val" id="calYtdPL"&gt;--&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="cal-header"&gt;&lt;button class="cal-nav" onclick="changeMonth(-1)"&gt;&amp;#9664;&lt;/button&gt;&lt;div class="cal-month" id="monthLabel"&gt;Month Year&lt;/div&gt;&lt;button class="cal-nav" onclick="changeMonth(1)"&gt;&amp;#9654;&lt;/button&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="calendar-grid" id="calendarGrid"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card" style="margin-top:15px; padding-bottom:10px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;h3 class="dash-title" style="margin: 0; padding: 0; border: none;"&gt;Cumulative P/L&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;select id="chartSportFilter" class="lb-select" onchange="drawChart()"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="ALL"&gt;All Sports&lt;/option&gt;&lt;option value="NHL"&gt;NHL&lt;/option&gt;&lt;option value="NFL"&gt;NFL&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="NBA"&gt;NBA&lt;/option&gt;&lt;option value="MLB"&gt;MLB&lt;/option&gt;&lt;option value="NCAAB"&gt;NCAAB&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="NCAAF"&gt;NCAAF&lt;/option&gt;&lt;option value="TENNIS"&gt;TENNIS&lt;/option&gt;&lt;option value="SOCCER"&gt;SOCCER&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="GOLF"&gt;GOLF&lt;/option&gt;&lt;option value="MULTI"&gt;MULTI&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div style="display: flex; gap: 6px; margin-bottom: 10px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;button id="btnChartMONTH" class="chart-btn active" onclick="setChartRange('MONTH')"&gt;Month&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;button id="btnChart7D" class="chart-btn" onclick="setChartRange('7D')"&gt;7 Days&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;button id="btnChart30D" class="chart-btn" onclick="setChartRange('30D')"&gt;30 Days&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;button id="btnChartALL" class="chart-btn" onclick="setChartRange('ALL')"&gt;All Time&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div style="position:relative; height:180px; width:100%;"&gt;&lt;canvas id="plChart"&gt;&lt;/canvas&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;h3 class="dash-title" style="margin: 0; padding: 0; border: none;"&gt;Custom Date Range&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;select id="rangeSportFilter" class="lb-select" onchange="calcRange()"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="ALL"&gt;All Sports&lt;/option&gt;&lt;option value="NHL"&gt;NHL&lt;/option&gt;&lt;option value="NFL"&gt;NFL&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="NBA"&gt;NBA&lt;/option&gt;&lt;option value="MLB"&gt;MLB&lt;/option&gt;&lt;option value="NCAAB"&gt;NCAAB&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="NCAAF"&gt;NCAAF&lt;/option&gt;&lt;option value="TENNIS"&gt;TENNIS&lt;/option&gt;&lt;option value="SOCCER"&gt;SOCCER&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="GOLF"&gt;GOLF&lt;/option&gt;&lt;option value="MULTI"&gt;MULTI&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div style="display:flex; gap:10px; margin-bottom:12px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div style="flex:1;"&gt;&lt;label style="font-size:12px; margin-bottom:4px;"&gt;Start Date&lt;/label&gt;&lt;input type="date" id="startDate" onchange="calcRange()" style="min-height:36px; padding:8px; font-size:13px;"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div style="flex:1;"&gt;&lt;label style="font-size:12px; margin-bottom:4px;"&gt;End Date&lt;/label&gt;&lt;input type="date" id="endDate" onchange="calcRange()" style="min-height:36px; padding:8px; font-size:13px;"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Net P/L:&lt;/span&gt;&lt;span class="stat-value" id="rngPL"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Record:&lt;/span&gt;&lt;span class="stat-value" id="rngRec"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;ROI:&lt;/span&gt;&lt;span class="stat-value" id="rngROI"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;h3 class="dash-title"&gt;Hall of Fame&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Best Day:&lt;/span&gt;&lt;span class="stat-value" id="hofBestDay"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Best Week:&lt;/span&gt;&lt;span class="stat-value" id="hofBestWeek"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;h4 style="color: var(--text-label); font-size: 13px; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;"&gt;Monster Hits (&gt;$300)&lt;/h4&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div id="hofMonsterBets"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="viewDash" class="view-section"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="dashLoader" class="loading-text"&gt;Fetching data...&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="dashContainer" style="display:none;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;h3 class="dash-title"&gt;Overall&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Total P/L:&lt;/span&gt;&lt;span class="stat-value" id="valPL"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Total Wagered:&lt;/span&gt;&lt;span class="stat-value" id="valWagered"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Total ROI:&lt;/span&gt;&lt;span class="stat-value" id="valROI"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Record:&lt;/span&gt;&lt;span class="stat-value" id="valRecord"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;h3 class="dash-title"&gt;Bet Style&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Straight P/L:&lt;/span&gt;&lt;span class="stat-value" id="valStrPL"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Straight Rec:&lt;/span&gt;&lt;span class="stat-value" id="valStrRec"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row" style="margin-top:8px;"&gt;&lt;span class="stat-label"&gt;Parlay P/L:&lt;/span&gt;&lt;span class="stat-value" id="valParPL"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Parlay Rec:&lt;/span&gt;&lt;span class="stat-value" id="valParRec"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;h3 class="dash-title"&gt;Specialty Tracking&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="clickable-row" onclick="showSpecialtyBets('GOAL')" style="padding: 8px 6px; margin-bottom: 5px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;"&gt;Goal Props (All) &lt;span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;"&gt;TAP TO VIEW&lt;/span&gt;&lt;/h4&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Net P/L:&lt;/span&gt;&lt;span class="stat-value" id="valGoalPL"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Record:&lt;/span&gt;&lt;span class="stat-value" id="valGoalRecord"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="stat-row" style="margin-bottom:0;"&gt;&lt;span class="stat-label"&gt;ROI:&lt;/span&gt;&lt;span class="stat-value" id="valGoalROI"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="clickable-row" onclick="showSpecialtyBets('ENG')" style="padding: 8px 6px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;"&gt;Empty Net Goals &lt;span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;"&gt;TAP TO VIEW&lt;/span&gt;&lt;/h4&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Net P/L:&lt;/span&gt;&lt;span class="stat-value" id="valEngPL"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="stat-row"&gt;&lt;span class="stat-label"&gt;Record:&lt;/span&gt;&lt;span class="stat-value" id="valEngRecord"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="stat-row" style="margin-bottom:0;"&gt;&lt;span class="stat-label"&gt;ROI:&lt;/span&gt;&lt;span class="stat-value" id="valEngROI"&gt;--&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;&lt;h3 class="dash-title"&gt;By Book&lt;/h3&gt;&lt;div id="tableBooks"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;&lt;h3 class="dash-title"&gt;By Sport&lt;/h3&gt;&lt;div id="tableSports"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;&lt;h3 class="dash-title"&gt;P/L By Bet Type (Sport)&lt;/h3&gt;&lt;div id="tableBetTypeSport"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;&lt;h3 class="dash-title"&gt;P/L By Bet Type (Book)&lt;/h3&gt;&lt;div id="tableBetTypeBook"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="dash-card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="lb-header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;h3 class="dash-title"&gt;Most Profitable&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;select id="lbSportFilter" class="lb-select" onchange="renderLeaderboard()"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="ALL"&gt;All Sports&lt;/option&gt;&lt;option value="NHL"&gt;NHL&lt;/option&gt;&lt;option value="NFL"&gt;NFL&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="NBA"&gt;NBA&lt;/option&gt;&lt;option value="MLB"&gt;MLB&lt;/option&gt;&lt;option value="NCAAB"&gt;NCAAB&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="NCAAF"&gt;NCAAF&lt;/option&gt;&lt;option value="TENNIS"&gt;TENNIS&lt;/option&gt;&lt;option value="SOCCER"&gt;SOCCER&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;option value="GOLF"&gt;GOLF&lt;/option&gt;&lt;option value="MULTI"&gt;MULTI&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div id="tableMostProf"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="betsModal" class="modal-overlay"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="modal-content"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="modal-header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;h3 id="modalTitle"&gt;Title&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button class="modal-close" onclick="closeModal()"&gt;×&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="modalBetsList"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('date').valueAsDate = new Date();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec";<span class="Apple-converted-space"> </span></p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>let dailyPLData = {}; let rawBetsData = [];<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>let currentMonth = new Date().getMonth(); let currentYear = new Date().getFullYear();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let dataFetched = false; let editingBet = null; let plChart = null; let currentChartRange = 'MONTH';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>window.onload = function() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (localStorage.getItem('theme') === 'light') { document.body.classList.remove('dark-mode'); document.getElementById('themeBtn').textContent = 'Dark Mode'; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>fetchMasterData(true);<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function getUniqueEntities() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let entities = new Set();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>rawBetsData.forEach(bet =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (bet.team1 &amp;&amp; bet.team1.trim() !== "") entities.add(bet.team1.trim());</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (bet.team2 &amp;&amp; bet.team2.trim() !== "") entities.add(bet.team2.trim());</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return Array.from(entities);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function setupAutocomplete(inp) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>inp.addEventListener("input", function(e) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let a, b, i, val = this.value; closeAllLists();</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (!val || val.length &lt; 3) return false;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>a = document.createElement("DIV"); a.setAttribute("id", this.id + "autocomplete-list"); a.setAttribute("class", "autocomplete-items"); this.parentNode.appendChild(a);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let uniqueTeams = getUniqueEntities(); let count = 0;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>for (i = 0; i &lt; uniqueTeams.length; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (uniqueTeams[i].toUpperCase().includes(val.toUpperCase())) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>if (count &gt;= 6) break;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                        </span>b = document.createElement("DIV"); let matchIdx = uniqueTeams[i].toUpperCase().indexOf(val.toUpperCase());</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>b.innerHTML = uniqueTeams[i].substring(0, matchIdx) + "&lt;span style='color:var(--text-label);'&gt;" + uniqueTeams[i].substring(matchIdx, matchIdx + val.length) + "&lt;/span&gt;" + uniqueTeams[i].substring(matchIdx + val.length) + "&lt;input type='hidden' value='" + uniqueTeams[i].replace(/'/g, "&amp;apos;") + "'&gt;";</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>b.addEventListener("click", function(e) { inp.value = this.getElementsByTagName("input")[0].value; closeAllLists(); });</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>a.appendChild(b); count++;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>function closeAllLists(elmnt) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>var x = document.getElementsByClassName("autocomplete-items");</p>
+<p class="p1"><span class="Apple-converted-space">                </span>for (var i = 0; i &lt; x.length; i++) { if (elmnt != x[i] &amp;&amp; elmnt != inp) { x[i].parentNode.removeChild(x[i]); } }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.addEventListener("click", function (e) { closeAllLists(e.target); });</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>setupAutocomplete(document.getElementById("team1")); setupAutocomplete(document.getElementById("team2"));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function forceRefresh() { document.getElementById('refreshBtn').textContent = "⏳..."; dataFetched = false; fetchMasterData(false); }</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function toggleTheme() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.body.classList.toggle('dark-mode'); const isDark = document.body.classList.contains('dark-mode');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>localStorage.setItem('theme', isDark ? 'dark' : 'light'); document.getElementById('themeBtn').textContent = isDark ? 'Light Mode' : 'Dark Mode';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(dataFetched &amp;&amp; document.getElementById('viewDash').classList.contains('active')) fetchMasterData(false);<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(dataFetched &amp;&amp; document.getElementById('viewCal').classList.contains('active')) drawChart();<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function switchTab(tab) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>['viewLog', 'viewCal', 'viewDash'].forEach(id =&gt; document.getElementById(id).classList.remove('active'));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>['btnLog', 'btnCal', 'btnDash'].forEach(id =&gt; document.getElementById(id).classList.remove('active'));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(tab === 'log') { document.getElementById('viewLog').classList.add('active'); document.getElementById('btnLog').classList.add('active'); }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>else if (tab === 'cal') { document.getElementById('viewCal').classList.add('active'); document.getElementById('btnCal').classList.add('active'); if(!dataFetched) fetchMasterData(false); else renderCalendar(currentMonth, currentYear); }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>else if (tab === 'dash') { document.getElementById('viewDash').classList.add('active'); document.getElementById('btnDash').classList.add('active'); if(!dataFetched) fetchMasterData(false); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function getColor(valStr) { return (!valStr) ? 'var(--text-main)' : (valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)'); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function formatPL(num) { return num === 0 ? '$0.00' : (num &gt; 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function formatDateObj(obj) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let y = obj.getFullYear(); let m = String(obj.getMonth() + 1).padStart(2, '0'); let d = String(obj.getDate()).padStart(2, '0');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return `${y}-${m}-${d}`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function getDates(startStr, endStr) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let dates = []; let curr = new Date(startStr + "T00:00:00"); let end = new Date(endStr + "T00:00:00");</p>
+<p class="p1"><span class="Apple-converted-space">            </span>while(curr &lt;= end) { dates.push(formatDateObj(curr)); curr.setDate(curr.getDate() + 1); }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return dates;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function setChartRange(range) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>currentChartRange = range;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>['MONTH', '7D', '30D', 'ALL'].forEach(id =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let el = document.getElementById('btnChart' + id);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if(el) { if(id === range) el.classList.add('active'); else el.classList.remove('active'); }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>drawChart();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function drawChart() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(plChart) plChart.destroy();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let ctx = document.getElementById('plChart').getContext('2d');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let filter = document.getElementById('chartSportFilter').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let dates = [], todayObj = new Date(), todayStr = formatDateObj(todayObj);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (currentChartRange === 'MONTH') {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let firstDay = new Date(currentYear, currentMonth, 1), lastDay = new Date(currentYear, currentMonth + 1, 0);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>dates = getDates(formatDateObj(firstDay), formatDateObj(lastDay));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else if (currentChartRange === '7D') {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let startObj = new Date(); startObj.setDate(startObj.getDate() - 6); dates = getDates(formatDateObj(startObj), todayStr);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else if (currentChartRange === '30D') {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let startObj = new Date(); startObj.setDate(startObj.getDate() - 29); dates = getDates(formatDateObj(startObj), todayStr);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else if (currentChartRange === 'ALL') {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (rawBetsData.length &gt; 0) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>let earliest = rawBetsData.reduce((min, b) =&gt; b.date &lt; min ? b.date : min, rawBetsData[0].date);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>dates = getDates(earliest || todayStr, todayStr);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>} else { dates = [todayStr]; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>let labels = [], data = [], cum = 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>dates.forEach(dStr =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let parts = dStr.split('-');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>labels.push(`${parts[1]}/${parts[2]}`);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let dailySum = 0;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (filter === 'ALL') { dailySum = dailyPLData[dStr] || 0; }<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>else { rawBetsData.forEach(b =&gt; { if (b.date === dStr &amp;&amp; b.sport === filter) dailySum += b.pl; }); }</p>
+<p class="p1"><span class="Apple-converted-space">                </span>cum += dailySum; data.push(cum);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>let isDk = document.body.classList.contains('dark-mode'), line = isDk?'#32CD32':'#1b4d29', grid = isDk?'#444444':'#e0e0e0', txt = isDk?'#e0e0e0':'#333333';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>plChart = new Chart(ctx, {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>type: 'line', data: { labels: labels, datasets: [{ data: data, borderColor: line, backgroundColor: line+'33', borderWidth: 2, fill: true, tension: 0.2, pointRadius: 1 }] },</p>
+<p class="p1"><span class="Apple-converted-space">                </span>options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: grid }, ticks: { color: txt, maxTicksLimit: 10 } }, y: { grid: { color: grid }, ticks: { color: txt } } } }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function calcRange() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let s = document.getElementById('startDate').value, e = document.getElementById('endDate').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let filter = document.getElementById('rangeSportFilter').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(!s || !e) return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let pl=0, wag=0, w=0, l=0, p=0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>rawBetsData.forEach(b =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if(b.date &amp;&amp; b.date &gt;= s &amp;&amp; b.date &lt;= e) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (filter === 'ALL' || b.sport === filter) { pl+=b.pl; wag+=b.wager; if(b.pl&gt;0)w++; else if(b.pl&lt;0)l++; else p++; }</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let roi = wag &gt; 0 ? (pl/wag*100) : 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('rngPL').textContent = formatPL(pl); document.getElementById('rngPL').style.color = getColor(formatPL(pl));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('rngRec').textContent = `${w}W - ${l}L - ${p}P`;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('rngROI').textContent = (roi&gt;0?'+':'')+roi.toFixed(2)+'%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// --- UPDATED: PENDING &amp; SETTLED LISTS ---</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function renderBetLists() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const pendContainer = document.getElementById('pendingBetsContainer');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const settContainer = document.getElementById('recentBetsContainer');</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (rawBetsData.length === 0) {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>pendContainer.innerHTML = '&lt;p style="font-size:13px; opacity:0.7; text-align:center;"&gt;No pending bets.&lt;/p&gt;';<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>settContainer.innerHTML = '&lt;p style="font-size:13px; opacity:0.7; text-align:center;"&gt;No settled bets.&lt;/p&gt;';<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>return;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>let pendHtml = '', settHtml = '', settCount = 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>rawBetsData.forEach((b, idx) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let oddsText = b.odds &gt; 0 ? `+${b.odds}` : b.odds;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let plText = isSettled ? formatPL(b.pl) : '';<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>let plColor = isSettled ? getColor(plText) : 'var(--text-main)';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let borderCol = isSettled ? (b.pl &gt; 0 ? 'var(--win-text)' : (b.pl &lt; 0 ? 'var(--loss-text)' : 'var(--text-main)')) : '#f39c12'; // Amber border for pending</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let dStr = b.date ? b.date.substring(5).replace('-', '/') : '';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let resText = isSettled ? b.result + ': ' + plText : 'Pending';</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>let card = `&lt;div class="bet-card clickable-row" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;"&gt;&lt;span&gt;${dStr} | ${b.book} | ${b.sport}&lt;/span&gt;&lt;span&gt;${oddsText}&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;"&gt;${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;"&gt;&lt;span&gt;$${b.wager.toFixed(2)}&lt;/span&gt;&lt;span style="color:${plColor}; font-weight:bold;"&gt;${resText}&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (isSettled) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (settCount &lt; 10) { settHtml += card; settCount++; }</p>
+<p class="p1"><span class="Apple-converted-space">                </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>pendHtml += card;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>pendContainer.innerHTML = pendHtml || '&lt;p style="font-size:13px; opacity:0.7; text-align:center;"&gt;No pending bets right now.&lt;/p&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>settContainer.innerHTML = settHtml || '&lt;p style="font-size:13px; opacity:0.7; text-align:center;"&gt;No settled bets yet.&lt;/p&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function editBet(idx) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>editingBet = rawBetsData[idx];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('book').value = editingBet.book; document.getElementById('date').value = editingBet.date; document.getElementById('sport').value = editingBet.sport; document.getElementById('parlay').checked = editingBet.parlay; document.getElementById('betType').value = editingBet.betType; document.getElementById('team1').value = editingBet.team1; document.getElementById('team2').value = editingBet.team2; document.getElementById('details').value = editingBet.details; document.getElementById('odds').value = editingBet.odds; document.getElementById('wager').value = editingBet.wager; document.getElementById('result').value = editingBet.result;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('submitBtn').textContent = "UPDATE BET"; document.getElementById('cancelEditBtn').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function cancelEdit() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>editingBet = null; document.getElementById('date').valueAsDate = new Date();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>['team1','team2','details','odds','wager','result'].forEach(id =&gt; document.getElementById(id).value = "");</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('parlay').checked = false; document.getElementById('submitBtn').textContent = "LOG BET"; document.getElementById('cancelEditBtn').style.display = "none";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function openModal(title, bets, isDayView) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const modal = document.getElementById('betsModal'); document.getElementById('modalTitle').textContent = title; const list = document.getElementById('modalBetsList');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (bets.length === 0) { list.innerHTML = '&lt;p style="text-align:center; opacity:0.7;"&gt;No bets logged.&lt;/p&gt;'; modal.style.display = 'flex'; return; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let html = '';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (isDayView) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let sportSummary = {}; bets.forEach(b =&gt; { sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; });</p>
+<p class="p1"><span class="Apple-converted-space">                </span>html += '&lt;div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border);"&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>for (const [s, pl] of Object.entries(sportSummary)) { let plText = formatPL(pl), borderCol = pl &gt; 0 ? 'var(--win-text)' : (pl &lt; 0 ? 'var(--loss-text)' : 'var(--text-main)'); html += `&lt;div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};"&gt;${s}: &lt;span style="color:${getColor(plText)}"&gt;${plText}&lt;/span&gt;&lt;/div&gt;`; }</p>
+<p class="p1"><span class="Apple-converted-space">                </span>html += '&lt;/div&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let totalPL = 0, w=0, l=0, p=0; bets.forEach(b =&gt; { totalPL += b.pl; if(b.pl&gt;0)w++; else if(b.pl&lt;0)l++; else p++; });</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let sumColor = totalPL &gt; 0 ? 'var(--win-text)' : (totalPL &lt; 0 ? 'var(--loss-text)' : 'var(--text-main)');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>html += `&lt;div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border); font-size: 14px;"&gt;&lt;div style="display:flex; justify-content:space-between; margin-bottom: 5px;"&gt;&lt;strong&gt;Record:&lt;/strong&gt; &lt;span&gt;${w}W - ${l}L - ${p}P&lt;/span&gt;&lt;/div&gt;&lt;div style="display:flex; justify-content:space-between;"&gt;&lt;strong&gt;Net Profit:&lt;/strong&gt; &lt;span style="color:${sumColor}; font-weight:bold;"&gt;${formatPL(totalPL)}&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>bets.forEach(b =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let odds = b.odds &gt; 0 ? `+${b.odds}` : b.odds; let plText = formatPL(b.pl); let borderCol = b.pl &gt; 0 ? 'var(--win-text)' : (b.pl &lt; 0 ? 'var(--loss-text)' : 'var(--text-main)'); let headerDStr = isDayView ? b.sport : `${(b.date||'').substring(5).replace('-','/')} | ${b.sport}`;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>html += `&lt;div class="bet-card" style="border-left-color: ${borderCol}"&gt;&lt;div class="bet-card-header"&gt;&lt;span&gt;${headerDStr}&lt;/span&gt;&lt;span&gt;${odds}&lt;/span&gt;&lt;/div&gt;&lt;div class="bet-card-details" style="font-weight:bold; color:var(--text-label);"&gt;${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}&lt;/div&gt;&lt;div class="bet-card-details"&gt;${b.details || 'Moneyline'}&lt;/div&gt;&lt;div class="bet-card-footer"&gt;&lt;span&gt;Wager: $${b.wager.toFixed(2)}&lt;/span&gt;&lt;span style="color:${getColor(plText)}"&gt;${plText}&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>list.innerHTML = html; modal.style.display = 'flex';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function showDayBets(dateStr) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const bets = rawBetsData.filter(b =&gt; b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function showEntityBets(entity) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const bets = rawBetsData.filter(b =&gt; b.team1 === entity || b.team2 === entity).sort((a, b) =&gt; new Date(b.date) - new Date(a.date)); openModal(entity + " History", bets, false);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function showSpecialtyBets(type) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let bets = [], title = ""; const goalKws = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (type === 'ENG') { bets = rawBetsData.filter(b =&gt; b.details &amp;&amp; b.details.toUpperCase().includes('ENG')); title = "ENG Tracker History"; }<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>else if (type === 'GOAL') { bets = rawBetsData.filter(b =&gt; b.details &amp;&amp; goalKws.some(kw =&gt; b.details.toUpperCase().includes(kw))); title = "Goal Props History"; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>bets = bets.sort((a, b) =&gt; new Date(b.date) - new Date(a.date)); openModal(title, bets, false);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function closeModal() { document.getElementById('betsModal').style.display = 'none'; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>window.onclick = function(e) { if (e.target == document.getElementById('betsModal')) closeModal(); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function buildPivotTable(dataArray) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (!dataArray || dataArray.length &lt; 2) return '&lt;p style="font-size:13px;"&gt;Awaiting Data...&lt;/p&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let html = '&lt;div class="table-wrapper"&gt;&lt;table&gt;&lt;tr&gt;'; let colCount = 0; dataArray[0].forEach(h =&gt; { if (h !== "") { html += `&lt;th&gt;${h}&lt;/th&gt;`; colCount++; } }); html += '&lt;/tr&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 1; i &lt; dataArray.length; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>html += '&lt;tr&gt;'; for (let j = 0; j &lt; colCount; j++) { let cell = dataArray[i][j] || "", style = (j &gt; 0 &amp;&amp; cell !== "") ? ` class="text-right" style="color:${getColor(cell)}; font-weight:bold;"` : (j &gt; 0 ? ' class="text-right"' : ''); html += `&lt;td${style}&gt;${cell}&lt;/td&gt;`; } html += '&lt;/tr&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>html += '&lt;/table&gt;&lt;/div&gt;'; return html;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function renderLeaderboard() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const filter = document.getElementById('lbSportFilter').value; let entities = {};</p>
+<p class="p1"><span class="Apple-converted-space">            </span>rawBetsData.forEach(bet =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (filter !== 'ALL' &amp;&amp; bet.sport !== filter) return;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>['team1', 'team2'].forEach(t =&gt; { let team = bet[t]; if (team &amp;&amp; team.trim() !== "") { if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; entities[team].bets += 1; entities[team].pl += bet.pl; } });</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let sorted = Object.keys(entities).map(k =&gt; [k, entities[k].bets, entities[k].pl]).sort((a, b) =&gt; b[2] - a[2]);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (sorted.length === 0) { document.getElementById('tableMostProf').innerHTML = '&lt;p style="font-size:13px;"&gt;No bets logged.&lt;/p&gt;'; return; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let html = '&lt;div class="table-wrapper"&gt;&lt;table&gt;&lt;tr&gt;&lt;th&gt;Player/Team&lt;/th&gt;&lt;th class="text-right"&gt;Bets&lt;/th&gt;&lt;th class="text-right"&gt;P/L&lt;/th&gt;&lt;/tr&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; sorted.length; i++) { let entity = sorted[i][0], bets = sorted[i][1], plText = formatPL(sorted[i][2]); html += `&lt;tr class="clickable-row" onclick="showEntityBets('${entity.replace(/'/g, "\\'")}')"&gt;&lt;td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;"&gt;${entity}&lt;/td&gt;&lt;td class="text-right"&gt;${bets}&lt;/td&gt;&lt;td class="text-right" style="color:${getColor(plText)}; font-weight:bold;"&gt;${plText}&lt;/td&gt;&lt;/tr&gt;`; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('tableMostProf').innerHTML = html + '&lt;/table&gt;&lt;/div&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function renderHallOfFame() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let bestDay = null, bestDayVal = -Infinity, weeklyTotals = {};</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (const [dateStr, pl] of Object.entries(dailyPLData)) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (pl &gt; bestDayVal) { bestDayVal = pl; bestDay = dateStr; }</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let d = new Date(dateStr + "T00:00:00"), day = d.getDay(), sun = new Date(d); sun.setDate(d.getDate() - day);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let weekKey = `${sun.getFullYear()}-${String(sun.getMonth()+1).padStart(2,'0')}-${String(sun.getDate()).padStart(2,'0')}`; weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + pl;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let bestWeek = null, bestWeekVal = -Infinity;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (const [w, pl] of Object.entries(weeklyTotals)) { if (pl &gt; bestWeekVal) { bestWeekVal = pl; bestWeek = w; } }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('hofBestDay').textContent = bestDayVal &gt; 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; document.getElementById('hofBestDay').style.color = bestDayVal &gt; 0 ? getColor(formatPL(bestDayVal)) : ''; document.getElementById('hofBestWeek').textContent = bestWeekVal &gt; 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; document.getElementById('hofBestWeek').style.color = bestWeekVal &gt; 0 ? getColor(formatPL(bestWeekVal)) : '';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let monsters = rawBetsData.filter(b =&gt; b.pl &gt;= 300).sort((a,b) =&gt; b.pl - a.pl);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '&lt;p style="font-size:13px;"&gt;No monster hits yet.&lt;/p&gt;'; }<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>else { let html = '&lt;div class="table-wrapper"&gt;&lt;table&gt;&lt;tr&gt;&lt;th&gt;Date&lt;/th&gt;&lt;th&gt;Player/Team&lt;/th&gt;&lt;th&gt;Details&lt;/th&gt;&lt;th class="text-right"&gt;Wager&lt;/th&gt;&lt;th class="text-right"&gt;Won&lt;/th&gt;&lt;/tr&gt;'; monsters.forEach(m =&gt; { html += `&lt;tr&gt;&lt;td&gt;${m.date.substring(5)}&lt;/td&gt;&lt;td&gt;${m.team1}&lt;/td&gt;&lt;td&gt;${m.details}&lt;/td&gt;&lt;td class="text-right"&gt;$${m.wager.toFixed(2)}&lt;/td&gt;&lt;td class="text-right" style="color:var(--win-text); font-weight:bold;"&gt;${formatPL(m.pl)}&lt;/td&gt;&lt;/tr&gt;`; }); document.getElementById('hofMonsterBets').innerHTML = html + '&lt;/table&gt;&lt;/div&gt;'; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function updateCalendarSummaries(month, year) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let weekPl = 0, monthPl = 0, ytdPl = 0; const today = new Date(), dayOfWeek = today.getDay();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for(let i=0; i&lt;7; i++) { let d = new Date(today); d.setDate(today.getDate() - dayOfWeek + i); let dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; if(dailyPLData[dStr]) weekPl += dailyPLData[dStr]; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const viewMonthPrefix = `${year}-${String(month+1).padStart(2,'0')}`, viewYearPrefix = `${year}-`;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (const [dateStr, pl] of Object.entries(dailyPLData)) { if (dateStr.startsWith(viewYearPrefix)) { ytdPl += pl; if (dateStr.startsWith(viewMonthPrefix)) monthPl += pl; } }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('calWeekPL').textContent = formatPL(weekPl); document.getElementById('calWeekPL').style.color = getColor(formatPL(weekPl)); document.getElementById('calMonthPL').textContent = formatPL(monthPl); document.getElementById('calMonthPL').style.color = getColor(formatPL(monthPl)); document.getElementById('calYtdPL').textContent = formatPL(ytdPl); document.getElementById('calYtdPL').style.color = getColor(formatPL(ytdPl));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function fetchMasterData(isSilent = false) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (!isSilent) { document.getElementById('calLoader').style.display = 'block'; document.getElementById('dashLoader').style.display = 'block'; document.getElementById('calContainer').style.display = 'none'; document.getElementById('dashContainer').style.display = 'none'; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>fetch(WEB_APP_URL).then(res =&gt; res.json()).then(data =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('refreshBtn').textContent = "⟳ Refresh";</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (data.status === "success") {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>document.getElementById('valPL').textContent = data.pl; document.getElementById('valPL').style.color = getColor(data.pl); document.getElementById('valWagered').textContent = data.wagered; document.getElementById('valROI').textContent = data.roi; document.getElementById('valRecord').textContent = data.record;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>document.getElementById('valStrPL').textContent = data.straightPL; document.getElementById('valStrPL').style.color = getColor(data.straightPL); document.getElementById('valStrRec').textContent = data.straightRec;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>document.getElementById('valParPL').textContent = data.parlayPL; document.getElementById('valParPL').style.color = getColor(data.parlayPL); document.getElementById('valParRec').textContent = data.parlayRec;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>let bHtml = '&lt;table&gt;&lt;tr&gt;&lt;th&gt;Book&lt;/th&gt;&lt;th class="text-right"&gt;P/L&lt;/th&gt;&lt;th class="text-right"&gt;ROI&lt;/th&gt;&lt;/tr&gt;'; data.books.forEach(b =&gt; { bHtml += `&lt;tr&gt;&lt;td&gt;${b[0]}&lt;/td&gt;&lt;td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;"&gt;${b[1]}&lt;/td&gt;&lt;td class="text-right"&gt;${b[2]}&lt;/td&gt;&lt;/tr&gt;`; }); document.getElementById('tableBooks').innerHTML = bHtml + '&lt;/table&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>let sHtml = '&lt;table&gt;&lt;tr&gt;&lt;th&gt;Sport&lt;/th&gt;&lt;th class="text-right"&gt;Wagered&lt;/th&gt;&lt;th class="text-right"&gt;P/L&lt;/th&gt;&lt;th class="text-right"&gt;ROI&lt;/th&gt;&lt;/tr&gt;'; data.sports.forEach(s =&gt; { sHtml += `&lt;tr&gt;&lt;td&gt;${s[0]}&lt;/td&gt;&lt;td class="text-right"&gt;${s[1]}&lt;/td&gt;&lt;td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;"&gt;${s[2]}&lt;/td&gt;&lt;td class="text-right"&gt;${s[3]}&lt;/td&gt;&lt;/tr&gt;`; }); document.getElementById('tableSports').innerHTML = sHtml + '&lt;/table&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>rawBetsData = data.rawBets || []; let engPL=0, engWagered=0, engW=0, engL=0, engP=0; let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>rawBetsData.forEach(bet =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>if (bet.details) { let dUp = bet.details.toUpperCase();</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>if (dUp.includes('ENG')) { engPL += bet.pl; engWagered += bet.wager; if (bet.pl&gt;0) engW++; else if (bet.pl&lt;0) engL++; else engP++; }</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>if (goalKeywords.some(kw =&gt; dUp.includes(kw))) { goalPL += bet.pl; goalWagered += bet.wager; if (bet.pl&gt;0) goalW++; else if (bet.pl&lt;0) goalL++; else goalP++; }</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>});</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>let engROIVal = engWagered &gt; 0 ? (engPL / engWagered * 100) : 0; document.getElementById('valEngPL').textContent = formatPL(engPL); document.getElementById('valEngPL').style.color = getColor(formatPL(engPL)); document.getElementById('valEngRecord').textContent = `${engW}W - ${engL}L - ${engP}P`; document.getElementById('valEngROI').textContent = (engROIVal &gt; 0 ? '+' : '') + engROIVal.toFixed(2) + '%'; document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>let goalROIVal = goalWagered &gt; 0 ? (goalPL / goalWagered * 100) : 0; document.getElementById('valGoalPL').textContent = formatPL(goalPL); document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL)); document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; document.getElementById('valGoalROI').textContent = (goalROIVal &gt; 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>renderLeaderboard(); renderBetLists(); dailyPLData = data.dailyData || {}; dataFetched = true;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}).catch(e =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('refreshBtn').textContent = "⟳ Refresh"; if(!isSilent) alert("Error reading data. Check script deployment.");</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function changeMonth(dir) { currentMonth += dir; if(currentMonth &gt; 11) { currentMonth = 0; currentYear++; } if(currentMonth &lt; 0) { currentMonth = 11; currentYear--; } renderCalendar(currentMonth, currentYear); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function renderCalendar(month, year) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const grid = document.getElementById('calendarGrid'); const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`; grid.innerHTML = '';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d =&gt; { grid.innerHTML += `&lt;div class="day-name"&gt;${d}&lt;/div&gt;`; });</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; firstDay; i++) { grid.innerHTML += `&lt;div class="day-cell empty"&gt;&lt;/div&gt;`; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 1; i &lt;= daysInMonth; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; let pl = dailyPLData[dStr] || 0;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>let plText = pl === 0 ? '-' : (pl &gt; 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`); let cls = pl &gt; 0 ? 'profit' : (pl &lt; 0 ? 'loss' : '');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>grid.innerHTML += `&lt;div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"&gt;&lt;div class="date-num"&gt;${i}&lt;/div&gt;&lt;div class="pl-amt"&gt;${plText}&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>updateCalendarSummaries(month, year); renderHallOfFame();<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>setChartRange('MONTH');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function submitBet() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const btn = document.getElementById('submitBtn'), statusDiv = document.getElementById('status'), keepSlip = document.getElementById('keepSlip').checked;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: document.getElementById('parlay').checked, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: document.getElementById('details').value, odds: parseFloat(document.getElementById('odds').value), wager: parseFloat(document.getElementById('wager').value), result: document.getElementById('result').value };</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) { statusDiv.textContent = "Fill Team 1, Odds, and Wager."; statusDiv.className = "error"; statusDiv.style.display = "block"; return; }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let finalData = editingBet ? { action: "edit", old: editingBet, new: payload } : { action: "log", ...payload };</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>btn.disabled = true; btn.textContent = "SENDING...";</p>
+<p class="p1"><span class="Apple-converted-space">            </span>fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) }).then(res =&gt; res.json()).then(data =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (data.status === "success") {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>statusDiv.textContent = editingBet ? "Bet Updated!" : "Bet Logged!"; statusDiv.className = "success";</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (editingBet || !keepSlip) { cancelEdit(); }</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>dataFetched = false; fetchMasterData(true);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>} else { statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error"; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; }</p>
+<p class="p1"><span class="Apple-converted-space">                </span>statusDiv.style.display = "block"; btn.disabled = false;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
 </body>
 </html>
