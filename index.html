@@ -264,7 +264,11 @@
     </div>
 
     <script>
-        document.getElementById('date').valueAsDate = new Date();
+        // --- UPDATED DATE LOGIC: SET TO LOCAL TIME ---
+        let today = new Date();
+        document.getElementById('date').value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        
+        // YOUR EXACT GOOGLE SCRIPT URL:
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
         
         let dailyPLData = {}; let rawBetsData = []; 
@@ -399,7 +403,6 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'')+roi.toFixed(2)+'%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
-        // --- UPDATED: PENDING & SETTLED LISTS ---
         function renderBetLists() {
             const pendContainer = document.getElementById('pendingBetsContainer');
             const settContainer = document.getElementById('recentBetsContainer');
@@ -416,7 +419,7 @@
                 let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
                 let plText = isSettled ? formatPL(b.pl) : ''; 
                 let plColor = isSettled ? getColor(plText) : 'var(--text-main)';
-                let borderCol = isSettled ? (b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)')) : '#f39c12'; // Amber border for pending
+                let borderCol = isSettled ? (b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)')) : '#f39c12';
                 let dStr = b.date ? b.date.substring(5).replace('-', '/') : '';
                 let resText = isSettled ? b.result + ': ' + plText : 'Pending';
                 
@@ -444,7 +447,12 @@
         }
 
         function cancelEdit() {
-            editingBet = null; document.getElementById('date').valueAsDate = new Date();
+            editingBet = null; 
+            
+            // --- UPDATED DATE LOGIC FOR CANCEL BUTTON ---
+            let d = new Date();
+            document.getElementById('date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            
             ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = "");
             document.getElementById('parlay').checked = false; document.getElementById('submitBtn').textContent = "LOG BET"; document.getElementById('cancelEditBtn').style.display = "none";
         }
