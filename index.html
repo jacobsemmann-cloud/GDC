@@ -8,8 +8,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; }
-        :root { --bg-base: #f2f2f7; --glass-bg: rgba(255, 255, 255, 0.95); --text-main: #333; --text-label: #1b4d29; --input-bg: #fff; --input-border: #e0e0e0; --panel-bg: #f8f9fa; --border-accent: #1b4d29; --win-color: #e8f5e9; --win-text: #1b4d29; --loss-color: #f8d7da; --loss-text: #721c24; }
-        body.dark-mode { --bg-base: #121212; --glass-bg: rgba(30, 30, 30, 0.95); --text-main: #e0e0e0; --text-label: #32CD32; --input-bg: #2c2c2c; --input-border: #444; --panel-bg: #1e1e1e; --border-accent: #32CD32; --win-color: rgba(50, 205, 50, 0.2); --win-text: #32CD32; --loss-color: rgba(220, 53, 69, 0.2); --loss-text: #ff6b6b; }
+        
+        :root { 
+            --bg-base: #f2f2f7; --glass-bg: rgba(255, 255, 255, 0.95); --text-main: #333; --text-label: #1b4d29; 
+            --input-bg: #fff; --input-border: #e0e0e0; --panel-bg: #f8f9fa; --border-accent: #1b4d29; 
+            --win-color: #e8f5e9; --win-text: #1b4d29; --loss-color: #f8d7da; --loss-text: #721c24; 
+        }
+        
+        body.dark-mode { 
+            --bg-base: #121212; --glass-bg: rgba(30, 30, 30, 0.95); --text-main: #e0e0e0; --text-label: #32CD32; 
+            --input-bg: #2c2c2c; --input-border: #444; --panel-bg: #1e1e1e; --border-accent: #32CD32; 
+            --win-color: rgba(50, 205, 50, 0.2); --win-text: #32CD32; --loss-color: rgba(220, 53, 69, 0.2); --loss-text: #ff6b6b; 
+        }
+        
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-base); margin: 0; padding: 10px; color: var(--text-main); min-height: 100vh; transition: background-color 0.3s ease; overflow-x: hidden; }
         
         .glass-container { background-color: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 12px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; width: 100%; margin: 0 auto; border-top: 4px solid var(--border-accent); position: relative;}
@@ -30,7 +41,7 @@
         .view-section { display: none; }
         .view-section.active { display: block; }
         
-        /* --- COMPACT FORM CSS --- */
+        /* Compact Form Elements */
         .form-group { margin-bottom: 8px; width: 100%; }
         label { display: block; font-weight: bold; margin-bottom: 3px; font-size: 12px; color: var(--text-label); }
         
@@ -50,13 +61,14 @@
         #status { text-align: center; margin-top: 10px; font-weight: bold; display: none; padding: 10px; border-radius: 6px; font-size: 14px;}
         .sticky-options { margin-top: 10px; border-top: 1px solid var(--input-border); padding-top: 10px; }
         
-        /* --- AUTOCOMPLETE COMPACT --- */
+        /* Autocomplete */
         .autocomplete-wrapper { position: relative; }
         .autocomplete-items { position: absolute; border: 2px solid var(--border-accent); border-top: none; z-index: 99; top: 100%; left: 0; right: 0; border-radius: 0 0 6px 6px; background-color: var(--glass-bg); box-shadow: 0 4px 8px rgba(0,0,0,0.3); max-height: 180px; overflow-y: auto; }
         .autocomplete-items div { padding: 10px; cursor: pointer; border-bottom: 1px solid var(--input-border); color: var(--text-main); font-size: 14px; font-weight: bold; }
         .autocomplete-items div:last-child { border-bottom: none; }
         .autocomplete-items div:hover { background-color: var(--win-color); color: var(--win-text); }
         
+        /* Dashboard Cards */
         .dash-card { background-color: var(--panel-bg); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 4px solid var(--text-label); }
         .dash-title { margin-top: 0; margin-bottom: 12px; color: var(--text-label); font-size: 15px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--input-border); padding-bottom: 5px; }
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
@@ -70,10 +82,12 @@
         .text-right { text-align: right; }
         .clickable-row { cursor: pointer; transition: background-color 0.2s; }
         .clickable-row:active { background-color: rgba(128,128,128,0.2); }
+        
         .lb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 8px; margin-bottom: 12px; }
         .lb-header h3 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .lb-select { width: auto; padding: 4px; font-size: 12px; margin: 0; background-color: var(--bg-base); color: var(--text-main); border: 1px solid var(--input-border); border-radius: 4px; font-weight: bold; min-height: 0; -webkit-appearance: auto; appearance: auto;}
         
+        /* Calendar UI */
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .cal-nav { background: transparent; border: none; color: var(--text-label); font-size: 20px; font-weight: bold; cursor: pointer; padding: 5px 10px; }
         .cal-month { font-size: 16px; font-weight: bold; color: var(--text-main); }
@@ -94,6 +108,7 @@
         .loss .pl-amt { color: var(--loss-text); }
         .loading-text { text-align: center; font-weight: bold; color: var(--text-label); margin: 20px 0; }
         
+        /* Modal UI */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);}
         .modal-content { background: var(--glass-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 450px; max-height: 80vh; overflow-y: auto; border: 2px solid var(--border-accent); box-shadow: 0 10px 40px rgba(0,0,0,0.5);}
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); padding-bottom: 10px; margin-bottom: 15px; }
@@ -106,6 +121,7 @@
     </style>
 </head>
 <body class="dark-mode">
+
     <div class="glass-container">
         
         <div class="app-header">
@@ -291,19 +307,27 @@
     </div>
 
     <script>
-        // --- UPDATED DATE LOGIC: SET TO LOCAL TIME ---
+        // --- Set Default Date to Local Timezone ---
         let today = new Date();
         document.getElementById('date').value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
         
         // YOUR EXACT GOOGLE SCRIPT URL:
-        const "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeIOm5S-PjwJloLMt-EUA66bdu6IgmL4sakY6QvuiC08nLFeQqNsNAb1jodAD-kmhk/exec"; 
         
-        let dailyPLData = {}; let rawBetsData = []; 
-        let currentMonth = new Date().getMonth(); let currentYear = new Date().getFullYear();
-        let dataFetched = false; let editingBet = null; let plChart = null; let currentChartRange = 'MONTH';
+        let dailyPLData = {}; 
+        let rawBetsData = []; 
+        let currentMonth = new Date().getMonth(); 
+        let currentYear = new Date().getFullYear();
+        let dataFetched = false; 
+        let editingBet = null; 
+        let plChart = null; 
+        let currentChartRange = 'MONTH';
 
         window.onload = function() {
-            if (localStorage.getItem('theme') === 'light') { document.body.classList.remove('dark-mode'); document.getElementById('themeBtn').textContent = 'Dark Mode'; }
+            if (localStorage.getItem('theme') === 'light') { 
+                document.body.classList.remove('dark-mode'); 
+                document.getElementById('themeBtn').textContent = 'Dark Mode'; 
+            }
             fetchMasterData(true); 
         };
 
@@ -318,33 +342,65 @@
 
         function setupAutocomplete(inp) {
             inp.addEventListener("input", function(e) {
-                let a, b, i, val = this.value; closeAllLists();
+                let a, b, i, val = this.value; 
+                closeAllLists();
                 if (!val || val.length < 3) return false;
-                a = document.createElement("DIV"); a.setAttribute("id", this.id + "autocomplete-list"); a.setAttribute("class", "autocomplete-items"); this.parentNode.appendChild(a);
-                let uniqueTeams = getUniqueEntities(); let count = 0;
+                
+                a = document.createElement("DIV"); 
+                a.setAttribute("id", this.id + "autocomplete-list"); 
+                a.setAttribute("class", "autocomplete-items"); 
+                this.parentNode.appendChild(a);
+                
+                let uniqueTeams = getUniqueEntities(); 
+                let count = 0;
+                
                 for (i = 0; i < uniqueTeams.length; i++) {
                     if (uniqueTeams[i].toUpperCase().includes(val.toUpperCase())) {
                         if (count >= 6) break; 
-                        b = document.createElement("DIV"); let matchIdx = uniqueTeams[i].toUpperCase().indexOf(val.toUpperCase());
-                        b.innerHTML = uniqueTeams[i].substring(0, matchIdx) + "<span style='color:var(--text-label);'>" + uniqueTeams[i].substring(matchIdx, matchIdx + val.length) + "</span>" + uniqueTeams[i].substring(matchIdx + val.length) + "<input type='hidden' value='" + uniqueTeams[i].replace(/'/g, "&apos;") + "'>";
-                        b.addEventListener("click", function(e) { inp.value = this.getElementsByTagName("input")[0].value; closeAllLists(); });
-                        a.appendChild(b); count++;
+                        b = document.createElement("DIV"); 
+                        let matchIdx = uniqueTeams[i].toUpperCase().indexOf(val.toUpperCase());
+                        
+                        b.innerHTML = uniqueTeams[i].substring(0, matchIdx) + 
+                                      "<span style='color:var(--text-label);'>" + 
+                                      uniqueTeams[i].substring(matchIdx, matchIdx + val.length) + 
+                                      "</span>" + 
+                                      uniqueTeams[i].substring(matchIdx + val.length) + 
+                                      "<input type='hidden' value='" + uniqueTeams[i].replace(/'/g, "&apos;") + "'>";
+                        
+                        b.addEventListener("click", function(e) { 
+                            inp.value = this.getElementsByTagName("input")[0].value; 
+                            closeAllLists(); 
+                        });
+                        a.appendChild(b); 
+                        count++;
                     }
                 }
             });
             function closeAllLists(elmnt) {
                 var x = document.getElementsByClassName("autocomplete-items");
-                for (var i = 0; i < x.length; i++) { if (elmnt != x[i] && elmnt != inp) { x[i].parentNode.removeChild(x[i]); } }
+                for (var i = 0; i < x.length; i++) { 
+                    if (elmnt != x[i] && elmnt != inp) { 
+                        x[i].parentNode.removeChild(x[i]); 
+                    } 
+                }
             }
             document.addEventListener("click", function (e) { closeAllLists(e.target); });
         }
-        setupAutocomplete(document.getElementById("team1")); setupAutocomplete(document.getElementById("team2"));
+        
+        setupAutocomplete(document.getElementById("team1")); 
+        setupAutocomplete(document.getElementById("team2"));
 
-        function forceRefresh() { document.getElementById('refreshBtn').textContent = "⏳..."; dataFetched = false; fetchMasterData(false); }
+        function forceRefresh() { 
+            document.getElementById('refreshBtn').textContent = "⏳..."; 
+            dataFetched = false; 
+            fetchMasterData(false); 
+        }
         
         function toggleTheme() {
-            document.body.classList.toggle('dark-mode'); const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light'); document.getElementById('themeBtn').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            document.body.classList.toggle('dark-mode'); 
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light'); 
+            document.getElementById('themeBtn').textContent = isDark ? 'Light Mode' : 'Dark Mode';
             if(dataFetched && document.getElementById('viewDash').classList.contains('active')) fetchMasterData(false); 
             if(dataFetched && document.getElementById('viewCal').classList.contains('active')) drawChart(); 
         }
@@ -352,31 +408,60 @@
         function switchTab(tab) {
             ['viewLog', 'viewCal', 'viewDash'].forEach(id => document.getElementById(id).classList.remove('active'));
             ['btnLog', 'btnCal', 'btnDash'].forEach(id => document.getElementById(id).classList.remove('active'));
-            if(tab === 'log') { document.getElementById('viewLog').classList.add('active'); document.getElementById('btnLog').classList.add('active'); }
-            else if (tab === 'cal') { document.getElementById('viewCal').classList.add('active'); document.getElementById('btnCal').classList.add('active'); if(!dataFetched) fetchMasterData(false); else renderCalendar(currentMonth, currentYear); }
-            else if (tab === 'dash') { document.getElementById('viewDash').classList.add('active'); document.getElementById('btnDash').classList.add('active'); if(!dataFetched) fetchMasterData(false); }
+            
+            if(tab === 'log') { 
+                document.getElementById('viewLog').classList.add('active'); 
+                document.getElementById('btnLog').classList.add('active'); 
+            } else if (tab === 'cal') { 
+                document.getElementById('viewCal').classList.add('active'); 
+                document.getElementById('btnCal').classList.add('active'); 
+                if(!dataFetched) fetchMasterData(false); 
+                else renderCalendar(currentMonth, currentYear); 
+            } else if (tab === 'dash') { 
+                document.getElementById('viewDash').classList.add('active'); 
+                document.getElementById('btnDash').classList.add('active'); 
+                if(!dataFetched) fetchMasterData(false); 
+            }
         }
 
-        function getColor(valStr) { return (!valStr) ? 'var(--text-main)' : (valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)'); }
-        function formatPL(num) { return num === 0 ? '$0.00' : (num > 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`); }
+        function getColor(valStr) { 
+            return (!valStr) ? 'var(--text-main)' : (valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)'); 
+        }
+        
+        function formatPL(num) { 
+            return num === 0 ? '$0.00' : (num > 0 ? `+$${num.toFixed(2)}` : `-$${Math.abs(num).toFixed(2)}`); 
+        }
 
         function formatDateObj(obj) {
-            let y = obj.getFullYear(); let m = String(obj.getMonth() + 1).padStart(2, '0'); let d = String(obj.getDate()).padStart(2, '0');
+            let y = obj.getFullYear(); 
+            let m = String(obj.getMonth() + 1).padStart(2, '0'); 
+            let d = String(obj.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
         }
+        
         function getDates(startStr, endStr) {
-            let dates = []; let curr = new Date(startStr + "T00:00:00"); let end = new Date(endStr + "T00:00:00");
-            while(curr <= end) { dates.push(formatDateObj(curr)); curr.setDate(curr.getDate() + 1); }
+            let dates = []; 
+            let curr = new Date(startStr + "T00:00:00"); 
+            let end = new Date(endStr + "T00:00:00");
+            while(curr <= end) { 
+                dates.push(formatDateObj(curr)); 
+                curr.setDate(curr.getDate() + 1); 
+            }
             return dates;
         }
+
         function setChartRange(range) {
             currentChartRange = range;
             ['MONTH', '7D', '30D', 'ALL'].forEach(id => {
                 let el = document.getElementById('btnChart' + id);
-                if(el) { if(id === range) el.classList.add('active'); else el.classList.remove('active'); }
+                if(el) { 
+                    if(id === range) el.classList.add('active'); 
+                    else el.classList.remove('active'); 
+                }
             });
             drawChart();
         }
+
         function drawChart() {
             if(plChart) plChart.destroy();
             let ctx = document.getElementById('plChart').getContext('2d');
@@ -387,14 +472,18 @@
                 let firstDay = new Date(currentYear, currentMonth, 1), lastDay = new Date(currentYear, currentMonth + 1, 0);
                 dates = getDates(formatDateObj(firstDay), formatDateObj(lastDay));
             } else if (currentChartRange === '7D') {
-                let startObj = new Date(); startObj.setDate(startObj.getDate() - 6); dates = getDates(formatDateObj(startObj), todayStr);
+                let startObj = new Date(); startObj.setDate(startObj.getDate() - 6); 
+                dates = getDates(formatDateObj(startObj), todayStr);
             } else if (currentChartRange === '30D') {
-                let startObj = new Date(); startObj.setDate(startObj.getDate() - 29); dates = getDates(formatDateObj(startObj), todayStr);
+                let startObj = new Date(); startObj.setDate(startObj.getDate() - 29); 
+                dates = getDates(formatDateObj(startObj), todayStr);
             } else if (currentChartRange === 'ALL') {
                 if (rawBetsData.length > 0) {
                     let earliest = rawBetsData.reduce((min, b) => b.date < min ? b.date : min, rawBetsData[0].date);
                     dates = getDates(earliest || todayStr, todayStr);
-                } else { dates = [todayStr]; }
+                } else { 
+                    dates = [todayStr]; 
+                }
             }
 
             let labels = [], data = [], cum = 0;
@@ -402,32 +491,66 @@
                 let parts = dStr.split('-');
                 labels.push(`${parts[1]}/${parts[2]}`);
                 let dailySum = 0;
-                if (filter === 'ALL') { dailySum = dailyPLData[dStr] || 0; } 
-                else { rawBetsData.forEach(b => { if (b.date === dStr && b.sport === filter) dailySum += b.pl; }); }
-                cum += dailySum; data.push(cum);
+                if (filter === 'ALL') { 
+                    dailySum = dailyPLData[dStr] || 0; 
+                } else { 
+                    rawBetsData.forEach(b => { 
+                        if (b.date === dStr && b.sport === filter) dailySum += b.pl; 
+                    }); 
+                }
+                cum += dailySum; 
+                data.push(cum);
             });
 
-            let isDk = document.body.classList.contains('dark-mode'), line = isDk?'#32CD32':'#1b4d29', grid = isDk?'#444444':'#e0e0e0', txt = isDk?'#e0e0e0':'#333333';
+            let isDk = document.body.classList.contains('dark-mode');
+            let line = isDk ? '#32CD32' : '#1b4d29';
+            let grid = isDk ? '#444444' : '#e0e0e0';
+            let txt = isDk ? '#e0e0e0' : '#333333';
+            
             plChart = new Chart(ctx, {
-                type: 'line', data: { labels: labels, datasets: [{ data: data, borderColor: line, backgroundColor: line+'33', borderWidth: 2, fill: true, tension: 0.2, pointRadius: 1 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: grid }, ticks: { color: txt, maxTicksLimit: 10 } }, y: { grid: { color: grid }, ticks: { color: txt } } } }
+                type: 'line', 
+                data: { 
+                    labels: labels, 
+                    datasets: [{ 
+                        data: data, borderColor: line, backgroundColor: line+'33', borderWidth: 2, fill: true, tension: 0.2, pointRadius: 1 
+                    }] 
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        x: { grid: { color: grid }, ticks: { color: txt, maxTicksLimit: 10 } }, 
+                        y: { grid: { color: grid }, ticks: { color: txt } } 
+                    } 
+                }
             });
         }
 
         function calcRange() {
-            let s = document.getElementById('startDate').value, e = document.getElementById('endDate').value;
+            let s = document.getElementById('startDate').value;
+            let e = document.getElementById('endDate').value;
             let filter = document.getElementById('rangeSportFilter').value;
             if(!s || !e) return;
+            
             let pl=0, wag=0, w=0, l=0, p=0;
             rawBetsData.forEach(b => {
                 if(b.date && b.date >= s && b.date <= e) {
-                    if (filter === 'ALL' || b.sport === filter) { pl+=b.pl; wag+=b.wager; if(b.pl>0)w++; else if(b.pl<0)l++; else p++; }
+                    if (filter === 'ALL' || b.sport === filter) { 
+                        pl += b.pl; 
+                        wag += b.wager; 
+                        if(b.pl > 0) w++; 
+                        else if(b.pl < 0) l++; 
+                        else p++; 
+                    }
                 }
             });
+            
             let roi = wag > 0 ? (pl/wag*100) : 0;
-            document.getElementById('rngPL').textContent = formatPL(pl); document.getElementById('rngPL').style.color = getColor(formatPL(pl));
+            document.getElementById('rngPL').textContent = formatPL(pl); 
+            document.getElementById('rngPL').style.color = getColor(formatPL(pl));
             document.getElementById('rngRec').textContent = `${w}W - ${l}L - ${p}P`;
-            document.getElementById('rngROI').textContent = (roi>0?'+':'')+roi.toFixed(2)+'%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
+            document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; 
+            document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
         function renderBetLists() {
@@ -469,8 +592,21 @@
 
         function editBet(idx) {
             editingBet = rawBetsData[idx];
-            document.getElementById('book').value = editingBet.book; document.getElementById('date').value = editingBet.date; document.getElementById('sport').value = editingBet.sport; document.getElementById('parlay').checked = editingBet.parlay; document.getElementById('betType').value = editingBet.betType; document.getElementById('team1').value = editingBet.team1; document.getElementById('team2').value = editingBet.team2; document.getElementById('details').value = editingBet.details; document.getElementById('odds').value = editingBet.odds; document.getElementById('wager').value = editingBet.wager; document.getElementById('result').value = editingBet.result;
-            document.getElementById('submitBtn').textContent = "UPDATE BET"; document.getElementById('cancelEditBtn').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('book').value = editingBet.book; 
+            document.getElementById('date').value = editingBet.date; 
+            document.getElementById('sport').value = editingBet.sport; 
+            document.getElementById('parlay').checked = editingBet.parlay; 
+            document.getElementById('betType').value = editingBet.betType; 
+            document.getElementById('team1').value = editingBet.team1; 
+            document.getElementById('team2').value = editingBet.team2; 
+            document.getElementById('details').value = editingBet.details; 
+            document.getElementById('odds').value = editingBet.odds; 
+            document.getElementById('wager').value = editingBet.wager; 
+            document.getElementById('result').value = editingBet.result;
+            
+            document.getElementById('submitBtn').textContent = "UPDATE BET"; 
+            document.getElementById('cancelEditBtn').style.display = "block"; 
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelEdit() {
@@ -480,68 +616,133 @@
             document.getElementById('date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             
             ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = "");
-            document.getElementById('parlay').checked = false; document.getElementById('submitBtn').textContent = "LOG BET"; document.getElementById('cancelEditBtn').style.display = "none";
+            document.getElementById('parlay').checked = false; 
+            
+            document.getElementById('submitBtn').textContent = "LOG BET"; 
+            document.getElementById('cancelEditBtn').style.display = "none";
         }
 
         function openModal(title, bets, isDayView) {
-            const modal = document.getElementById('betsModal'); document.getElementById('modalTitle').textContent = title; const list = document.getElementById('modalBetsList');
-            if (bets.length === 0) { list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged.</p>'; modal.style.display = 'flex'; return; }
+            const modal = document.getElementById('betsModal'); 
+            document.getElementById('modalTitle').textContent = title; 
+            const list = document.getElementById('modalBetsList');
+            
+            if (bets.length === 0) { 
+                list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged.</p>'; 
+                modal.style.display = 'flex'; 
+                return; 
+            }
+            
             let html = '';
             if (isDayView) {
-                let sportSummary = {}; bets.forEach(b => { sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; });
+                let sportSummary = {}; 
+                bets.forEach(b => { sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; });
+                
                 html += '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border);">';
-                for (const [s, pl] of Object.entries(sportSummary)) { let plText = formatPL(pl), borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">${s}: <span style="color:${getColor(plText)}">${plText}</span></div>`; }
+                for (const [s, pl] of Object.entries(sportSummary)) { 
+                    let plText = formatPL(pl), borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); 
+                    html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">${s}: <span style="color:${getColor(plText)}">${plText}</span></div>`; 
+                }
                 html += '</div>';
             } else {
-                let totalPL = 0, w=0, l=0, p=0; bets.forEach(b => { totalPL += b.pl; if(b.pl>0)w++; else if(b.pl<0)l++; else p++; });
+                let totalPL = 0, w=0, l=0, p=0; 
+                bets.forEach(b => { totalPL += b.pl; if(b.pl>0)w++; else if(b.pl<0)l++; else p++; });
                 let sumColor = totalPL > 0 ? 'var(--win-text)' : (totalPL < 0 ? 'var(--loss-text)' : 'var(--text-main)');
                 html += `<div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border); font-size: 14px;"><div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><strong>Record:</strong> <span>${w}W - ${l}L - ${p}P</span></div><div style="display:flex; justify-content:space-between;"><strong>Net Profit:</strong> <span style="color:${sumColor}; font-weight:bold;">${formatPL(totalPL)}</span></div></div>`;
             }
+            
             bets.forEach(b => {
-                let odds = b.odds > 0 ? `+${b.odds}` : b.odds; let plText = formatPL(b.pl); let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); let headerDStr = isDayView ? b.sport : `${(b.date||'').substring(5).replace('-','/')} | ${b.sport}`;
+                let odds = b.odds > 0 ? `+${b.odds}` : b.odds; 
+                let plText = formatPL(b.pl); 
+                let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); 
+                let headerDStr = isDayView ? b.sport : `${(b.date||'').substring(5).replace('-','/')} | ${b.sport}`;
+                
                 html += `<div class="bet-card" style="border-left-color: ${borderCol}"><div class="bet-card-header"><span>${headerDStr}</span><span>${odds}</span></div><div class="bet-card-details" style="font-weight:bold; color:var(--text-label);">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div><div class="bet-card-details">${b.details || 'Moneyline'}</div><div class="bet-card-footer"><span>Wager: $${b.wager.toFixed(2)}</span><span style="color:${getColor(plText)}">${plText}</span></div></div>`;
             });
-            list.innerHTML = html; modal.style.display = 'flex';
+            list.innerHTML = html; 
+            modal.style.display = 'flex';
         }
 
         function showDayBets(dateStr) {
-            const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d);
+            const bets = rawBetsData.filter(b => b.date === dateStr); 
+            const [y, m, d] = dateStr.split('-'); 
+            const dObj = new Date(y, m-1, d);
             openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true);
         }
 
         function showEntityBets(entity) {
-            const bets = rawBetsData.filter(b => b.team1 === entity || b.team2 === entity).sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(entity + " History", bets, false);
+            const bets = rawBetsData.filter(b => b.team1 === entity || b.team2 === entity).sort((a, b) => new Date(b.date) - new Date(a.date)); 
+            openModal(entity + " History", bets, false);
         }
 
         function showSpecialtyBets(type) {
-            let bets = [], title = ""; const goalKws = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
-            if (type === 'ENG') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG')); title = "ENG Tracker History"; } 
-            else if (type === 'GOAL') { bets = rawBetsData.filter(b => b.details && goalKws.some(kw => b.details.toUpperCase().includes(kw))); title = "Goal Props History"; }
-            bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(title, bets, false);
+            let bets = [], title = ""; 
+            const goalKws = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
+            
+            if (type === 'ENG') { 
+                bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG')); 
+                title = "ENG Tracker History"; 
+            } else if (type === 'GOAL') { 
+                bets = rawBetsData.filter(b => b.details && goalKws.some(kw => b.details.toUpperCase().includes(kw))); 
+                title = "Goal Props History"; 
+            }
+            
+            bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); 
+            openModal(title, bets, false);
         }
 
-        function closeModal() { document.getElementById('betsModal').style.display = 'none'; }
-        window.onclick = function(e) { if (e.target == document.getElementById('betsModal')) closeModal(); }
+        function closeModal() { 
+            document.getElementById('betsModal').style.display = 'none'; 
+        }
+        
+        window.onclick = function(e) { 
+            if (e.target == document.getElementById('betsModal')) closeModal(); 
+        }
 
         function buildPivotTable(dataArray) {
             if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
-            let html = '<div class="table-wrapper"><table><tr>'; let colCount = 0; dataArray[0].forEach(h => { if (h !== "") { html += `<th>${h}</th>`; colCount++; } }); html += '</tr>';
+            let html = '<div class="table-wrapper"><table><tr>'; 
+            let colCount = 0; 
+            dataArray[0].forEach(h => { if (h !== "") { html += `<th>${h}</th>`; colCount++; } }); 
+            html += '</tr>';
+            
             for (let i = 1; i < dataArray.length; i++) {
-                html += '<tr>'; for (let j = 0; j < colCount; j++) { let cell = dataArray[i][j] || "", style = (j > 0 && cell !== "") ? ` class="text-right" style="color:${getColor(cell)}; font-weight:bold;"` : (j > 0 ? ' class="text-right"' : ''); html += `<td${style}>${cell}</td>`; } html += '</tr>';
+                html += '<tr>'; 
+                for (let j = 0; j < colCount; j++) { 
+                    let cell = dataArray[i][j] || "";
+                    let style = (j > 0 && cell !== "") ? ` class="text-right" style="color:${getColor(cell)}; font-weight:bold;"` : (j > 0 ? ' class="text-right"' : ''); 
+                    html += `<td${style}>${cell}</td>`; 
+                } 
+                html += '</tr>';
             }
-            html += '</table></div>'; return html;
+            html += '</table></div>'; 
+            return html;
         }
 
         function renderLeaderboard() {
-            const filter = document.getElementById('lbSportFilter').value; let entities = {};
+            const filter = document.getElementById('lbSportFilter').value; 
+            let entities = {};
+            
             rawBetsData.forEach(bet => {
                 if (filter !== 'ALL' && bet.sport !== filter) return;
-                ['team1', 'team2'].forEach(t => { let team = bet[t]; if (team && team.trim() !== "") { if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; entities[team].bets += 1; entities[team].pl += bet.pl; } });
+                ['team1', 'team2'].forEach(t => { 
+                    let team = bet[t]; 
+                    if (team && team.trim() !== "") { 
+                        if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; 
+                        entities[team].bets += 1; 
+                        entities[team].pl += bet.pl; 
+                    } 
+                });
             });
+            
             let sorted = Object.keys(entities).map(k => [k, entities[k].bets, entities[k].pl]).sort((a, b) => b[2] - a[2]);
             if (sorted.length === 0) { document.getElementById('tableMostProf').innerHTML = '<p style="font-size:13px;">No bets logged.</p>'; return; }
+            
             let html = '<div class="table-wrapper"><table><tr><th>Player/Team</th><th class="text-right">Bets</th><th class="text-right">P/L</th></tr>';
-            for (let i = 0; i < sorted.length; i++) { let entity = sorted[i][0], bets = sorted[i][1], plText = formatPL(sorted[i][2]); html += `<tr class="clickable-row" onclick="showEntityBets('${entity.replace(/'/g, "\\'")}')"><td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`; }
+            for (let i = 0; i < sorted.length; i++) { 
+                let entity = sorted[i][0], bets = sorted[i][1], plText = formatPL(sorted[i][2]); 
+                html += `<tr class="clickable-row" onclick="showEntityBets('${entity.replace(/'/g, "\\'")}')"><td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`; 
+            }
             document.getElementById('tableMostProf').innerHTML = html + '</table></div>';
         }
 
@@ -549,89 +750,235 @@
             let bestDay = null, bestDayVal = -Infinity, weeklyTotals = {};
             for (const [dateStr, pl] of Object.entries(dailyPLData)) {
                 if (pl > bestDayVal) { bestDayVal = pl; bestDay = dateStr; }
-                let d = new Date(dateStr + "T00:00:00"), day = d.getDay(), sun = new Date(d); sun.setDate(d.getDate() - day);
-                let weekKey = `${sun.getFullYear()}-${String(sun.getMonth()+1).padStart(2,'0')}-${String(sun.getDate()).padStart(2,'0')}`; weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + pl;
+                let d = new Date(dateStr + "T00:00:00"), day = d.getDay(), sun = new Date(d); 
+                sun.setDate(d.getDate() - day);
+                let weekKey = `${sun.getFullYear()}-${String(sun.getMonth()+1).padStart(2,'0')}-${String(sun.getDate()).padStart(2,'0')}`; 
+                weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + pl;
             }
+            
             let bestWeek = null, bestWeekVal = -Infinity;
-            for (const [w, pl] of Object.entries(weeklyTotals)) { if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = w; } }
-            document.getElementById('hofBestDay').textContent = bestDayVal > 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; document.getElementById('hofBestDay').style.color = bestDayVal > 0 ? getColor(formatPL(bestDayVal)) : ''; document.getElementById('hofBestWeek').textContent = bestWeekVal > 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; document.getElementById('hofBestWeek').style.color = bestWeekVal > 0 ? getColor(formatPL(bestWeekVal)) : '';
+            for (const [w, pl] of Object.entries(weeklyTotals)) { 
+                if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = w; } 
+            }
+            
+            document.getElementById('hofBestDay').textContent = bestDayVal > 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; 
+            document.getElementById('hofBestDay').style.color = bestDayVal > 0 ? getColor(formatPL(bestDayVal)) : ''; 
+            document.getElementById('hofBestWeek').textContent = bestWeekVal > 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; 
+            document.getElementById('hofBestWeek').style.color = bestWeekVal > 0 ? getColor(formatPL(bestWeekVal)) : '';
+            
             let monsters = rawBetsData.filter(b => b.pl >= 300).sort((a,b) => b.pl - a.pl);
-            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } 
-            else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${m.details}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
+            if (monsters.length === 0) { 
+                document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; 
+            } else { 
+                let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; 
+                monsters.forEach(m => { 
+                    html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${m.details}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; 
+                }); 
+                document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; 
+            }
         }
 
         function updateCalendarSummaries(month, year) {
-            let weekPl = 0, monthPl = 0, ytdPl = 0; const today = new Date(), dayOfWeek = today.getDay();
-            for(let i=0; i<7; i++) { let d = new Date(today); d.setDate(today.getDate() - dayOfWeek + i); let dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; if(dailyPLData[dStr]) weekPl += dailyPLData[dStr]; }
+            let weekPl = 0, monthPl = 0, ytdPl = 0; 
+            const today = new Date(), dayOfWeek = today.getDay();
+            
+            for(let i=0; i<7; i++) { 
+                let d = new Date(today); d.setDate(today.getDate() - dayOfWeek + i); 
+                let dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
+                if(dailyPLData[dStr]) weekPl += dailyPLData[dStr]; 
+            }
+            
             const viewMonthPrefix = `${year}-${String(month+1).padStart(2,'0')}`, viewYearPrefix = `${year}-`;
-            for (const [dateStr, pl] of Object.entries(dailyPLData)) { if (dateStr.startsWith(viewYearPrefix)) { ytdPl += pl; if (dateStr.startsWith(viewMonthPrefix)) monthPl += pl; } }
-            document.getElementById('calWeekPL').textContent = formatPL(weekPl); document.getElementById('calWeekPL').style.color = getColor(formatPL(weekPl)); document.getElementById('calMonthPL').textContent = formatPL(monthPl); document.getElementById('calMonthPL').style.color = getColor(formatPL(monthPl)); document.getElementById('calYtdPL').textContent = formatPL(ytdPl); document.getElementById('calYtdPL').style.color = getColor(formatPL(ytdPl));
+            for (const [dateStr, pl] of Object.entries(dailyPLData)) { 
+                if (dateStr.startsWith(viewYearPrefix)) { 
+                    ytdPl += pl; 
+                    if (dateStr.startsWith(viewMonthPrefix)) monthPl += pl; 
+                } 
+            }
+            
+            document.getElementById('calWeekPL').textContent = formatPL(weekPl); 
+            document.getElementById('calWeekPL').style.color = getColor(formatPL(weekPl)); 
+            document.getElementById('calMonthPL').textContent = formatPL(monthPl); 
+            document.getElementById('calMonthPL').style.color = getColor(formatPL(monthPl)); 
+            document.getElementById('calYtdPL').textContent = formatPL(ytdPl); 
+            document.getElementById('calYtdPL').style.color = getColor(formatPL(ytdPl));
         }
 
         function fetchMasterData(isSilent = false) {
-            if (!isSilent) { document.getElementById('calLoader').style.display = 'block'; document.getElementById('dashLoader').style.display = 'block'; document.getElementById('calContainer').style.display = 'none'; document.getElementById('dashContainer').style.display = 'none'; }
-            fetch(WEB_APP_URL).then(res => res.json()).then(data => {
+            if (!isSilent) { 
+                document.getElementById('calLoader').style.display = 'block'; 
+                document.getElementById('dashLoader').style.display = 'block'; 
+                document.getElementById('calContainer').style.display = 'none'; 
+                document.getElementById('dashContainer').style.display = 'none'; 
+            }
+            
+            fetch(WEB_APP_URL)
+            .then(res => res.json())
+            .then(data => {
                 document.getElementById('refreshBtn').textContent = "⟳ Refresh";
                 if (data.status === "success") {
-                    document.getElementById('valPL').textContent = data.pl; document.getElementById('valPL').style.color = getColor(data.pl); document.getElementById('valWagered').textContent = data.wagered; document.getElementById('valROI').textContent = data.roi; document.getElementById('valRecord').textContent = data.record;
-                    document.getElementById('valStrPL').textContent = data.straightPL; document.getElementById('valStrPL').style.color = getColor(data.straightPL); document.getElementById('valStrRec').textContent = data.straightRec;
-                    document.getElementById('valParPL').textContent = data.parlayPL; document.getElementById('valParPL').style.color = getColor(data.parlayPL); document.getElementById('valParRec').textContent = data.parlayRec;
-                    let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; }); document.getElementById('tableBooks').innerHTML = bHtml + '</table>';
-                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; }); document.getElementById('tableSports').innerHTML = sHtml + '</table>';
-                    document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
+                    document.getElementById('valPL').textContent = data.pl; 
+                    document.getElementById('valPL').style.color = getColor(data.pl); 
+                    document.getElementById('valWagered').textContent = data.wagered; 
+                    document.getElementById('valROI').textContent = data.roi; 
+                    document.getElementById('valRecord').textContent = data.record;
+                    
+                    document.getElementById('valStrPL').textContent = data.straightPL; 
+                    document.getElementById('valStrPL').style.color = getColor(data.straightPL); 
+                    document.getElementById('valStrRec').textContent = data.straightRec;
+                    
+                    document.getElementById('valParPL').textContent = data.parlayPL; 
+                    document.getElementById('valParPL').style.color = getColor(data.parlayPL); 
+                    document.getElementById('valParRec').textContent = data.parlayRec;
+                    
+                    let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; 
+                    data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; }); 
+                    document.getElementById('tableBooks').innerHTML = bHtml + '</table>';
+                    
+                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; 
+                    data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; }); 
+                    document.getElementById('tableSports').innerHTML = sHtml + '</table>';
+                    
+                    document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); 
+                    document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
 
-                    rawBetsData = data.rawBets || []; let engPL=0, engWagered=0, engW=0, engL=0, engP=0; let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0;
+                    rawBetsData = data.rawBets || []; 
+                    let engPL=0, engWagered=0, engW=0, engL=0, engP=0; 
+                    let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0;
                     const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
+                    
                     rawBetsData.forEach(bet => {
-                        if (bet.details) { let dUp = bet.details.toUpperCase();
-                            if (dUp.includes('ENG')) { engPL += bet.pl; engWagered += bet.wager; if (bet.pl>0) engW++; else if (bet.pl<0) engL++; else engP++; }
-                            if (goalKeywords.some(kw => dUp.includes(kw))) { goalPL += bet.pl; goalWagered += bet.wager; if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; }
+                        if (bet.details) { 
+                            let dUp = bet.details.toUpperCase();
+                            if (dUp.includes('ENG')) { 
+                                engPL += bet.pl; engWagered += bet.wager; 
+                                if (bet.pl>0) engW++; else if (bet.pl<0) engL++; else engP++; 
+                            }
+                            if (goalKeywords.some(kw => dUp.includes(kw))) { 
+                                goalPL += bet.pl; goalWagered += bet.wager; 
+                                if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; 
+                            }
                         }
                     });
                     
-                    let engROIVal = engWagered > 0 ? (engPL / engWagered * 100) : 0; document.getElementById('valEngPL').textContent = formatPL(engPL); document.getElementById('valEngPL').style.color = getColor(formatPL(engPL)); document.getElementById('valEngRecord').textContent = `${engW}W - ${engL}L - ${engP}P`; document.getElementById('valEngROI').textContent = (engROIVal > 0 ? '+' : '') + engROIVal.toFixed(2) + '%'; document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));
-                    let goalROIVal = goalWagered > 0 ? (goalPL / goalWagered * 100) : 0; document.getElementById('valGoalPL').textContent = formatPL(goalPL); document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL)); document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
+                    let engROIVal = engWagered > 0 ? (engPL / engWagered * 100) : 0; 
+                    document.getElementById('valEngPL').textContent = formatPL(engPL); 
+                    document.getElementById('valEngPL').style.color = getColor(formatPL(engPL)); 
+                    document.getElementById('valEngRecord').textContent = `${engW}W - ${engL}L - ${engP}P`; 
+                    document.getElementById('valEngROI').textContent = (engROIVal > 0 ? '+' : '') + engROIVal.toFixed(2) + '%'; 
+                    document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));
+                    
+                    let goalROIVal = goalWagered > 0 ? (goalPL / goalWagered * 100) : 0; 
+                    document.getElementById('valGoalPL').textContent = formatPL(goalPL); 
+                    document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL)); 
+                    document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; 
+                    document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; 
+                    document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
 
-                    renderLeaderboard(); renderBetLists(); dailyPLData = data.dailyData || {}; dataFetched = true;
-                    if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
+                    renderLeaderboard(); 
+                    renderBetLists(); 
+                    dailyPLData = data.dailyData || {}; 
+                    dataFetched = true;
+                    
+                    if (!isSilent) { 
+                        document.getElementById('calLoader').style.display = 'none'; 
+                        document.getElementById('dashLoader').style.display = 'none'; 
+                        document.getElementById('calContainer').style.display = 'block'; 
+                        document.getElementById('dashContainer').style.display = 'block'; 
+                        if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); 
+                    }
                 }
             }).catch(e => {
-                document.getElementById('refreshBtn').textContent = "⟳ Refresh"; if(!isSilent) alert("Error reading data. Check script deployment.");
-                document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block';
+                document.getElementById('refreshBtn').textContent = "⟳ Refresh"; 
+                if(!isSilent) alert("Error reading data. Check script deployment.");
+                
+                document.getElementById('calLoader').style.display = 'none'; 
+                document.getElementById('dashLoader').style.display = 'none'; 
+                document.getElementById('calContainer').style.display = 'block'; 
+                document.getElementById('dashContainer').style.display = 'block';
             });
         }
 
-        function changeMonth(dir) { currentMonth += dir; if(currentMonth > 11) { currentMonth = 0; currentYear++; } if(currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentMonth, currentYear); }
+        function changeMonth(dir) { 
+            currentMonth += dir; 
+            if(currentMonth > 11) { currentMonth = 0; currentYear++; } 
+            if(currentMonth < 0) { currentMonth = 11; currentYear--; } 
+            renderCalendar(currentMonth, currentYear); 
+        }
 
         function renderCalendar(month, year) {
-            const grid = document.getElementById('calendarGrid'); const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`; grid.innerHTML = '';
-            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const grid = document.getElementById('calendarGrid'); 
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`; 
+            grid.innerHTML = '';
+            
+            const firstDay = new Date(year, month, 1).getDay(); 
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
             ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { grid.innerHTML += `<div class="day-name">${d}</div>`; });
             for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="day-cell empty"></div>`; }
+            
             for (let i = 1; i <= daysInMonth; i++) {
-                const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; let pl = dailyPLData[dStr] || 0;
-                let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`); let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
+                const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; 
+                let pl = dailyPLData[dStr] || 0;
+                let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`); 
+                let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
+                
                 grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
             }
-            updateCalendarSummaries(month, year); renderHallOfFame(); 
+            
+            updateCalendarSummaries(month, year); 
+            renderHallOfFame(); 
             setChartRange('MONTH');
         }
 
         function submitBet() {
-            const btn = document.getElementById('submitBtn'), statusDiv = document.getElementById('status'), keepSlip = document.getElementById('keepSlip').checked;
-            const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: document.getElementById('parlay').checked, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: document.getElementById('details').value, odds: parseFloat(document.getElementById('odds').value), wager: parseFloat(document.getElementById('wager').value), result: document.getElementById('result').value };
-            if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) { statusDiv.textContent = "Fill Team 1, Odds, and Wager."; statusDiv.className = "error"; statusDiv.style.display = "block"; return; }
+            const btn = document.getElementById('submitBtn');
+            const statusDiv = document.getElementById('status');
+            const keepSlip = document.getElementById('keepSlip').checked;
+            
+            const payload = { 
+                book: document.getElementById('book').value, 
+                date: document.getElementById('date').value, 
+                sport: document.getElementById('sport').value, 
+                parlay: document.getElementById('parlay').checked, 
+                betType: document.getElementById('betType').value, 
+                team1: document.getElementById('team1').value, 
+                team2: document.getElementById('team2').value, 
+                details: document.getElementById('details').value, 
+                odds: parseFloat(document.getElementById('odds').value), 
+                wager: parseFloat(document.getElementById('wager').value), 
+                result: document.getElementById('result').value 
+            };
+            
+            if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) { 
+                statusDiv.textContent = "Fill Team 1, Odds, and Wager."; 
+                statusDiv.className = "error"; 
+                statusDiv.style.display = "block"; 
+                return; 
+            }
+            
             let finalData = editingBet ? { action: "edit", old: editingBet, new: payload } : { action: "log", ...payload };
 
-            btn.disabled = true; btn.textContent = "SENDING...";
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) }).then(res => res.json()).then(data => {
+            btn.disabled = true; 
+            btn.textContent = "SENDING...";
+            
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) })
+            .then(res => res.json())
+            .then(data => {
                 if (data.status === "success") {
-                    statusDiv.textContent = editingBet ? "Bet Updated!" : "Bet Logged!"; statusDiv.className = "success";
+                    statusDiv.textContent = editingBet ? "Bet Updated!" : "Bet Logged!"; 
+                    statusDiv.className = "success";
                     if (editingBet || !keepSlip) { cancelEdit(); }
-                    dataFetched = false; fetchMasterData(true);
-                } else { statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error"; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; }
-                statusDiv.style.display = "block"; btn.disabled = false; 
+                    dataFetched = false; 
+                    fetchMasterData(true);
+                } else { 
+                    statusDiv.textContent = "Error: " + data.message; 
+                    statusDiv.className = "error"; 
+                    btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; 
+                }
+                statusDiv.style.display = "block"; 
+                btn.disabled = false; 
             });
         }
     </script>
