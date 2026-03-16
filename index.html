@@ -344,7 +344,7 @@
             checkGeminiKey(); // Check for AI Key on load
         };
 
-        // --- NEW GEMINI AI LOGIC ---
+        // --- NEW GEMINI AI LOGIC (UPDATED FOR GEMINI 2.5) ---
         function saveGeminiKey() {
             const key = document.getElementById('geminiKeyInput').value.trim();
             if (key) {
@@ -385,7 +385,8 @@
             const prompt = `Act as an expert sports betting analyst. I am giving you my recent betting history. \n\n${recentBets.join('\n')}\n\nAnalyze my performance. Tell me what sport or bet type I am best at, where I am losing money, and give me 2 actionable, blunt pieces of advice to improve my ROI. Keep it under 3 paragraphs. Do not use asterisks or markdown formatting.`;
             
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                // UPDATED MODEL VERSION HERE: gemini-2.5-flash
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -896,7 +897,7 @@
                 try {
                     return JSON.parse(text);
                 } catch (e) {
-                    throw new Error("SAFARI ITP BLOCK: Google returned HTML instead of data. Make sure deployment is set exactly to 'Anyone' (NOT 'Anyone with a Google Account'). Preview: " + text.substring(0, 80));
+                    throw new Error("SAFARI ITP BLOCK: Google returned HTML instead of data. Make sure deployment is set exactly to 'Anyone' (NOT 'Anyone with a Google Account').");
                 }
             })
             .then(data => {
