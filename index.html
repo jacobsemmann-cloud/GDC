@@ -260,7 +260,7 @@
                     <h3 class="dash-title" style="color: #007bff;">💬 Chat With Your Data</h3>
                     <div id="dataChatControls">
                         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                            <input type="text" id="chatQuestion" placeholder="e.g. What's my ROI on NFL totals?" style="flex: 1; min-height: 36px; padding: 8px; font-size: 13px;">
+                            <input type="text" id="chatQuestion" placeholder="e.g. What's my ROI on NBA Unders?" style="flex: 1; min-height: 36px; padding: 8px; font-size: 13px;">
                             <button class="btn-primary" id="btnChatSend" onclick="runDataChat()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #007bff;">Ask</button>
                         </div>
                         <div id="chatResponse" style="font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
@@ -393,7 +393,8 @@
             resDiv.style.display = "block";
             resDiv.innerHTML = "<i>Crunching the numbers...</i>";
             
-            const recentBets = rawBetsData.slice(0, 200).map(b => `${b.date} | ${b.sport} | ${b.betType} | $${b.wager} | PL: ${b.pl}`);
+            // Added details field to the prompt map string
+            const recentBets = rawBetsData.slice(0, 200).map(b => `${b.date} | ${b.sport} | ${b.betType} | Details: ${b.details || 'None'} | $${b.wager} | PL: ${b.pl}`);
             const prompt = `Act as an expert sports betting analyst. I am giving you my recent betting history. \n\n${recentBets.join('\n')}\n\nAnalyze my performance. Tell me what sport or bet type I am best at, where I am losing money, and give me 2 actionable, blunt pieces of advice to improve my ROI. Keep it under 3 paragraphs. Do not use asterisks or markdown formatting.`;
             
             try {
@@ -418,7 +419,7 @@
             btn.disabled = false;
         }
 
-        // --- NEW: CHAT WITH YOUR DATA LOGIC ---
+        // --- CHAT WITH YOUR DATA LOGIC ---
         async function runDataChat() {
             const key = localStorage.getItem('geminiKey');
             if (!key) {
@@ -437,10 +438,11 @@
             resDiv.style.display = "block";
             resDiv.innerHTML = "<i>Searching your database...</i>";
 
-            const betData = rawBetsData.map(b => `${b.date} | ${b.book} | ${b.sport} | ${b.betType} | ${b.team1} ${b.team2?'vs '+b.team2:''} | Wager: $${b.wager} | Odds: ${b.odds} | PL: ${b.pl} | Res: ${b.result}`);
+            // Added details field to the prompt map string
+            const betData = rawBetsData.map(b => `${b.date} | ${b.book} | ${b.sport} | ${b.betType} | ${b.team1} ${b.team2?'vs '+b.team2:''} | Details: ${b.details || 'None'} | Wager: $${b.wager} | Odds: ${b.odds} | PL: ${b.pl} | Res: ${b.result}`);
 
             const prompt = `Act as an expert SQL data analyst for my personal sports betting database. 
-            Here is my raw betting data (Date | Book | Sport | Bet Type | Teams | Wager | Odds | Profit/Loss | Result):
+            Here is my raw betting data (Date | Book | Sport | Bet Type | Teams | Details | Wager | Odds | Profit/Loss | Result):
             ${betData.join('\n')}
             
             User Question: "${question}"
@@ -718,6 +720,7 @@
                 let card = `<div class="bet-card clickable-row" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
                     <div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;"><span>${dStr} | ${b.book} | ${b.sport}</span><span>${oddsText}</span></div>
                     <div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div>
+                    <div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">${b.details || ''}</div>
                     <div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;"><span>$${b.wager.toFixed(2)}</span><span style="color:${plColor}; font-weight:bold;">${resText}</span></div>
                 </div>`;
                 
