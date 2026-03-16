@@ -256,6 +256,17 @@
                     <div id="aiResponse" style="margin-top: 15px; font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
                 </div>
 
+                <div class="dash-card" style="border-left-color: #007bff;">
+                    <h3 class="dash-title" style="color: #007bff;">💬 Chat With Your Data</h3>
+                    <div id="dataChatControls">
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <input type="text" id="chatQuestion" placeholder="e.g. What's my ROI on NFL totals?" style="flex: 1; min-height: 36px; padding: 8px; font-size: 13px;">
+                            <button class="btn-primary" id="btnChatSend" onclick="runDataChat()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #007bff;">Ask</button>
+                        </div>
+                        <div id="chatResponse" style="font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
+                    </div>
+                </div>
+
                 <div class="dash-card">
                     <h3 class="dash-title">Overall</h3>
                     <div class="stat-row"><span class="stat-label">Total P/L:</span><span class="stat-value" id="valPL">--</span></div>
@@ -341,10 +352,10 @@
                 document.getElementById('themeBtn').textContent = 'Dark Mode'; 
             }
             fetchMasterData(true); 
-            checkGeminiKey(); // Check for AI Key on load
+            checkGeminiKey(); 
         };
 
-        // --- NEW GEMINI AI LOGIC (UPDATED FOR GEMINI 2.5) ---
+        // --- GEMINI AI ANALYST LOGIC ---
         function saveGeminiKey() {
             const key = document.getElementById('geminiKeyInput').value.trim();
             if (key) {
@@ -369,7 +380,10 @@
 
         async function runAIAnalysis() {
             const key = localStorage.getItem('geminiKey');
-            if (!key) return;
+            if (!key) {
+                alert("Please save your Gemini API Key first!");
+                return;
+            }
             
             const btn = document.getElementById('btnAnalyze');
             const resDiv = document.getElementById('aiResponse');
@@ -379,13 +393,10 @@
             resDiv.style.display = "block";
             resDiv.innerHTML = "<i>Crunching the numbers...</i>";
             
-            // Format recent data to save tokens (Last 200 bets)
             const recentBets = rawBetsData.slice(0, 200).map(b => `${b.date} | ${b.sport} | ${b.betType} | $${b.wager} | PL: ${b.pl}`);
-            
             const prompt = `Act as an expert sports betting analyst. I am giving you my recent betting history. \n\n${recentBets.join('\n')}\n\nAnalyze my performance. Tell me what sport or bet type I am best at, where I am losing money, and give me 2 actionable, blunt pieces of advice to improve my ROI. Keep it under 3 paragraphs. Do not use asterisks or markdown formatting.`;
             
             try {
-                // UPDATED MODEL VERSION HERE: gemini-2.5-flash
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -404,6 +415,58 @@
             }
             
             btn.textContent = "🧠 ANALYZE MY BETS";
+            btn.disabled = false;
+        }
+
+        // --- NEW: CHAT WITH YOUR DATA LOGIC ---
+        async function runDataChat() {
+            const key = localStorage.getItem('geminiKey');
+            if (!key) {
+                alert("Please save your Gemini API Key in the Analyst card above first!");
+                return;
+            }
+
+            const question = document.getElementById('chatQuestion').value.trim();
+            if (!question) return;
+
+            const btn = document.getElementById('btnChatSend');
+            const resDiv = document.getElementById('chatResponse');
+
+            btn.textContent = "⏳...";
+            btn.disabled = true;
+            resDiv.style.display = "block";
+            resDiv.innerHTML = "<i>Searching your database...</i>";
+
+            const betData = rawBetsData.map(b => `${b.date} | ${b.book} | ${b.sport} | ${b.betType} | ${b.team1} ${b.team2?'vs '+b.team2:''} | Wager: $${b.wager} | Odds: ${b.odds} | PL: ${b.pl} | Res: ${b.result}`);
+
+            const prompt = `Act as an expert SQL data analyst for my personal sports betting database. 
+            Here is my raw betting data (Date | Book | Sport | Bet Type | Teams | Wager | Odds | Profit/Loss | Result):
+            ${betData.join('\n')}
+            
+            User Question: "${question}"
+            
+            Analyze the data and answer the question accurately based ONLY on the provided data. Keep your answer brief, direct, and conversational. Do not use asterisks or markdown formatting.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+
+                const aiText = data.candidates[0].content.parts[0].text;
+                resDiv.innerHTML = `<strong>Q: ${question}</strong><br><br>${aiText.replace(/\n/g, '<br>')}`;
+                document.getElementById('chatQuestion').value = '';
+            } catch (err) {
+                resDiv.innerHTML = `<span style="color:var(--loss-text)">Error connecting to Gemini: ${err.message}</span>`;
+            }
+
+            btn.textContent = "Ask";
             btn.disabled = false;
         }
         // ---------------------------
@@ -897,7 +960,7 @@
                 try {
                     return JSON.parse(text);
                 } catch (e) {
-                    throw new Error("SAFARI ITP BLOCK: Google returned HTML instead of data. Make sure deployment is set exactly to 'Anyone' (NOT 'Anyone with a Google Account').");
+                    throw new Error("SAFARI ITP BLOCK: Google returned HTML instead of data. Make sure deployment is set exactly to 'Anyone' (NOT 'Anyone with a Google Account'). Preview: " + text.substring(0, 80));
                 }
             })
             .then(data => {
