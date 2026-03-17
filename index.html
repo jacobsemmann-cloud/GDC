@@ -55,7 +55,7 @@
         .checkbox-group input { margin-right: 8px; width: 18px; height: 18px; accent-color: #32CD32; -webkit-appearance: checkbox; appearance: checkbox;}
         .checkbox-group label { margin-bottom: 0; font-size: 14px; color: var(--text-main);}
         
-        .btn-primary { width: 100%; padding: 12px; background-color: #1b4d29; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-primary { width: 100%; padding: 12px; background-color: #1b4d29; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
         body.dark-mode .btn-primary { background-color: #32CD32; color: #000; }
         #status { text-align: center; margin-top: 10px; font-weight: bold; display: none; padding: 10px; border-radius: 6px; font-size: 14px;}
         .sticky-options { margin-top: 10px; border-top: 1px solid var(--input-border); padding-top: 10px; }
@@ -291,11 +291,17 @@
                         <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valGoalRecord">--</span></div>
                         <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valGoalROI">--</span></div>
                     </div>
-                    <div class="clickable-row" onclick="showSpecialtyBets('ENG')" style="padding: 8px 6px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
+                    <div class="clickable-row" onclick="showSpecialtyBets('ENG')" style="padding: 8px 6px; margin-bottom: 5px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
                         <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Empty Net Goals <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
                         <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valEngPL">--</span></div>
                         <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valEngRecord">--</span></div>
                         <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valEngROI">--</span></div>
+                    </div>
+                    <div class="clickable-row" onclick="showSpecialtyBets('NCAAT')" style="padding: 8px 6px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
+                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">March Madness <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
+                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valNcaatPL">--</span></div>
+                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valNcaatRecord">--</span></div>
+                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valNcaatROI">--</span></div>
                     </div>
                 </div>
 
@@ -393,7 +399,6 @@
             resDiv.style.display = "block";
             resDiv.innerHTML = "<i>Crunching the numbers...</i>";
             
-            // Added details field to the prompt map string
             const recentBets = rawBetsData.slice(0, 200).map(b => `${b.date} | ${b.sport} | ${b.betType} | Details: ${b.details || 'None'} | $${b.wager} | PL: ${b.pl}`);
             const prompt = `Act as an expert sports betting analyst. I am giving you my recent betting history. \n\n${recentBets.join('\n')}\n\nAnalyze my performance. Tell me what sport or bet type I am best at, where I am losing money, and give me 2 actionable, blunt pieces of advice to improve my ROI. Keep it under 3 paragraphs. Do not use asterisks or markdown formatting.`;
             
@@ -438,7 +443,6 @@
             resDiv.style.display = "block";
             resDiv.innerHTML = "<i>Searching your database...</i>";
 
-            // Added details field to the prompt map string
             const betData = rawBetsData.map(b => `${b.date} | ${b.book} | ${b.sport} | ${b.betType} | ${b.team1} ${b.team2?'vs '+b.team2:''} | Details: ${b.details || 'None'} | Wager: $${b.wager} | Odds: ${b.odds} | PL: ${b.pl} | Res: ${b.result}`);
 
             const prompt = `Act as an expert SQL data analyst for my personal sports betting database. 
@@ -830,6 +834,9 @@
             } else if (type === 'GOAL') { 
                 bets = rawBetsData.filter(b => b.details && goalKws.some(kw => b.details.toUpperCase().includes(kw))); 
                 title = "Goal Props History"; 
+            } else if (type === 'NCAAT') { 
+                bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('NCAAT')); 
+                title = "March Madness History"; 
             }
             
             bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); 
@@ -1007,6 +1014,7 @@
 
                     let engPL=0, engWagered=0, engW=0, engL=0, engP=0; 
                     let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0;
+                    let ncaatPL=0, ncaatWagered=0, ncaatW=0, ncaatL=0, ncaatP=0;
                     const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
                     
                     rawBetsData.forEach(bet => {
@@ -1019,6 +1027,10 @@
                             if (goalKeywords.some(kw => dUp.includes(kw))) { 
                                 goalPL += bet.pl; goalWagered += bet.wager; 
                                 if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; 
+                            }
+                            if (dUp.includes('NCAAT')) { 
+                                ncaatPL += bet.pl; ncaatWagered += bet.wager; 
+                                if (bet.pl>0) ncaatW++; else if (bet.pl<0) ncaatL++; else ncaatP++; 
                             }
                         }
                     });
@@ -1036,6 +1048,13 @@
                     document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; 
                     document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; 
                     document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
+
+                    let ncaatROIVal = ncaatWagered > 0 ? (ncaatPL / ncaatWagered * 100) : 0; 
+                    document.getElementById('valNcaatPL').textContent = formatPL(ncaatPL); 
+                    document.getElementById('valNcaatPL').style.color = getColor(formatPL(ncaatPL)); 
+                    document.getElementById('valNcaatRecord').textContent = `${ncaatW}W - ${ncaatL}L - ${ncaatP}P`; 
+                    document.getElementById('valNcaatROI').textContent = (ncaatROIVal > 0 ? '+' : '') + ncaatROIVal.toFixed(2) + '%'; 
+                    document.getElementById('valNcaatROI').style.color = getColor(formatPL(ncaatPL));
 
                     renderLeaderboard(); 
                     renderBetLists(); 
