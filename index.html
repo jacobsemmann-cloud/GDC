@@ -241,13 +241,10 @@
                 
                 <div class="dash-card" style="border-left-color: #8a2be2;">
                     <h3 class="dash-title" style="color: #8a2be2;">🤖 Gemini AI Analyst</h3>
-                    
                     <div id="aiSetup" style="margin-bottom: 5px;">
                         <input type="password" id="geminiKeyInput" placeholder="Paste Gemini API Key here..." style="min-height: 36px; padding: 8px; font-size: 13px; margin-bottom: 8px;">
                         <button class="btn-primary" onclick="saveGeminiKey()" style="background-color: #8a2be2; padding: 10px; font-size: 14px; margin-top: 0;">Save Key Locally</button>
-                        <p style="font-size: 11px; opacity: 0.7; margin-top: 8px; line-height: 1.3;">Get a free API key from Google AI Studio. This key is saved strictly to your phone's browser storage for security.</p>
                     </div>
-                    
                     <div id="aiControls" style="display: none;">
                         <div style="display: flex; gap: 6px; margin-top: 0;">
                             <button class="btn-primary" onclick="runAIAnalysis('7D')" style="background-color: #8a2be2; padding: 10px 4px; margin-top: 0; flex: 1; font-size: 13px;">7 DAYS</button>
@@ -256,7 +253,6 @@
                         </div>
                         <button onclick="localStorage.removeItem('geminiKey'); checkGeminiKey();" style="background: transparent; border: none; color: var(--text-main); opacity: 0.6; font-size: 11px; cursor: pointer; display: block; margin: 10px auto 0; text-decoration: underline;">Reset API Key</button>
                     </div>
-                    
                     <div id="aiResponse" style="margin-top: 15px; font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
                 </div>
 
@@ -273,6 +269,7 @@
 
                 <div class="dash-card" style="border-left-color: #ff9900;">
                     <h3 class="dash-title" style="color: #ff9900;">🌐 Live Line Shopper</h3>
+                    <p style="font-size: 10px; opacity: 0.7; margin-top: -5px; margin-bottom: 8px;">Note: Player props consume 10x API credits per search.</p>
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <select id="oddsSport" class="lb-select" style="flex: 1; min-height: 36px; font-size: 13px;">
                             <option value="basketball_nba">NBA</option>
@@ -286,10 +283,14 @@
                             <option value="spreads">Spread</option>
                             <option value="totals">Total</option>
                             <option value="h2h">Moneyline</option>
+                            <option value="player_points">Player Points (NBA/NHL)</option>
+                            <option value="player_assists">Player Assists (NBA/NHL)</option>
+                            <option value="player_shots_on_goal">Shots on Goal (NHL)</option>
+                            <option value="player_goal_scorer_anytime">Anytime Goal (NHL)</option>
                         </select>
                     </div>
                     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                        <input type="text" id="oddsTeam" placeholder="Team Name (e.g. Knicks)" style="flex: 2; min-height: 36px; padding: 8px; font-size: 13px;">
+                        <input type="text" id="oddsTeam" placeholder="Team or Player Name" style="flex: 2; min-height: 36px; padding: 8px; font-size: 13px;">
                         <button class="btn-primary" id="btnOddsSend" onclick="runRealLineShopper()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #ff9900;">Search</button>
                     </div>
                     <div id="oddsResponse" style="font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
@@ -325,12 +326,6 @@
                         <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valEngRecord">--</span></div>
                         <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valEngROI">--</span></div>
                     </div>
-                    <div class="clickable-row" onclick="showSpecialtyBets('NCAAT')" style="padding: 8px 6px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
-                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">March Madness <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
-                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valNcaatPL">--</span></div>
-                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valNcaatRecord">--</span></div>
-                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valNcaatROI">--</span></div>
-                    </div>
                 </div>
 
                 <div class="dash-card"><h3 class="dash-title">By Book</h3><div id="tableBooks"></div></div>
@@ -343,9 +338,7 @@
                         <h3 class="dash-title">Most Profitable</h3>
                         <select id="lbSportFilter" class="lb-select" onchange="renderLeaderboard()">
                             <option value="ALL">All Sports</option><option value="NHL">NHL</option><option value="NFL">NFL</option>
-                            <option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option>
-                            <option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option>
-                            <option value="GOLF">GOLF</option><option value="MULTI">MULTI</option>
+                            <option value="NBA">NBA</option><option value="MLB">MLB</option>
                         </select>
                     </div>
                     <div id="tableMostProf"></div>
@@ -389,7 +382,6 @@
             checkGeminiKey(); 
         };
 
-        // --- GEMINI AI ANALYST LOGIC ---
         function saveGeminiKey() {
             const key = document.getElementById('geminiKeyInput').value.trim();
             if (key) {
@@ -414,10 +406,7 @@
 
         async function runAIAnalysis(timeframe) {
             const key = localStorage.getItem('geminiKey');
-            if (!key) {
-                alert("Please save your Gemini API Key first!");
-                return;
-            }
+            if (!key) { alert("Please save your Gemini API Key first!"); return; }
             
             const resDiv = document.getElementById('aiResponse');
             resDiv.style.display = "block";
@@ -427,54 +416,31 @@
             let limitDate = new Date();
             let label = "";
             
-            if (timeframe === '7D') {
-                limitDate.setDate(todayObj.getDate() - 7);
-                label = "Last 7 Days";
-            } else if (timeframe === 'MONTH') {
-                limitDate.setDate(todayObj.getDate() - 30);
-                label = "Past 30 Days";
-            } else if (timeframe === 'YTD') {
-                limitDate = new Date(todayObj.getFullYear(), 0, 1);
-                label = "Year-to-Date";
-            }
+            if (timeframe === '7D') { limitDate.setDate(todayObj.getDate() - 7); label = "Last 7 Days"; } 
+            else if (timeframe === 'MONTH') { limitDate.setDate(todayObj.getDate() - 30); label = "Past 30 Days"; } 
+            else if (timeframe === 'YTD') { limitDate = new Date(todayObj.getFullYear(), 0, 1); label = "Year-to-Date"; }
             
             const limitStr = formatDateObj(limitDate);
             const filteredBets = rawBetsData.filter(b => b.date >= limitStr);
             
-            if (filteredBets.length === 0) {
-                resDiv.innerHTML = `<strong>${label} Analysis:</strong><br><br>No bets found for this timeframe. Log some bets and try again!`;
-                return;
-            }
+            if (filteredBets.length === 0) { resDiv.innerHTML = `<strong>${label} Analysis:</strong><br><br>No bets found for this timeframe.`; return; }
             
             const recentBets = filteredBets.slice(0, 300).map(b => `${b.date} | ${b.sport} | ${b.betType} | Details: ${b.details || 'None'} | $${b.wager} | PL: ${b.pl}`);
             const prompt = `Act as an expert sports betting analyst. I am giving you my betting history for the ${label}. \n\n${recentBets.join('\n')}\n\nAnalyze my performance over this specific timeframe. Tell me what sport or bet type I am best at, where I am losing money, and give me 2 actionable, blunt pieces of advice to improve my ROI. Keep it under 3 paragraphs. Do not use asterisks or markdown formatting.`;
             
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                
                 const data = await response.json();
                 if (data.error) throw new Error(data.error.message);
-                
-                const aiText = data.candidates[0].content.parts[0].text;
-                resDiv.innerHTML = `<strong>${label} Analysis:</strong><br><br>` + aiText.replace(/\n/g, '<br>');
-            } catch (err) {
-                resDiv.innerHTML = `<span style="color:var(--loss-text)">Error connecting to Gemini: ${err.message}</span><br><br>Make sure your API key is valid.`;
-            }
+                resDiv.innerHTML = `<strong>${label} Analysis:</strong><br><br>` + data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+            } catch (err) { resDiv.innerHTML = `<span style="color:var(--loss-text)">Error: ${err.message}</span>`; }
         }
 
-        // --- CHAT WITH YOUR DATA LOGIC ---
         async function runDataChat() {
             const key = localStorage.getItem('geminiKey');
-            if (!key) {
-                alert("Please save your Gemini API Key in the Analyst card above first!");
-                return;
-            }
+            if (!key) { alert("Please save your Gemini API Key first!"); return; }
 
             const question = document.getElementById('chatQuestion').value.trim();
             if (!question) return;
@@ -482,56 +448,37 @@
             const btn = document.getElementById('btnChatSend');
             const resDiv = document.getElementById('chatResponse');
 
-            btn.textContent = "⏳...";
-            btn.disabled = true;
-            resDiv.style.display = "block";
-            resDiv.innerHTML = "<i>Searching your database...</i>";
+            btn.textContent = "⏳..."; btn.disabled = true;
+            resDiv.style.display = "block"; resDiv.innerHTML = "<i>Searching your database...</i>";
 
             const betData = rawBetsData.map(b => `${b.date} | ${b.book} | ${b.sport} | ${b.betType} | ${b.team1} ${b.team2?'vs '+b.team2:''} | Details: ${b.details || 'None'} | Wager: $${b.wager} | Odds: ${b.odds} | PL: ${b.pl} | Res: ${b.result}`);
-
-            const prompt = `Act as an expert SQL data analyst for my personal sports betting database. 
-            Here is my raw betting data (Date | Book | Sport | Bet Type | Teams | Details | Wager | Odds | Profit/Loss | Result):
-            ${betData.join('\n')}
-            
-            User Question: "${question}"
-            
-            Analyze the data and answer the question accurately based ONLY on the provided data. Keep your answer brief, direct, and conversational. Do not use asterisks or markdown formatting.`;
+            const prompt = `Act as an expert SQL data analyst for my personal sports betting database. Data:\n${betData.join('\n')}\n\nUser Question: "${question}"\n\nAnalyze the data and answer the question. Keep your answer brief, direct, and conversational. Do not use asterisks.`;
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-
                 const data = await response.json();
                 if (data.error) throw new Error(data.error.message);
-
-                const aiText = data.candidates[0].content.parts[0].text;
-                resDiv.innerHTML = `<strong>Q: ${question}</strong><br><br>${aiText.replace(/\n/g, '<br>')}`;
+                resDiv.innerHTML = `<strong>Q: ${question}</strong><br><br>${data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}`;
                 document.getElementById('chatQuestion').value = '';
-            } catch (err) {
-                resDiv.innerHTML = `<span style="color:var(--loss-text)">Error connecting to Gemini: ${err.message}</span>`;
-            }
+            } catch (err) { resDiv.innerHTML = `<span style="color:var(--loss-text)">Error: ${err.message}</span>`; }
 
-            btn.textContent = "Ask";
-            btn.disabled = false;
+            btn.textContent = "Ask"; btn.disabled = false;
         }
 
-        // --- NEW: REAL DATA API LINE SHOPPER ---
+        // --- REAL DATA API LINE SHOPPER WITH EXPANDED PROPS ---
         async function runRealLineShopper() {
-            const apiKey = "8d394324b96f75beb3566f481dd33315"; // Do not share this key publicly!
+            const apiKey = "8d394324b96f75beb3566f481dd33315"; 
             const sport = document.getElementById('oddsSport').value;
             const market = document.getElementById('oddsMarket').value;
-            const teamFilter = document.getElementById('oddsTeam').value.trim().toLowerCase();
+            const searchFilter = document.getElementById('oddsTeam').value.trim().toLowerCase();
             
             const btn = document.getElementById('btnOddsSend');
             const resDiv = document.getElementById('oddsResponse');
             
-            if (!teamFilter) {
-                alert("Please enter a team name to search for!");
+            if (!searchFilter) {
+                alert("Please enter a team or player name!");
                 return;
             }
 
@@ -541,44 +488,73 @@
             resDiv.innerHTML = "<i>Fetching live Vegas odds...</i>";
 
             try {
-                // Ping The Odds API
                 const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
                 const response = await fetch(url);
                 const data = await response.json();
 
                 if (data.message) throw new Error(data.message);
 
-                // Find the game that matches the team name
-                const game = data.find(g => g.home_team.toLowerCase().includes(teamFilter) || g.away_team.toLowerCase().includes(teamFilter));
+                let targetGame = null;
+                let foundPlayerName = null;
+                const isProp = market.startsWith('player_');
 
-                if (!game) {
-                    resDiv.innerHTML = `<strong>Error:</strong> Could not find an upcoming game for "${teamFilter}". Check the spelling or make sure the right sport is selected.`;
+                // Search logic: Find the game that matches the team OR the player prop
+                for (const game of data) {
+                    if (!isProp && (game.home_team.toLowerCase().includes(searchFilter) || game.away_team.toLowerCase().includes(searchFilter))) {
+                        targetGame = game;
+                        break;
+                    }
+
+                    if (isProp) {
+                        let playerFoundInThisGame = false;
+                        for (const book of game.bookmakers) {
+                            if (book.markets && book.markets[0]) {
+                                const foundOutcome = book.markets[0].outcomes.find(o => 
+                                    (o.description && o.description.toLowerCase().includes(searchFilter)) || 
+                                    (o.name && o.name.toLowerCase().includes(searchFilter))
+                                );
+                                if (foundOutcome) {
+                                    targetGame = game;
+                                    foundPlayerName = foundOutcome.description || foundOutcome.name;
+                                    playerFoundInThisGame = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (playerFoundInThisGame) break;
+                    }
+                }
+
+                if (!targetGame) {
+                    resDiv.innerHTML = `<strong>Error:</strong> Could not find data for "${searchFilter}". Make sure you selected the right sport and bet type!`;
                     btn.textContent = "Search";
                     btn.disabled = false;
                     return;
                 }
 
-                // Map The Odds API keys to your personal list
-                const myBooks = {
-                    "draftkings": "DraftKings",
-                    "fanduel": "FanDuel",
-                    "williamhill_us": "Caesars",
-                    "betrivers": "BetRivers",
-                    "betmgm": "MGM",
-                    "bet365": "Bet365"
-                };
+                const myBooks = { "draftkings": "DraftKings", "fanduel": "FanDuel", "williamhill_us": "Caesars", "betrivers": "BetRivers", "betmgm": "MGM", "bet365": "Bet365" };
 
-                let resultsHTML = `<strong>${game.away_team} @ ${game.home_team}</strong><br><br><ul style="margin:0; padding-left:20px;">`;
+                let headerText = isProp ? `<strong>${foundPlayerName}</strong> (${targetGame.away_team} @ ${targetGame.home_team})` : `<strong>${targetGame.away_team} @ ${targetGame.home_team}</strong>`;
+                let resultsHTML = `${headerText}<br><br><ul style="margin:0; padding-left:20px;">`;
 
                 Object.keys(myBooks).forEach(bookKey => {
-                    let bookData = game.bookmakers.find(b => b.key === bookKey);
+                    let bookData = targetGame.bookmakers.find(b => b.key === bookKey);
                     
                     if (bookData && bookData.markets && bookData.markets[0]) {
                         
-                        if (market === 'totals') {
-                            // Totals handle Over and Under
-                            let over = bookData.markets[0].outcomes.find(o => o.name === 'Over');
-                            let under = bookData.markets[0].outcomes.find(o => o.name === 'Under');
+                        // Check if it's an Over/Under style market
+                        const isOverUnder = ['totals', 'player_points', 'player_assists', 'player_shots_on_goal'].includes(market);
+
+                        if (isOverUnder) {
+                            let searchTarget = isProp ? foundPlayerName : undefined;
+                            
+                            let overOutcomes = bookData.markets[0].outcomes.filter(o => o.name === 'Over');
+                            let underOutcomes = bookData.markets[0].outcomes.filter(o => o.name === 'Under');
+                            
+                            // If it's a prop, we need the specific player's Over/Under
+                            let over = isProp ? overOutcomes.find(o => o.description === searchTarget) : overOutcomes[0];
+                            let under = isProp ? underOutcomes.find(o => o.description === searchTarget) : underOutcomes[0];
+
                             if (over && under) {
                                 let overPrice = over.price > 0 ? '+' + over.price : over.price;
                                 let underPrice = under.price > 0 ? '+' + under.price : under.price;
@@ -587,8 +563,14 @@
                                 resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
                             }
                         } else {
-                            // Spreads and Moneylines isolate the exact team
-                            let outcome = bookData.markets[0].outcomes.find(o => o.name.toLowerCase().includes(teamFilter));
+                            // Spread, Moneyline, or Anytime Goal logic
+                            let outcome = null;
+                            if (isProp) {
+                                outcome = bookData.markets[0].outcomes.find(o => (o.description === foundPlayerName || o.name === foundPlayerName));
+                            } else {
+                                outcome = bookData.markets[0].outcomes.find(o => o.name.toLowerCase().includes(searchFilter));
+                            }
+
                             if (outcome) {
                                 let pointStr = outcome.point !== undefined ? outcome.point : '';
                                 if (pointStr > 0 && market === 'spreads') pointStr = '+' + pointStr;
@@ -604,7 +586,7 @@
                     }
                 });
 
-                resultsHTML += "</ul><br><i style='font-size:10px; opacity:0.7;'>Powered by The Odds API. PrizePicks excluded from standard game odds.</i>";
+                resultsHTML += "</ul><br><i style='font-size:10px; opacity:0.7;'>Powered by The Odds API.</i>";
                 resDiv.innerHTML = resultsHTML;
 
             } catch (err) {
@@ -628,8 +610,7 @@
 
         function setupAutocomplete(inp) {
             inp.addEventListener("input", function(e) {
-                let a, b, i, val = this.value; 
-                closeAllLists();
+                let a, b, i, val = this.value; closeAllLists();
                 if (!val || val.length < 3) return false;
                 
                 a = document.createElement("DIV"); 
@@ -653,34 +634,21 @@
                                       uniqueTeams[i].substring(matchIdx + val.length) + 
                                       "<input type='hidden' value='" + uniqueTeams[i].replace(/'/g, "&apos;") + "'>";
                         
-                        b.addEventListener("click", function(e) { 
-                            inp.value = this.getElementsByTagName("input")[0].value; 
-                            closeAllLists(); 
-                        });
-                        a.appendChild(b); 
-                        count++;
+                        b.addEventListener("click", function(e) { inp.value = this.getElementsByTagName("input")[0].value; closeAllLists(); });
+                        a.appendChild(b); count++;
                     }
                 }
             });
             function closeAllLists(elmnt) {
                 var x = document.getElementsByClassName("autocomplete-items");
-                for (var i = 0; i < x.length; i++) { 
-                    if (elmnt != x[i] && elmnt != inp) { 
-                        x[i].parentNode.removeChild(x[i]); 
-                    } 
-                }
+                for (var i = 0; i < x.length; i++) { if (elmnt != x[i] && elmnt != inp) { x[i].parentNode.removeChild(x[i]); } }
             }
             document.addEventListener("click", function (e) { closeAllLists(e.target); });
         }
         
-        setupAutocomplete(document.getElementById("team1")); 
-        setupAutocomplete(document.getElementById("team2"));
+        setupAutocomplete(document.getElementById("team1")); setupAutocomplete(document.getElementById("team2"));
 
-        function forceRefresh() { 
-            document.getElementById('refreshBtn').textContent = "⏳..."; 
-            dataFetched = false; 
-            fetchMasterData(false); 
-        }
+        function forceRefresh() { document.getElementById('refreshBtn').textContent = "⏳..."; dataFetched = false; fetchMasterData(false); }
         
         function toggleTheme() {
             document.body.classList.toggle('dark-mode'); 
@@ -695,19 +663,9 @@
             ['viewLog', 'viewCal', 'viewDash'].forEach(id => document.getElementById(id).classList.remove('active'));
             ['btnLog', 'btnCal', 'btnDash'].forEach(id => document.getElementById(id).classList.remove('active'));
             
-            if(tab === 'log') { 
-                document.getElementById('viewLog').classList.add('active'); 
-                document.getElementById('btnLog').classList.add('active'); 
-            } else if (tab === 'cal') { 
-                document.getElementById('viewCal').classList.add('active'); 
-                document.getElementById('btnCal').classList.add('active'); 
-                if(!dataFetched) fetchMasterData(false); 
-                else renderCalendar(currentMonth, currentYear); 
-            } else if (tab === 'dash') { 
-                document.getElementById('viewDash').classList.add('active'); 
-                document.getElementById('btnDash').classList.add('active'); 
-                if(!dataFetched) fetchMasterData(false); 
-            }
+            if(tab === 'log') { document.getElementById('viewLog').classList.add('active'); document.getElementById('btnLog').classList.add('active'); } 
+            else if (tab === 'cal') { document.getElementById('viewCal').classList.add('active'); document.getElementById('btnCal').classList.add('active'); if(!dataFetched) fetchMasterData(false); else renderCalendar(currentMonth, currentYear); } 
+            else if (tab === 'dash') { document.getElementById('viewDash').classList.add('active'); document.getElementById('btnDash').classList.add('active'); if(!dataFetched) fetchMasterData(false); }
         }
 
         function formatPL(num) { 
@@ -716,25 +674,16 @@
             return n > 0 ? `+$${n.toFixed(2)}` : `-$${Math.abs(n).toFixed(2)}`; 
         }
         
-        function getColor(valStr) { 
-            return (!valStr) ? 'var(--text-main)' : (valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)'); 
-        }
+        function getColor(valStr) { return (!valStr) ? 'var(--text-main)' : (valStr.includes('-') ? 'var(--loss-text)' : 'var(--text-label)'); }
 
         function formatDateObj(obj) {
-            let y = obj.getFullYear(); 
-            let m = String(obj.getMonth() + 1).padStart(2, '0'); 
-            let d = String(obj.getDate()).padStart(2, '0');
+            let y = obj.getFullYear(); let m = String(obj.getMonth() + 1).padStart(2, '0'); let d = String(obj.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
         }
         
         function getDates(startStr, endStr) {
-            let dates = []; 
-            let curr = new Date(startStr + "T00:00:00"); 
-            let end = new Date(endStr + "T00:00:00");
-            while(curr <= end) { 
-                dates.push(formatDateObj(curr)); 
-                curr.setDate(curr.getDate() + 1); 
-            }
+            let dates = []; let curr = new Date(startStr + "T00:00:00"); let end = new Date(endStr + "T00:00:00");
+            while(curr <= end) { dates.push(formatDateObj(curr)); curr.setDate(curr.getDate() + 1); }
             return dates;
         }
 
@@ -742,10 +691,7 @@
             currentChartRange = range;
             ['MONTH', '7D', '30D', 'ALL'].forEach(id => {
                 let el = document.getElementById('btnChart' + id);
-                if(el) { 
-                    if(id === range) el.classList.add('active'); 
-                    else el.classList.remove('active'); 
-                }
+                if(el) { if(id === range) el.classList.add('active'); else el.classList.remove('active'); }
             });
             drawChart();
         }
@@ -756,564 +702,198 @@
             let filter = document.getElementById('chartSportFilter').value;
             let dates = [], todayObj = new Date(), todayStr = formatDateObj(todayObj);
 
-            if (currentChartRange === 'MONTH') {
-                let firstDay = new Date(currentYear, currentMonth, 1), lastDay = new Date(currentYear, currentMonth + 1, 0);
-                dates = getDates(formatDateObj(firstDay), formatDateObj(lastDay));
-            } else if (currentChartRange === '7D') {
-                let startObj = new Date(); startObj.setDate(startObj.getDate() - 6); 
-                dates = getDates(formatDateObj(startObj), todayStr);
-            } else if (currentChartRange === '30D') {
-                let startObj = new Date(); startObj.setDate(startObj.getDate() - 29); 
-                dates = getDates(formatDateObj(startObj), todayStr);
-            } else if (currentChartRange === 'ALL') {
-                if (rawBetsData.length > 0) {
-                    let earliest = rawBetsData.reduce((min, b) => b.date < min ? b.date : min, rawBetsData[0].date);
-                    dates = getDates(earliest || todayStr, todayStr);
-                } else { 
-                    dates = [todayStr]; 
-                }
-            }
+            if (currentChartRange === 'MONTH') { let firstDay = new Date(currentYear, currentMonth, 1), lastDay = new Date(currentYear, currentMonth + 1, 0); dates = getDates(formatDateObj(firstDay), formatDateObj(lastDay)); } 
+            else if (currentChartRange === '7D') { let startObj = new Date(); startObj.setDate(startObj.getDate() - 6); dates = getDates(formatDateObj(startObj), todayStr); } 
+            else if (currentChartRange === '30D') { let startObj = new Date(); startObj.setDate(startObj.getDate() - 29); dates = getDates(formatDateObj(startObj), todayStr); } 
+            else if (currentChartRange === 'ALL') { if (rawBetsData.length > 0) { let earliest = rawBetsData.reduce((min, b) => b.date < min ? b.date : min, rawBetsData[0].date); dates = getDates(earliest || todayStr, todayStr); } else { dates = [todayStr]; } }
 
             let labels = [], data = [], cum = 0;
             dates.forEach(dStr => {
-                let parts = dStr.split('-');
-                labels.push(`${parts[1]}/${parts[2]}`);
+                let parts = dStr.split('-'); labels.push(`${parts[1]}/${parts[2]}`);
                 let dailySum = 0;
-                if (filter === 'ALL') { 
-                    dailySum = dailyPLData[dStr] || 0; 
-                } else { 
-                    rawBetsData.forEach(b => { 
-                        if (b.date === dStr && b.sport === filter) dailySum += b.pl; 
-                    }); 
-                }
-                cum += dailySum; 
-                data.push(cum);
+                if (filter === 'ALL') { dailySum = dailyPLData[dStr] || 0; } 
+                else { rawBetsData.forEach(b => { if (b.date === dStr && b.sport === filter) dailySum += b.pl; }); }
+                cum += dailySum; data.push(cum);
             });
 
             let isDk = document.body.classList.contains('dark-mode');
-            let line = isDk ? '#32CD32' : '#1b4d29';
-            let grid = isDk ? '#444444' : '#e0e0e0';
-            let txt = isDk ? '#e0e0e0' : '#333333';
+            let line = isDk ? '#32CD32' : '#1b4d29'; let grid = isDk ? '#444444' : '#e0e0e0'; let txt = isDk ? '#e0e0e0' : '#333333';
             
             plChart = new Chart(ctx, {
-                type: 'line', 
-                data: { 
-                    labels: labels, 
-                    datasets: [{ 
-                        data: data, borderColor: line, backgroundColor: line+'33', borderWidth: 2, fill: true, tension: 0.2, pointRadius: 1 
-                    }] 
-                },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } }, 
-                    scales: { 
-                        x: { grid: { color: grid }, ticks: { color: txt, maxTicksLimit: 10 } }, 
-                        y: { grid: { color: grid }, ticks: { color: txt } } 
-                    } 
-                }
+                type: 'line', data: { labels: labels, datasets: [{ data: data, borderColor: line, backgroundColor: line+'33', borderWidth: 2, fill: true, tension: 0.2, pointRadius: 1 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: grid }, ticks: { color: txt, maxTicksLimit: 10 } }, y: { grid: { color: grid }, ticks: { color: txt } } } }
             });
         }
 
         function calcRange() {
-            let s = document.getElementById('startDate').value;
-            let e = document.getElementById('endDate').value;
-            let filter = document.getElementById('rangeSportFilter').value;
+            let s = document.getElementById('startDate').value; let e = document.getElementById('endDate').value; let filter = document.getElementById('rangeSportFilter').value;
             if(!s || !e) return;
             
             let pl=0, wag=0, w=0, l=0, p=0;
             rawBetsData.forEach(b => {
                 if(b.date && b.date >= s && b.date <= e) {
-                    if (filter === 'ALL' || b.sport === filter) { 
-                        pl += b.pl; 
-                        wag += b.wager; 
-                        if(b.pl > 0) w++; 
-                        else if(b.pl < 0) l++; 
-                        else p++; 
-                    }
+                    if (filter === 'ALL' || b.sport === filter) { pl += b.pl; wag += b.wager; if(b.pl > 0) w++; else if(b.pl < 0) l++; else p++; }
                 }
             });
             
             let roi = wag > 0 ? (pl/wag*100) : 0;
-            document.getElementById('rngPL').textContent = formatPL(pl); 
-            document.getElementById('rngPL').style.color = getColor(formatPL(pl));
+            document.getElementById('rngPL').textContent = formatPL(pl); document.getElementById('rngPL').style.color = getColor(formatPL(pl));
             document.getElementById('rngRec').textContent = `${w}W - ${l}L - ${p}P`;
-            document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; 
-            document.getElementById('rngROI').style.color = getColor(formatPL(pl));
+            document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
         function renderBetLists() {
-            const pendContainer = document.getElementById('pendingBetsContainer');
-            const settContainer = document.getElementById('recentBetsContainer');
-            
-            if (rawBetsData.length === 0) { 
-                pendContainer.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center;">No pending bets.</p>'; 
-                settContainer.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center;">No settled bets.</p>'; 
-                return; 
-            }
+            const pendContainer = document.getElementById('pendingBetsContainer'); const settContainer = document.getElementById('recentBetsContainer');
+            if (rawBetsData.length === 0) { pendContainer.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center;">No pending bets.</p>'; settContainer.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center;">No settled bets.</p>'; return; }
             
             let pendHtml = '', settHtml = '', settCount = 0;
             rawBetsData.forEach((b, idx) => {
-                let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
-                let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
-                let plText = isSettled ? formatPL(b.pl) : ''; 
-                let plColor = isSettled ? getColor(plText) : 'var(--text-main)';
+                let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds; let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
+                let plText = isSettled ? formatPL(b.pl) : ''; let plColor = isSettled ? getColor(plText) : 'var(--text-main)';
                 let borderCol = isSettled ? (b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)')) : '#f39c12';
-                let dStr = b.date ? b.date.substring(5).replace('-', '/') : '';
-                let resText = isSettled ? b.result + ': ' + plText : 'Pending';
+                let dStr = b.date ? b.date.substring(5).replace('-', '/') : ''; let resText = isSettled ? b.result + ': ' + plText : 'Pending';
                 
-                let card = `<div class="bet-card clickable-row" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
-                    <div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;"><span>${dStr} | ${b.book} | ${b.sport}</span><span>${oddsText}</span></div>
-                    <div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div>
-                    <div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">${b.details || ''}</div>
-                    <div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;"><span>$${b.wager.toFixed(2)}</span><span style="color:${plColor}; font-weight:bold;">${resText}</span></div>
-                </div>`;
-                
-                if (isSettled) {
-                    if (settCount < 10) { settHtml += card; settCount++; }
-                } else {
-                    pendHtml += card;
-                }
+                let card = `<div class="bet-card clickable-row" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})"><div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;"><span>${dStr} | ${b.book} | ${b.sport}</span><span>${oddsText}</span></div><div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div><div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">${b.details || ''}</div><div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;"><span>$${b.wager.toFixed(2)}</span><span style="color:${plColor}; font-weight:bold;">${resText}</span></div></div>`;
+                if (isSettled) { if (settCount < 10) { settHtml += card; settCount++; } } else { pendHtml += card; }
             });
             
-            pendContainer.innerHTML = pendHtml || '<p style="font-size:13px; opacity:0.7; text-align:center;">No pending bets right now.</p>';
-            settContainer.innerHTML = settHtml || '<p style="font-size:13px; opacity:0.7; text-align:center;">No settled bets yet.</p>';
+            pendContainer.innerHTML = pendHtml || '<p style="font-size:13px; opacity:0.7; text-align:center;">No pending bets right now.</p>'; settContainer.innerHTML = settHtml || '<p style="font-size:13px; opacity:0.7; text-align:center;">No settled bets yet.</p>';
         }
 
         function editBet(idx) {
             editingBet = rawBetsData[idx];
-            document.getElementById('book').value = editingBet.book; 
-            document.getElementById('date').value = editingBet.date; 
-            document.getElementById('sport').value = editingBet.sport; 
-            document.getElementById('parlay').checked = editingBet.parlay; 
-            document.getElementById('betType').value = editingBet.betType; 
-            document.getElementById('team1').value = editingBet.team1; 
-            document.getElementById('team2').value = editingBet.team2; 
-            document.getElementById('details').value = editingBet.details; 
-            document.getElementById('odds').value = editingBet.odds; 
-            document.getElementById('wager').value = editingBet.wager; 
-            document.getElementById('result').value = editingBet.result;
-            
-            document.getElementById('submitBtn').textContent = "UPDATE BET"; 
-            document.getElementById('cancelEditBtn').style.display = "block"; 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            ['book','date','sport','betType','team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = editingBet[id]);
+            document.getElementById('parlay').checked = editingBet.parlay;
+            document.getElementById('submitBtn').textContent = "UPDATE BET"; document.getElementById('cancelEditBtn').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelEdit() {
-            editingBet = null; 
-            
-            let d = new Date();
+            editingBet = null; let d = new Date();
             document.getElementById('date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            
             ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = "");
-            document.getElementById('parlay').checked = false; 
-            
-            document.getElementById('submitBtn').textContent = "LOG BET"; 
-            document.getElementById('cancelEditBtn').style.display = "none";
+            document.getElementById('parlay').checked = false; document.getElementById('submitBtn').textContent = "LOG BET"; document.getElementById('cancelEditBtn').style.display = "none";
         }
 
         function openModal(title, bets, isDayView) {
-            const modal = document.getElementById('betsModal'); 
-            document.getElementById('modalTitle').textContent = title; 
-            const list = document.getElementById('modalBetsList');
-            
-            if (bets.length === 0) { 
-                list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged.</p>'; 
-                modal.style.display = 'flex'; 
-                return; 
-            }
+            const modal = document.getElementById('betsModal'); document.getElementById('modalTitle').textContent = title; const list = document.getElementById('modalBetsList');
+            if (bets.length === 0) { list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged.</p>'; modal.style.display = 'flex'; return; }
             
             let html = '';
             if (isDayView) {
-                let sportSummary = {}; 
-                bets.forEach(b => { sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; });
-                
+                let sportSummary = {}; bets.forEach(b => { sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; });
                 html += '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border);">';
-                for (const [s, pl] of Object.entries(sportSummary)) { 
-                    let plText = formatPL(pl), borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); 
-                    html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">${s}: <span style="color:${getColor(plText)}">${plText}</span></div>`; 
-                }
+                for (const [s, pl] of Object.entries(sportSummary)) { let plText = formatPL(pl), borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">${s}: <span style="color:${getColor(plText)}">${plText}</span></div>`; }
                 html += '</div>';
             } else {
-                let totalPL = 0, w=0, l=0, p=0; 
-                bets.forEach(b => { totalPL += b.pl; if(b.pl>0)w++; else if(b.pl<0)l++; else p++; });
+                let totalPL = 0, w=0, l=0, p=0; bets.forEach(b => { totalPL += b.pl; if(b.pl>0)w++; else if(b.pl<0)l++; else p++; });
                 let sumColor = totalPL > 0 ? 'var(--win-text)' : (totalPL < 0 ? 'var(--loss-text)' : 'var(--text-main)');
                 html += `<div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border); font-size: 14px;"><div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><strong>Record:</strong> <span>${w}W - ${l}L - ${p}P</span></div><div style="display:flex; justify-content:space-between;"><strong>Net Profit:</strong> <span style="color:${sumColor}; font-weight:bold;">${formatPL(totalPL)}</span></div></div>`;
             }
             
             bets.forEach(b => {
-                let odds = b.odds > 0 ? `+${b.odds}` : b.odds; 
-                let plText = formatPL(b.pl); 
-                let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); 
-                let headerDStr = isDayView ? b.sport : `${(b.date||'').substring(5).replace('-','/')} | ${b.sport}`;
-                
+                let odds = b.odds > 0 ? `+${b.odds}` : b.odds; let plText = formatPL(b.pl); let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); let headerDStr = isDayView ? b.sport : `${(b.date||'').substring(5).replace('-','/')} | ${b.sport}`;
                 html += `<div class="bet-card" style="border-left-color: ${borderCol}"><div class="bet-card-header"><span>${headerDStr}</span><span>${odds}</span></div><div class="bet-card-details" style="font-weight:bold; color:var(--text-label);">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div><div class="bet-card-details">${b.details || 'Moneyline'}</div><div class="bet-card-footer"><span>Wager: $${b.wager.toFixed(2)}</span><span style="color:${getColor(plText)}">${plText}</span></div></div>`;
             });
-            list.innerHTML = html; 
-            modal.style.display = 'flex';
+            list.innerHTML = html; modal.style.display = 'flex';
         }
 
-        function showDayBets(dateStr) {
-            const bets = rawBetsData.filter(b => b.date === dateStr); 
-            const [y, m, d] = dateStr.split('-'); 
-            const dObj = new Date(y, m-1, d);
-            openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true);
-        }
-
-        function showEntityBets(entity) {
-            const bets = rawBetsData.filter(b => b.team1 === entity || b.team2 === entity).sort((a, b) => new Date(b.date) - new Date(a.date)); 
-            openModal(entity + " History", bets, false);
-        }
-
+        function showDayBets(dateStr) { const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d); openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true); }
+        function showEntityBets(entity) { const bets = rawBetsData.filter(b => b.team1 === entity || b.team2 === entity).sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(entity + " History", bets, false); }
         function showSpecialtyBets(type) {
-            let bets = [], title = ""; 
-            const goalKws = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
-            
-            if (type === 'ENG') { 
-                bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG')); 
-                title = "ENG Tracker History"; 
-            } else if (type === 'GOAL') { 
-                bets = rawBetsData.filter(b => b.details && goalKws.some(kw => b.details.toUpperCase().includes(kw))); 
-                title = "Goal Props History"; 
-            } else if (type === 'NCAAT') { 
-                bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('NCAAT')); 
-                title = "March Madness History"; 
-            }
-            
-            bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); 
-            openModal(title, bets, false);
+            let bets = [], title = ""; const goalKws = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
+            if (type === 'ENG') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG')); title = "ENG Tracker History"; } 
+            else if (type === 'GOAL') { bets = rawBetsData.filter(b => b.details && goalKws.some(kw => b.details.toUpperCase().includes(kw))); title = "Goal Props History"; } 
+            else if (type === 'NCAAT') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('NCAAT')); title = "March Madness History"; }
+            bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(title, bets, false);
         }
 
-        function closeModal() { 
-            document.getElementById('betsModal').style.display = 'none'; 
-        }
-        
-        window.onclick = function(e) { 
-            if (e.target == document.getElementById('betsModal')) closeModal(); 
-        }
+        function closeModal() { document.getElementById('betsModal').style.display = 'none'; }
+        window.onclick = function(e) { if (e.target == document.getElementById('betsModal')) closeModal(); }
 
         function buildPivotTable(dataArray) {
             if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
-            let html = '<div class="table-wrapper"><table><tr>'; 
-            let colCount = 0; 
-            dataArray[0].forEach(h => { if (h !== "") { html += `<th>${h}</th>`; colCount++; } }); 
-            html += '</tr>';
-            
-            for (let i = 1; i < dataArray.length; i++) {
-                html += '<tr>'; 
-                for (let j = 0; j < colCount; j++) { 
-                    let cell = dataArray[i][j] || "";
-                    let style = (j > 0 && cell !== "") ? ` class="text-right" style="color:${getColor(cell)}; font-weight:bold;"` : (j > 0 ? ' class="text-right"' : ''); 
-                    html += `<td${style}>${cell}</td>`; 
-                } 
-                html += '</tr>';
-            }
-            html += '</table></div>'; 
-            return html;
+            let html = '<div class="table-wrapper"><table><tr>'; let colCount = 0; dataArray[0].forEach(h => { if (h !== "") { html += `<th>${h}</th>`; colCount++; } }); html += '</tr>';
+            for (let i = 1; i < dataArray.length; i++) { html += '<tr>'; for (let j = 0; j < colCount; j++) { let cell = dataArray[i][j] || ""; let style = (j > 0 && cell !== "") ? ` class="text-right" style="color:${getColor(cell)}; font-weight:bold;"` : (j > 0 ? ' class="text-right"' : ''); html += `<td${style}>${cell}</td>`; } html += '</tr>'; }
+            return html + '</table></div>';
         }
 
         function renderLeaderboard() {
-            const filter = document.getElementById('lbSportFilter').value; 
-            let entities = {};
-            
-            rawBetsData.forEach(bet => {
-                if (filter !== 'ALL' && bet.sport !== filter) return;
-                ['team1', 'team2'].forEach(t => { 
-                    let team = bet[t]; 
-                    if (team && team.trim() !== "") { 
-                        if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; 
-                        entities[team].bets += 1; 
-                        entities[team].pl += bet.pl; 
-                    } 
-                });
-            });
-            
+            const filter = document.getElementById('lbSportFilter').value; let entities = {};
+            rawBetsData.forEach(bet => { if (filter !== 'ALL' && bet.sport !== filter) return; ['team1', 'team2'].forEach(t => { let team = bet[t]; if (team && team.trim() !== "") { if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; entities[team].bets += 1; entities[team].pl += bet.pl; } }); });
             let sorted = Object.keys(entities).map(k => [k, entities[k].bets, entities[k].pl]).sort((a, b) => b[2] - a[2]);
             if (sorted.length === 0) { document.getElementById('tableMostProf').innerHTML = '<p style="font-size:13px;">No bets logged.</p>'; return; }
-            
             let html = '<div class="table-wrapper"><table><tr><th>Player/Team</th><th class="text-right">Bets</th><th class="text-right">P/L</th></tr>';
-            for (let i = 0; i < sorted.length; i++) { 
-                let entity = sorted[i][0], bets = sorted[i][1], plText = formatPL(sorted[i][2]); 
-                html += `<tr class="clickable-row" onclick="showEntityBets('${entity.replace(/'/g, "\\'")}')"><td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`; 
-            }
+            for (let i = 0; i < sorted.length; i++) { let entity = sorted[i][0], bets = sorted[i][1], plText = formatPL(sorted[i][2]); html += `<tr class="clickable-row" onclick="showEntityBets('${entity.replace(/'/g, "\\'")}')"><td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`; }
             document.getElementById('tableMostProf').innerHTML = html + '</table></div>';
         }
 
         function renderHallOfFame() {
             let bestDay = null, bestDayVal = -Infinity, weeklyTotals = {};
-            for (const [dateStr, pl] of Object.entries(dailyPLData)) {
-                if (pl > bestDayVal) { bestDayVal = pl; bestDay = dateStr; }
-                let d = new Date(dateStr + "T00:00:00"), day = d.getDay(), sun = new Date(d); 
-                sun.setDate(d.getDate() - day);
-                let weekKey = `${sun.getFullYear()}-${String(sun.getMonth()+1).padStart(2,'0')}-${String(sun.getDate()).padStart(2,'0')}`; 
-                weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + pl;
-            }
-            
-            let bestWeek = null, bestWeekVal = -Infinity;
-            for (const [w, pl] of Object.entries(weeklyTotals)) { 
-                if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = w; } 
-            }
-            
-            document.getElementById('hofBestDay').textContent = bestDayVal > 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; 
-            document.getElementById('hofBestDay').style.color = bestDayVal > 0 ? getColor(formatPL(bestDayVal)) : ''; 
-            document.getElementById('hofBestWeek').textContent = bestWeekVal > 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; 
-            document.getElementById('hofBestWeek').style.color = bestWeekVal > 0 ? getColor(formatPL(bestWeekVal)) : '';
-            
+            for (const [dateStr, pl] of Object.entries(dailyPLData)) { if (pl > bestDayVal) { bestDayVal = pl; bestDay = dateStr; } let d = new Date(dateStr + "T00:00:00"), day = d.getDay(), sun = new Date(d); sun.setDate(d.getDate() - day); let weekKey = `${sun.getFullYear()}-${String(sun.getMonth()+1).padStart(2,'0')}-${String(sun.getDate()).padStart(2,'0')}`; weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + pl; }
+            let bestWeek = null, bestWeekVal = -Infinity; for (const [w, pl] of Object.entries(weeklyTotals)) { if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = w; } }
+            document.getElementById('hofBestDay').textContent = bestDayVal > 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; document.getElementById('hofBestDay').style.color = bestDayVal > 0 ? getColor(formatPL(bestDayVal)) : ''; document.getElementById('hofBestWeek').textContent = bestWeekVal > 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; document.getElementById('hofBestWeek').style.color = bestWeekVal > 0 ? getColor(formatPL(bestWeekVal)) : '';
             let monsters = rawBetsData.filter(b => b.pl >= 300).sort((a,b) => b.pl - a.pl);
-            if (monsters.length === 0) { 
-                document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; 
-            } else { 
-                let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; 
-                monsters.forEach(m => { 
-                    html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${m.details}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; 
-                }); 
-                document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; 
-            }
+            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${m.details}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
         }
 
         function updateCalendarSummaries(month, year) {
-            let weekPl = 0, monthPl = 0, ytdPl = 0; 
-            const today = new Date(), dayOfWeek = today.getDay();
-            
-            for(let i=0; i<7; i++) { 
-                let d = new Date(today); d.setDate(today.getDate() - dayOfWeek + i); 
-                let dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
-                if(dailyPLData[dStr]) weekPl += dailyPLData[dStr]; 
-            }
-            
+            let weekPl = 0, monthPl = 0, ytdPl = 0; const today = new Date(), dayOfWeek = today.getDay();
+            for(let i=0; i<7; i++) { let d = new Date(today); d.setDate(today.getDate() - dayOfWeek + i); let dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; if(dailyPLData[dStr]) weekPl += dailyPLData[dStr]; }
             const viewMonthPrefix = `${year}-${String(month+1).padStart(2,'0')}`, viewYearPrefix = `${year}-`;
-            for (const [dateStr, pl] of Object.entries(dailyPLData)) { 
-                if (dateStr.startsWith(viewYearPrefix)) { 
-                    ytdPl += pl; 
-                    if (dateStr.startsWith(viewMonthPrefix)) monthPl += pl; 
-                } 
-            }
-            
-            document.getElementById('calWeekPL').textContent = formatPL(weekPl); 
-            document.getElementById('calWeekPL').style.color = getColor(formatPL(weekPl)); 
-            document.getElementById('calMonthPL').textContent = formatPL(monthPl); 
-            document.getElementById('calMonthPL').style.color = getColor(formatPL(monthPl)); 
-            document.getElementById('calYtdPL').textContent = formatPL(ytdPl); 
-            document.getElementById('calYtdPL').style.color = getColor(formatPL(ytdPl));
+            for (const [dateStr, pl] of Object.entries(dailyPLData)) { if (dateStr.startsWith(viewYearPrefix)) { ytdPl += pl; if (dateStr.startsWith(viewMonthPrefix)) monthPl += pl; } }
+            document.getElementById('calWeekPL').textContent = formatPL(weekPl); document.getElementById('calWeekPL').style.color = getColor(formatPL(weekPl)); document.getElementById('calMonthPL').textContent = formatPL(monthPl); document.getElementById('calMonthPL').style.color = getColor(formatPL(monthPl)); document.getElementById('calYtdPL').textContent = formatPL(ytdPl); document.getElementById('calYtdPL').style.color = getColor(formatPL(ytdPl));
         }
 
         function fetchMasterData(isSilent = false) {
-            if (!isSilent) { 
-                document.getElementById('calLoader').style.display = 'block'; 
-                document.getElementById('dashLoader').style.display = 'block'; 
-                document.getElementById('calContainer').style.display = 'none'; 
-                document.getElementById('dashContainer').style.display = 'none'; 
-            }
-            
-            fetch(WEB_APP_URL)
-            .then(async res => {
-                const text = await res.text();
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    throw new Error("SAFARI ITP BLOCK: Google returned HTML instead of data. Make sure deployment is set exactly to 'Anyone' (NOT 'Anyone with a Google Account'). Preview: " + text.substring(0, 80));
-                }
-            })
+            if (!isSilent) { document.getElementById('calLoader').style.display = 'block'; document.getElementById('dashLoader').style.display = 'block'; document.getElementById('calContainer').style.display = 'none'; document.getElementById('dashContainer').style.display = 'none'; }
+            fetch(WEB_APP_URL).then(async res => { const text = await res.text(); try { return JSON.parse(text); } catch (e) { throw new Error("SAFARI ITP BLOCK: Make sure deployment is set exactly to 'Anyone'"); } })
             .then(data => {
                 document.getElementById('refreshBtn').textContent = "⟳ Refresh";
                 if (data.status === "success") {
-                    document.getElementById('valPL').textContent = data.pl; 
-                    document.getElementById('valPL').style.color = getColor(data.pl); 
-                    document.getElementById('valWagered').textContent = data.wagered; 
-                    document.getElementById('valROI').textContent = data.roi; 
-                    document.getElementById('valRecord').textContent = data.record;
+                    document.getElementById('valPL').textContent = data.pl; document.getElementById('valPL').style.color = getColor(data.pl); document.getElementById('valWagered').textContent = data.wagered; document.getElementById('valROI').textContent = data.roi; document.getElementById('valRecord').textContent = data.record;
+                    document.getElementById('valStrPL').textContent = data.straightPL; document.getElementById('valStrPL').style.color = getColor(data.straightPL); document.getElementById('valStrRec').textContent = data.straightRec; document.getElementById('valParPL').textContent = data.parlayPL; document.getElementById('valParPL').style.color = getColor(data.parlayPL); document.getElementById('valParRec').textContent = data.parlayRec;
                     
-                    document.getElementById('valStrPL').textContent = data.straightPL; 
-                    document.getElementById('valStrPL').style.color = getColor(data.straightPL); 
-                    document.getElementById('valStrRec').textContent = data.straightRec;
+                    let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; }); document.getElementById('tableBooks').innerHTML = bHtml + '</table>';
+                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; }); document.getElementById('tableSports').innerHTML = sHtml + '</table>';
                     
-                    document.getElementById('valParPL').textContent = data.parlayPL; 
-                    document.getElementById('valParPL').style.color = getColor(data.parlayPL); 
-                    document.getElementById('valParRec').textContent = data.parlayRec;
-                    
-                    let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; 
-                    data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; }); 
-                    document.getElementById('tableBooks').innerHTML = bHtml + '</table>';
-                    
-                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; 
-                    data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; }); 
-                    document.getElementById('tableSports').innerHTML = sHtml + '</table>';
-                    
-                    document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); 
-                    document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
+                    document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
 
-                    rawBetsData = data.rawBets || []; 
-                    rawBetsData.forEach(b => {
-                        b.pl = parseFloat(b.pl) || 0;
-                        b.wager = parseFloat(b.wager) || 0;
-                    });
-                    
-                    dailyPLData = data.dailyData || {}; 
-                    for (let key in dailyPLData) {
-                        dailyPLData[key] = parseFloat(dailyPLData[key]) || 0;
-                    }
+                    rawBetsData = data.rawBets || []; rawBetsData.forEach(b => { b.pl = parseFloat(b.pl) || 0; b.wager = parseFloat(b.wager) || 0; });
+                    dailyPLData = data.dailyData || {}; for (let key in dailyPLData) { dailyPLData[key] = parseFloat(dailyPLData[key]) || 0; }
 
-                    let engPL=0, engWagered=0, engW=0, engL=0, engP=0; 
-                    let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0;
-                    let ncaatPL=0, ncaatWagered=0, ncaatW=0, ncaatL=0, ncaatP=0;
-                    const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
+                    let engPL=0, engWagered=0, engW=0, engL=0, engP=0; let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0; let ncaatPL=0, ncaatWagered=0, ncaatW=0, ncaatL=0, ncaatP=0; const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
+                    rawBetsData.forEach(bet => { if (bet.details) { let dUp = bet.details.toUpperCase(); if (dUp.includes('ENG')) { engPL += bet.pl; engWagered += bet.wager; if (bet.pl>0) engW++; else if (bet.pl<0) engL++; else engP++; } if (goalKeywords.some(kw => dUp.includes(kw))) { goalPL += bet.pl; goalWagered += bet.wager; if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; } if (dUp.includes('NCAAT')) { ncaatPL += bet.pl; ncaatWagered += bet.wager; if (bet.pl>0) ncaatW++; else if (bet.pl<0) ncaatL++; else ncaatP++; } } });
                     
-                    rawBetsData.forEach(bet => {
-                        if (bet.details) { 
-                            let dUp = bet.details.toUpperCase();
-                            if (dUp.includes('ENG')) { 
-                                engPL += bet.pl; engWagered += bet.wager; 
-                                if (bet.pl>0) engW++; else if (bet.pl<0) engL++; else engP++; 
-                            }
-                            if (goalKeywords.some(kw => dUp.includes(kw))) { 
-                                goalPL += bet.pl; goalWagered += bet.wager; 
-                                if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; 
-                            }
-                            if (dUp.includes('NCAAT')) { 
-                                ncaatPL += bet.pl; ncaatWagered += bet.wager; 
-                                if (bet.pl>0) ncaatW++; else if (bet.pl<0) ncaatL++; else ncaatP++; 
-                            }
-                        }
-                    });
-                    
-                    let engROIVal = engWagered > 0 ? (engPL / engWagered * 100) : 0; 
-                    document.getElementById('valEngPL').textContent = formatPL(engPL); 
-                    document.getElementById('valEngPL').style.color = getColor(formatPL(engPL)); 
-                    document.getElementById('valEngRecord').textContent = `${engW}W - ${engL}L - ${engP}P`; 
-                    document.getElementById('valEngROI').textContent = (engROIVal > 0 ? '+' : '') + engROIVal.toFixed(2) + '%'; 
-                    document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));
-                    
-                    let goalROIVal = goalWagered > 0 ? (goalPL / goalWagered * 100) : 0; 
-                    document.getElementById('valGoalPL').textContent = formatPL(goalPL); 
-                    document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL)); 
-                    document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; 
-                    document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; 
-                    document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
+                    let engROIVal = engWagered > 0 ? (engPL / engWagered * 100) : 0; document.getElementById('valEngPL').textContent = formatPL(engPL); document.getElementById('valEngPL').style.color = getColor(formatPL(engPL)); document.getElementById('valEngRecord').textContent = `${engW}W - ${engL}L - ${engP}P`; document.getElementById('valEngROI').textContent = (engROIVal > 0 ? '+' : '') + engROIVal.toFixed(2) + '%'; document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));
+                    let goalROIVal = goalWagered > 0 ? (goalPL / goalWagered * 100) : 0; document.getElementById('valGoalPL').textContent = formatPL(goalPL); document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL)); document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
+                    let ncaatROIVal = ncaatWagered > 0 ? (ncaatPL / ncaatWagered * 100) : 0; document.getElementById('valNcaatPL').textContent = formatPL(ncaatPL); document.getElementById('valNcaatPL').style.color = getColor(formatPL(ncaatPL)); document.getElementById('valNcaatRecord').textContent = `${ncaatW}W - ${ncaatL}L - ${ncaatP}P`; document.getElementById('valNcaatROI').textContent = (ncaatROIVal > 0 ? '+' : '') + ncaatROIVal.toFixed(2) + '%'; document.getElementById('valNcaatROI').style.color = getColor(formatPL(ncaatPL));
 
-                    let ncaatROIVal = ncaatWagered > 0 ? (ncaatPL / ncaatWagered * 100) : 0; 
-                    document.getElementById('valNcaatPL').textContent = formatPL(ncaatPL); 
-                    document.getElementById('valNcaatPL').style.color = getColor(formatPL(ncaatPL)); 
-                    document.getElementById('valNcaatRecord').textContent = `${ncaatW}W - ${ncaatL}L - ${ncaatP}P`; 
-                    document.getElementById('valNcaatROI').textContent = (ncaatROIVal > 0 ? '+' : '') + ncaatROIVal.toFixed(2) + '%'; 
-                    document.getElementById('valNcaatROI').style.color = getColor(formatPL(ncaatPL));
-
-                    renderLeaderboard(); 
-                    renderBetLists(); 
-                    dataFetched = true;
-                    
-                    if (!isSilent) { 
-                        document.getElementById('calLoader').style.display = 'none'; 
-                        document.getElementById('dashLoader').style.display = 'none'; 
-                        document.getElementById('calContainer').style.display = 'block'; 
-                        document.getElementById('dashContainer').style.display = 'block'; 
-                        if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); 
-                    }
+                    renderLeaderboard(); renderBetLists(); dataFetched = true;
+                    if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
                 }
-            }).catch(e => {
-                document.getElementById('refreshBtn').textContent = "⟳ Refresh"; 
-                if(!isSilent) alert("CRASH REPORT: \n\n" + e.message);
-                
-                document.getElementById('calLoader').style.display = 'none'; 
-                document.getElementById('dashLoader').style.display = 'none'; 
-                document.getElementById('calContainer').style.display = 'block'; 
-                document.getElementById('dashContainer').style.display = 'block';
-            });
+            }).catch(e => { document.getElementById('refreshBtn').textContent = "⟳ Refresh"; if(!isSilent) alert("CRASH: " + e.message); document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; });
         }
 
-        function changeMonth(dir) { 
-            currentMonth += dir; 
-            if(currentMonth > 11) { currentMonth = 0; currentYear++; } 
-            if(currentMonth < 0) { currentMonth = 11; currentYear--; } 
-            renderCalendar(currentMonth, currentYear); 
-        }
+        function changeMonth(dir) { currentMonth += dir; if(currentMonth > 11) { currentMonth = 0; currentYear++; } if(currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentMonth, currentYear); }
 
         function renderCalendar(month, year) {
-            const grid = document.getElementById('calendarGrid'); 
-            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`; 
-            grid.innerHTML = '';
-            
-            const firstDay = new Date(year, month, 1).getDay(); 
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
+            const grid = document.getElementById('calendarGrid'); const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`; grid.innerHTML = '';
+            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
             ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { grid.innerHTML += `<div class="day-name">${d}</div>`; });
             for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="day-cell empty"></div>`; }
-            
-            for (let i = 1; i <= daysInMonth; i++) {
-                const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; 
-                let pl = dailyPLData[dStr] || 0;
-                let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`); 
-                let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : '');
-                
-                grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`;
-            }
-            
-            updateCalendarSummaries(month, year); 
-            renderHallOfFame(); 
-            setChartRange('MONTH');
+            for (let i = 1; i <= daysInMonth; i++) { const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; let pl = dailyPLData[dStr] || 0; let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`); let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : ''); grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`; }
+            updateCalendarSummaries(month, year); renderHallOfFame(); setChartRange('MONTH');
         }
 
         function submitBet() {
-            const btn = document.getElementById('submitBtn');
-            const statusDiv = document.getElementById('status');
-            const keepSlip = document.getElementById('keepSlip').checked;
-            
-            const payload = { 
-                book: document.getElementById('book').value, 
-                date: document.getElementById('date').value, 
-                sport: document.getElementById('sport').value, 
-                parlay: document.getElementById('parlay').checked, 
-                betType: document.getElementById('betType').value, 
-                team1: document.getElementById('team1').value, 
-                team2: document.getElementById('team2').value, 
-                details: document.getElementById('details').value, 
-                odds: parseFloat(document.getElementById('odds').value), 
-                wager: parseFloat(document.getElementById('wager').value), 
-                result: document.getElementById('result').value 
-            };
-            
-            if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) { 
-                statusDiv.textContent = "Fill Team 1, Odds, and Wager."; 
-                statusDiv.className = "error"; 
-                statusDiv.style.display = "block"; 
-                return; 
-            }
-            
+            const btn = document.getElementById('submitBtn'); const statusDiv = document.getElementById('status'); const keepSlip = document.getElementById('keepSlip').checked;
+            const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: document.getElementById('parlay').checked, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: document.getElementById('details').value, odds: parseFloat(document.getElementById('odds').value), wager: parseFloat(document.getElementById('wager').value), result: document.getElementById('result').value };
+            if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) { statusDiv.textContent = "Fill Team 1, Odds, and Wager."; statusDiv.className = "error"; statusDiv.style.display = "block"; return; }
             let finalData = editingBet ? { action: "edit", old: editingBet, new: payload } : { action: "log", ...payload };
-
-            btn.disabled = true; 
-            btn.textContent = "SENDING...";
-            
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) })
-            .then(async res => {
-                const text = await res.text();
-                try { 
-                    return JSON.parse(text); 
-                } catch (e) { 
-                    throw new Error("SAFARI ITP BLOCK: Google returned HTML instead of data."); 
-                }
-            })
-            .then(data => {
-                if (data.status === "success") {
-                    statusDiv.textContent = editingBet ? "Bet Updated!" : "Bet Logged!"; 
-                    statusDiv.className = "success";
-                    if (editingBet || !keepSlip) { cancelEdit(); }
-                    dataFetched = false; 
-                    fetchMasterData(true);
-                } else { 
-                    statusDiv.textContent = "Error: " + data.message; 
-                    statusDiv.className = "error"; 
-                    btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; 
-                }
-                statusDiv.style.display = "block"; 
-                btn.disabled = false; 
-            })
-            .catch(e => {
-                statusDiv.textContent = "CRASH: " + e.message; 
-                statusDiv.className = "error"; 
-                statusDiv.style.display = "block"; 
-                btn.disabled = false; 
-                btn.textContent = editingBet ? "UPDATE BET" : "LOG BET";
-            });
+            btn.disabled = true; btn.textContent = "SENDING...";
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) }).then(async res => { const text = await res.text(); try { return JSON.parse(text); } catch (e) { throw new Error("SAFARI ITP BLOCK"); } })
+            .then(data => { if (data.status === "success") { statusDiv.textContent = editingBet ? "Bet Updated!" : "Bet Logged!"; statusDiv.className = "success"; if (editingBet || !keepSlip) { cancelEdit(); } dataFetched = false; fetchMasterData(true); } else { statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error"; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; } statusDiv.style.display = "block"; btn.disabled = false; })
+            .catch(e => { statusDiv.textContent = "CRASH: " + e.message; statusDiv.className = "error"; statusDiv.style.display = "block"; btn.disabled = false; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; });
         }
     </script>
 </body>
