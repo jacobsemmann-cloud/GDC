@@ -269,7 +269,7 @@
 
                 <div class="dash-card" style="border-left-color: #ff9900;">
                     <h3 class="dash-title" style="color: #ff9900;">🌐 Live Line Shopper</h3>
-                    <p style="font-size: 10px; opacity: 0.7; margin-top: -5px; margin-bottom: 8px;">Note: Player props consume 10x API credits per search.</p>
+                    <p style="font-size: 10px; opacity: 0.7; margin-top: -5px; margin-bottom: 8px;">Note: Player props consume 10x API credits per search. <b>You MUST type the team name with the player (e.g. 'Knicks Brunson').</b></p>
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <select id="oddsSport" class="lb-select" style="flex: 1; min-height: 36px; font-size: 13px;">
                             <option value="basketball_nba">NBA</option>
@@ -290,7 +290,7 @@
                         </select>
                     </div>
                     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                        <input type="text" id="oddsTeam" placeholder="Team or Player Name" style="flex: 2; min-height: 36px; padding: 8px; font-size: 13px;">
+                        <input type="text" id="oddsTeam" placeholder="e.g. Knicks Brunson" style="flex: 2; min-height: 36px; padding: 8px; font-size: 13px;">
                         <button class="btn-primary" id="btnOddsSend" onclick="runRealLineShopper()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #ff9900;">Search</button>
                     </div>
                     <div id="oddsResponse" style="font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
@@ -473,18 +473,18 @@
             btn.textContent = "Ask"; btn.disabled = false;
         }
 
-        // --- REAL DATA API LINE SHOPPER WITH EXPANDED PROPS ---
+        // --- REAL DATA API LINE SHOPPER WITH TWO-STEP FETCH FOR PROPS ---
         async function runRealLineShopper() {
             const apiKey = "8d394324b96f75beb3566f481dd33315"; 
             const sport = document.getElementById('oddsSport').value;
             const market = document.getElementById('oddsMarket').value;
-            const searchFilter = document.getElementById('oddsTeam').value.trim().toLowerCase();
+            const rawSearch = document.getElementById('oddsTeam').value.trim().toLowerCase();
             
             const btn = document.getElementById('btnOddsSend');
             const resDiv = document.getElementById('oddsResponse');
             
-            if (!searchFilter) {
-                alert("Please enter a team or player name!");
+            if (!rawSearch) {
+                alert("Please enter a team (or Team + Player)!");
                 return;
             }
 
@@ -494,33 +494,68 @@
             resDiv.innerHTML = "<i>Fetching live Vegas odds...</i>";
 
             try {
-                const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
-                const response = await fetch(url);
-                const data = await response.json();
+                const isProp = market.startsWith('player_');
+                const searchTerms = rawSearch.split(' ');
+                let dataList = [];
 
-                if (data.message) throw new Error(data.message);
+                if (isProp) {
+                    // STEP 1: Fetch today's games to get the Event ID
+                    resDiv.innerHTML = "<i>Locating game...</i>";
+                    const eventsUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${apiKey}`;
+                    const eventsRes = await fetch(eventsUrl);
+                    const eventsData = await eventsRes.json();
+
+                    if (eventsData.message) throw new Error(eventsData.message);
+
+                    // Find game matching ANY of the search terms (e.g. "Knicks")
+                    let targetEvent = eventsData.find(g => 
+                        searchTerms.some(term => g.home_team.toLowerCase().includes(term) || g.away_team.toLowerCase().includes(term))
+                    );
+
+                    if (!targetEvent) {
+                        throw new Error("Could not find a game. For props, you MUST include the team name (e.g., 'Knicks Brunson').");
+                    }
+
+                    // STEP 2: Fetch props for that specific Event ID
+                    resDiv.innerHTML = `<i>Found game (${targetEvent.away_team} @ ${targetEvent.home_team}). Fetching props...</i>`;
+                    const propUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${targetEvent.id}/odds?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
+                    const propRes = await fetch(propUrl);
+                    const propData = await propRes.json();
+                    
+                    if (propData.message) throw new Error(propData.message);
+                    
+                    dataList = [propData]; // Wrap the single game response in an array so it processes the same way
+                    
+                } else {
+                    // STANDARD MARKETS: Fetch all games at once
+                    const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
+                    const response = await fetch(url);
+                    dataList = await response.json();
+                    if (dataList.message) throw new Error(dataList.message);
+                }
 
                 let targetGame = null;
                 let foundPlayerName = null;
-                const isProp = market.startsWith('player_');
 
-                // Search logic: Find the game that matches the team OR the player prop
-                for (const game of data) {
-                    if (!isProp && (game.home_team.toLowerCase().includes(searchFilter) || game.away_team.toLowerCase().includes(searchFilter))) {
+                // Lock onto the correct game and player in the data
+                for (const game of dataList) {
+                    if (!isProp && searchTerms.some(term => game.home_team.toLowerCase().includes(term) || game.away_team.toLowerCase().includes(term))) {
                         targetGame = game;
                         break;
                     }
 
                     if (isProp) {
+                        targetGame = game; 
                         let playerFoundInThisGame = false;
                         for (const book of game.bookmakers) {
                             if (book.markets && book.markets[0]) {
-                                const foundOutcome = book.markets[0].outcomes.find(o => 
-                                    (o.description && o.description.toLowerCase().includes(searchFilter)) || 
-                                    (o.name && o.name.toLowerCase().includes(searchFilter))
-                                );
+                                // Find an outcome that matches ANY of our search terms (like "Brunson") but IS NOT the team name
+                                const foundOutcome = book.markets[0].outcomes.find(o => {
+                                    let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
+                                    return searchTerms.some(term => text.includes(term) && !game.home_team.toLowerCase().includes(term) && !game.away_team.toLowerCase().includes(term));
+                                });
+                                
                                 if (foundOutcome) {
-                                    targetGame = game;
                                     foundPlayerName = foundOutcome.description || foundOutcome.name;
                                     playerFoundInThisGame = true;
                                     break;
@@ -532,10 +567,10 @@
                 }
 
                 if (!targetGame) {
-                    resDiv.innerHTML = `<strong>Error:</strong> Could not find data for "${searchFilter}". Make sure you selected the right sport and bet type!`;
-                    btn.textContent = "Search";
-                    btn.disabled = false;
-                    return;
+                    throw new Error(`Could not find data for "${rawSearch}". Make sure you selected the right sport and bet type!`);
+                }
+                if (isProp && !foundPlayerName) {
+                    throw new Error(`Could not find prop lines for that player. Either lines aren't posted yet, or check spelling (e.g. 'Knicks Brunson').`);
                 }
 
                 const myBooks = { "draftkings": "DraftKings", "fanduel": "FanDuel", "williamhill_us": "Caesars", "betrivers": "BetRivers", "betmgm": "MGM", "bet365": "Bet365" };
@@ -548,7 +583,6 @@
                     
                     if (bookData && bookData.markets && bookData.markets[0]) {
                         
-                        // Check if it's an Over/Under style market
                         const isOverUnder = ['totals', 'player_points', 'player_assists', 'player_shots_on_goal'].includes(market);
 
                         if (isOverUnder) {
@@ -557,7 +591,6 @@
                             let overOutcomes = bookData.markets[0].outcomes.filter(o => o.name === 'Over');
                             let underOutcomes = bookData.markets[0].outcomes.filter(o => o.name === 'Under');
                             
-                            // If it's a prop, we need the specific player's Over/Under
                             let over = isProp ? overOutcomes.find(o => o.description === searchTarget) : overOutcomes[0];
                             let under = isProp ? underOutcomes.find(o => o.description === searchTarget) : underOutcomes[0];
 
@@ -569,12 +602,11 @@
                                 resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
                             }
                         } else {
-                            // Spread, Moneyline, or Anytime Goal logic
                             let outcome = null;
                             if (isProp) {
                                 outcome = bookData.markets[0].outcomes.find(o => (o.description === foundPlayerName || o.name === foundPlayerName));
                             } else {
-                                outcome = bookData.markets[0].outcomes.find(o => o.name.toLowerCase().includes(searchFilter));
+                                outcome = bookData.markets[0].outcomes.find(o => searchTerms.some(term => o.name.toLowerCase().includes(term)));
                             }
 
                             if (outcome) {
@@ -592,7 +624,7 @@
                     }
                 });
 
-                resultsHTML += "</ul><br><i style='font-size:10px; opacity:0.7;'>Powered by The Odds API.</i>";
+                resultsHTML += "</ul><br><i style='font-size:10px; opacity:0.7;'>Powered by The Odds API. PrizePicks excluded from standard game odds.</i>";
                 resDiv.innerHTML = resultsHTML;
 
             } catch (err) {
