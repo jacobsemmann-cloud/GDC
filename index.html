@@ -273,9 +273,24 @@
 
                 <div class="dash-card" style="border-left-color: #ff9900;">
                     <h3 class="dash-title" style="color: #ff9900;">🌐 Live Line Shopper</h3>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <select id="oddsSport" class="lb-select" style="flex: 1; min-height: 36px; font-size: 13px;">
+                            <option value="basketball_nba">NBA</option>
+                            <option value="basketball_ncaab">NCAAB</option>
+                            <option value="americanfootball_nfl">NFL</option>
+                            <option value="americanfootball_ncaaf">NCAAF</option>
+                            <option value="icehockey_nhl">NHL</option>
+                            <option value="baseball_mlb">MLB</option>
+                        </select>
+                        <select id="oddsMarket" class="lb-select" style="flex: 1; min-height: 36px; font-size: 13px;">
+                            <option value="spreads">Spread</option>
+                            <option value="totals">Total</option>
+                            <option value="h2h">Moneyline</option>
+                        </select>
+                    </div>
                     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                        <input type="text" id="oddsQuestion" placeholder="e.g. Best spread for Prairie View A&M vs Lehigh" style="flex: 1; min-height: 36px; padding: 8px; font-size: 13px;">
-                        <button class="btn-primary" id="btnOddsSend" onclick="runLineShopper()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #ff9900;">Search</button>
+                        <input type="text" id="oddsTeam" placeholder="Team Name (e.g. Knicks)" style="flex: 2; min-height: 36px; padding: 8px; font-size: 13px;">
+                        <button class="btn-primary" id="btnOddsSend" onclick="runRealLineShopper()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #ff9900;">Search</button>
                     </div>
                     <div id="oddsResponse" style="font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
                 </div>
@@ -505,63 +520,100 @@
             btn.disabled = false;
         }
 
-        // --- LIVE LINE SHOPPER (STRUCTURED OUTPUT) ---
-        async function runLineShopper() {
-            const key = localStorage.getItem('geminiKey');
-            if (!key) {
-                alert("Please save your Gemini API Key in the Analyst card above first!");
-                return;
-            }
-
-            const question = document.getElementById('oddsQuestion').value.trim();
-            if (!question) return;
-
+        // --- NEW: REAL DATA API LINE SHOPPER ---
+        async function runRealLineShopper() {
+            const apiKey = "8d394324b96f75beb3566f481dd33315"; // Do not share this key publicly!
+            const sport = document.getElementById('oddsSport').value;
+            const market = document.getElementById('oddsMarket').value;
+            const teamFilter = document.getElementById('oddsTeam').value.trim().toLowerCase();
+            
             const btn = document.getElementById('btnOddsSend');
             const resDiv = document.getElementById('oddsResponse');
+            
+            if (!teamFilter) {
+                alert("Please enter a team name to search for!");
+                return;
+            }
 
             btn.textContent = "⏳...";
             btn.disabled = true;
             resDiv.style.display = "block";
-            resDiv.innerHTML = "<i>Searching the live web...</i>";
-
-            const bookOptions = document.getElementById('book').options;
-            const myBooks = Array.from(bookOptions).map(opt => opt.value).join(', ');
-
-            const prompt = `You are an expert sports betting line shopper. Search the live internet for the absolute latest betting odds for the following query: "${question}". 
-
-Search top odds aggregators like ActionNetwork, VegasInsider, and OddsChecker. 
-ONLY output lines for these specific sportsbooks: ${myBooks}. (Note: treat 'MGM' as 'BetMGM').
-
-CRITICAL SEARCH RULE: Do not just rely on the first search result. If your initial search only shows DraftKings, you MUST search specifically for the missing books (e.g., "FanDuel ${question} odds", "Caesars ${question} odds").
-
-CRITICAL FORMAT RULE: For point spreads and totals, you MUST include both the line and the juice/vig (for example: -5.5 (-110) or O 220.5 (-115)).
-
-You MUST format your response as a strict list using dashes. You MUST include a line item for every single sportsbook I gave you. If you cannot find the odds for a specific book after thoroughly searching, output 'N/A' next to its name. Do not include any introductory or concluding conversational text. Do not use bolding asterisks like **. 
-
-End your response with an empty line, followed by 'Best Value: [Book name] ([Line and Juice])'.`;
+            resDiv.innerHTML = "<i>Fetching live Vegas odds...</i>";
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        tools: [{ google_search: {} }] 
-                    })
+                // Ping The Odds API
+                const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.message) throw new Error(data.message);
+
+                // Find the game that matches the team name
+                const game = data.find(g => g.home_team.toLowerCase().includes(teamFilter) || g.away_team.toLowerCase().includes(teamFilter));
+
+                if (!game) {
+                    resDiv.innerHTML = `<strong>Error:</strong> Could not find an upcoming game for "${teamFilter}". Check the spelling or make sure the right sport is selected.`;
+                    btn.textContent = "Search";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Map The Odds API keys to your personal list
+                const myBooks = {
+                    "draftkings": "DraftKings",
+                    "fanduel": "FanDuel",
+                    "williamhill_us": "Caesars",
+                    "betrivers": "BetRivers",
+                    "betmgm": "MGM",
+                    "bet365": "Bet365"
+                };
+
+                let resultsHTML = `<strong>${game.away_team} @ ${game.home_team}</strong><br><br><ul style="margin:0; padding-left:20px;">`;
+
+                Object.keys(myBooks).forEach(bookKey => {
+                    let bookData = game.bookmakers.find(b => b.key === bookKey);
+                    
+                    if (bookData && bookData.markets && bookData.markets[0]) {
+                        
+                        if (market === 'totals') {
+                            // Totals handle Over and Under
+                            let over = bookData.markets[0].outcomes.find(o => o.name === 'Over');
+                            let under = bookData.markets[0].outcomes.find(o => o.name === 'Under');
+                            if (over && under) {
+                                let overPrice = over.price > 0 ? '+' + over.price : over.price;
+                                let underPrice = under.price > 0 ? '+' + under.price : under.price;
+                                resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> O ${over.point} (${overPrice}) | U ${under.point} (${underPrice})</li>`;
+                            } else {
+                                resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
+                            }
+                        } else {
+                            // Spreads and Moneylines isolate the exact team
+                            let outcome = bookData.markets[0].outcomes.find(o => o.name.toLowerCase().includes(teamFilter));
+                            if (outcome) {
+                                let pointStr = outcome.point !== undefined ? outcome.point : '';
+                                if (pointStr > 0 && market === 'spreads') pointStr = '+' + pointStr;
+                                let priceStr = outcome.price > 0 ? '+' + outcome.price : outcome.price;
+                                let space = pointStr !== '' ? ' ' : '';
+                                resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> ${pointStr}${space}(${priceStr})</li>`;
+                            } else {
+                                resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
+                            }
+                        }
+                    } else {
+                        resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
+                    }
                 });
 
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
+                resultsHTML += "</ul><br><i style='font-size:10px; opacity:0.7;'>Powered by The Odds API. PrizePicks excluded from standard game odds.</i>";
+                resDiv.innerHTML = resultsHTML;
 
-                const aiText = data.candidates[0].content.parts[0].text;
-                resDiv.innerHTML = `<strong>Q: ${question}</strong><br><br>${aiText.replace(/\n/g, '<br>')}`;
-                document.getElementById('oddsQuestion').value = '';
             } catch (err) {
-                resDiv.innerHTML = `<span style="color:var(--loss-text)">Error connecting to Gemini: ${err.message}</span>`;
+                resDiv.innerHTML = `<span style="color:var(--loss-text)">API Error: ${err.message}</span>`;
             }
 
             btn.textContent = "Search";
             btn.disabled = false;
+            document.getElementById('oddsTeam').value = '';
         }
         // ---------------------------
 
