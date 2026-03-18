@@ -290,7 +290,7 @@
                         </select>
                     </div>
                     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                        <input type="text" id="oddsTeam" placeholder="e.g. Knicks Brunson" style="flex: 2; min-height: 36px; padding: 8px; font-size: 13px;">
+                        <input type="text" id="oddsTeam" placeholder="e.g. Devils Connor Brown" style="flex: 2; min-height: 36px; padding: 8px; font-size: 13px;">
                         <button class="btn-primary" id="btnOddsSend" onclick="runRealLineShopper()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #ff9900;">Search</button>
                     </div>
                     <div id="oddsResponse" style="font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
@@ -473,7 +473,7 @@
             btn.textContent = "Ask"; btn.disabled = false;
         }
 
-        // --- REAL DATA API LINE SHOPPER WITH TWO-STEP FETCH FOR PROPS ---
+        // --- REAL DATA API LINE SHOPPER WITH BULLETPROOF PROP MATCHING ---
         async function runRealLineShopper() {
             const apiKey = "8d394324b96f75beb3566f481dd33315"; 
             const sport = document.getElementById('oddsSport').value;
@@ -499,7 +499,6 @@
                 let dataList = [];
 
                 if (isProp) {
-                    // STEP 1: Fetch today's games to get the Event ID
                     resDiv.innerHTML = "<i>Locating game...</i>";
                     const eventsUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${apiKey}`;
                     const eventsRes = await fetch(eventsUrl);
@@ -507,27 +506,23 @@
 
                     if (eventsData.message) throw new Error(eventsData.message);
 
-                    // Find game matching ANY of the search terms (e.g. "Knicks")
                     let targetEvent = eventsData.find(g => 
                         searchTerms.some(term => g.home_team.toLowerCase().includes(term) || g.away_team.toLowerCase().includes(term))
                     );
 
                     if (!targetEvent) {
-                        throw new Error("Could not find a game. For props, you MUST include the team name (e.g., 'Knicks Brunson').");
+                        throw new Error("Could not find a game. For props, you MUST include the team name (e.g., 'Devils Connor Brown').");
                     }
 
-                    // STEP 2: Fetch props for that specific Event ID
                     resDiv.innerHTML = `<i>Found game (${targetEvent.away_team} @ ${targetEvent.home_team}). Fetching props...</i>`;
                     const propUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${targetEvent.id}/odds?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
                     const propRes = await fetch(propUrl);
                     const propData = await propRes.json();
                     
                     if (propData.message) throw new Error(propData.message);
-                    
-                    dataList = [propData]; // Wrap the single game response in an array so it processes the same way
+                    dataList = [propData]; 
                     
                 } else {
-                    // STANDARD MARKETS: Fetch all games at once
                     const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
                     const response = await fetch(url);
                     dataList = await response.json();
@@ -535,89 +530,123 @@
                 }
 
                 let targetGame = null;
-                let foundPlayerName = null;
 
-                // Lock onto the correct game and player in the data
                 for (const game of dataList) {
                     if (!isProp && searchTerms.some(term => game.home_team.toLowerCase().includes(term) || game.away_team.toLowerCase().includes(term))) {
                         targetGame = game;
                         break;
                     }
-
-                    if (isProp) {
-                        targetGame = game; 
-                        let playerFoundInThisGame = false;
-                        for (const book of game.bookmakers) {
-                            if (book.markets && book.markets[0]) {
-                                // Find an outcome that matches ANY of our search terms (like "Brunson") but IS NOT the team name
-                                const foundOutcome = book.markets[0].outcomes.find(o => {
-                                    let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
-                                    return searchTerms.some(term => text.includes(term) && !game.home_team.toLowerCase().includes(term) && !game.away_team.toLowerCase().includes(term));
-                                });
-                                
-                                if (foundOutcome) {
-                                    foundPlayerName = foundOutcome.description || foundOutcome.name;
-                                    playerFoundInThisGame = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (playerFoundInThisGame) break;
-                    }
+                    if (isProp) { targetGame = game; break; }
                 }
 
                 if (!targetGame) {
                     throw new Error(`Could not find data for "${rawSearch}". Make sure you selected the right sport and bet type!`);
                 }
-                if (isProp && !foundPlayerName) {
-                    throw new Error(`Could not find prop lines for that player. Either lines aren't posted yet, or check spelling (e.g. 'Knicks Brunson').`);
+
+                let playerTerms = [];
+                if (isProp) {
+                    playerTerms = searchTerms.filter(term => !targetGame.home_team.toLowerCase().includes(term) && !targetGame.away_team.toLowerCase().includes(term));
+                    if (playerTerms.length === 0) throw new Error("Found the game, but couldn't isolate the player's name. Try typing 'Team Player' (e.g. 'Devils Connor Brown').");
                 }
 
                 const myBooks = { "draftkings": "DraftKings", "fanduel": "FanDuel", "williamhill_us": "Caesars", "betrivers": "BetRivers", "betmgm": "MGM", "bet365": "Bet365" };
 
-                let headerText = isProp ? `<strong>${foundPlayerName}</strong> (${targetGame.away_team} @ ${targetGame.home_team})` : `<strong>${targetGame.away_team} @ ${targetGame.home_team}</strong>`;
+                let displayPlayerName = playerTerms.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ');
+                
+                // Try to grab the official formatted name from the API for the header
+                if (isProp) {
+                    for (const book of targetGame.bookmakers) {
+                        let tm = book.markets && book.markets[0];
+                        if (tm) {
+                            let oc = tm.outcomes.find(o => {
+                                let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
+                                return playerTerms.every(pt => text.includes(pt));
+                            });
+                            if (oc) { displayPlayerName = oc.description || oc.name; break; }
+                        }
+                    }
+                }
+
+                let headerText = isProp ? `<strong>${displayPlayerName}</strong> (${targetGame.away_team} @ ${targetGame.home_team})` : `<strong>${targetGame.away_team} @ ${targetGame.home_team}</strong>`;
                 let resultsHTML = `${headerText}<br><br><ul style="margin:0; padding-left:20px;">`;
 
                 Object.keys(myBooks).forEach(bookKey => {
                     let bookData = targetGame.bookmakers.find(b => b.key === bookKey);
                     
-                    if (bookData && bookData.markets && bookData.markets[0]) {
+                    if (bookData && bookData.markets) {
+                        let targetMarket = bookData.markets.find(m => m.key === market) || bookData.markets[0];
                         
-                        const isOverUnder = ['totals', 'player_points', 'player_assists', 'player_shots_on_goal'].includes(market);
+                        if (targetMarket && targetMarket.outcomes) {
+                            const isOverUnder = ['totals', 'player_points', 'player_assists', 'player_shots_on_goal'].includes(market);
 
-                        if (isOverUnder) {
-                            let searchTarget = isProp ? foundPlayerName : undefined;
-                            
-                            let overOutcomes = bookData.markets[0].outcomes.filter(o => o.name === 'Over');
-                            let underOutcomes = bookData.markets[0].outcomes.filter(o => o.name === 'Under');
-                            
-                            let over = isProp ? overOutcomes.find(o => o.description === searchTarget) : overOutcomes[0];
-                            let under = isProp ? underOutcomes.find(o => o.description === searchTarget) : underOutcomes[0];
+                            if (isOverUnder) {
+                                let over = null; let under = null;
+                                
+                                if (isProp) {
+                                    // 1. Try to match ALL search terms exactly
+                                    let localOutcome = targetMarket.outcomes.find(o => {
+                                        let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
+                                        return playerTerms.every(pt => text.includes(pt));
+                                    });
+                                    // 2. Fallback for "C. Brown" scenarios (Match just the last name)
+                                    if (!localOutcome) {
+                                        let lastName = playerTerms[playerTerms.length - 1];
+                                        localOutcome = targetMarket.outcomes.find(o => {
+                                            let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
+                                            return text.includes(lastName);
+                                        });
+                                    }
+                                    
+                                    if (localOutcome) {
+                                        let localName = localOutcome.description || localOutcome.name;
+                                        over = targetMarket.outcomes.find(o => o.name === 'Over' && (o.description === localName || o.name === localName));
+                                        under = targetMarket.outcomes.find(o => o.name === 'Under' && (o.description === localName || o.name === localName));
+                                    }
+                                } else {
+                                    over = targetMarket.outcomes.find(o => o.name === 'Over');
+                                    under = targetMarket.outcomes.find(o => o.name === 'Under');
+                                }
 
-                            if (over && under) {
-                                let overPrice = over.price > 0 ? '+' + over.price : over.price;
-                                let underPrice = under.price > 0 ? '+' + under.price : under.price;
-                                resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> O ${over.point} (${overPrice}) | U ${under.point} (${underPrice})</li>`;
+                                if (over && under) {
+                                    let overPrice = over.price > 0 ? '+' + over.price : over.price;
+                                    let underPrice = under.price > 0 ? '+' + under.price : under.price;
+                                    resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> O ${over.point} (${overPrice}) | U ${under.point} (${underPrice})</li>`;
+                                } else {
+                                    resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
+                                }
                             } else {
-                                resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
+                                // Spreads, Moneyline, Anytime Goal
+                                let outcome = null;
+                                if (isProp) {
+                                    outcome = targetMarket.outcomes.find(o => {
+                                        let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
+                                        return playerTerms.every(pt => text.includes(pt));
+                                    });
+                                    if (!outcome) {
+                                        let lastName = playerTerms[playerTerms.length - 1];
+                                        outcome = targetMarket.outcomes.find(o => {
+                                            let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
+                                            return text.includes(lastName);
+                                        });
+                                    }
+                                } else {
+                                    let teamTerms = searchTerms.filter(term => targetGame.home_team.toLowerCase().includes(term) || targetGame.away_team.toLowerCase().includes(term));
+                                    if(teamTerms.length === 0) teamTerms = searchTerms;
+                                    outcome = targetMarket.outcomes.find(o => teamTerms.some(term => o.name.toLowerCase().includes(term)));
+                                }
+
+                                if (outcome) {
+                                    let pointStr = outcome.point !== undefined ? outcome.point : '';
+                                    if (pointStr > 0 && market === 'spreads') pointStr = '+' + pointStr;
+                                    let priceStr = outcome.price > 0 ? '+' + outcome.price : outcome.price;
+                                    let space = pointStr !== '' ? ' ' : '';
+                                    resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> ${pointStr}${space}(${priceStr})</li>`;
+                                } else {
+                                    resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
+                                }
                             }
                         } else {
-                            let outcome = null;
-                            if (isProp) {
-                                outcome = bookData.markets[0].outcomes.find(o => (o.description === foundPlayerName || o.name === foundPlayerName));
-                            } else {
-                                outcome = bookData.markets[0].outcomes.find(o => searchTerms.some(term => o.name.toLowerCase().includes(term)));
-                            }
-
-                            if (outcome) {
-                                let pointStr = outcome.point !== undefined ? outcome.point : '';
-                                if (pointStr > 0 && market === 'spreads') pointStr = '+' + pointStr;
-                                let priceStr = outcome.price > 0 ? '+' + outcome.price : outcome.price;
-                                let space = pointStr !== '' ? ' ' : '';
-                                resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> ${pointStr}${space}(${priceStr})</li>`;
-                            } else {
-                                resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
-                            }
+                            resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
                         }
                     } else {
                         resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
