@@ -529,11 +529,14 @@
 
             const prompt = `You are an expert sports betting line shopper. Search the live internet for the absolute latest betting odds for the following query: "${question}". 
 
-You MUST prioritize pulling your data from ActionNetwork.com. ONLY look for lines from these specific sportsbooks: ${myBooks}. 
+Search top odds aggregators like ActionNetwork, VegasInsider, and OddsChecker. 
+ONLY output lines for these specific sportsbooks: ${myBooks}. (Note: treat 'MGM' as 'BetMGM').
 
-CRITICAL RULE: For point spreads and totals, you MUST include both the line and the juice/vig (for example: -5.5 (-110) or O 220.5 (-115)).
+CRITICAL SEARCH RULE: Do not just rely on the first search result. If your initial search only shows DraftKings, you MUST search specifically for the missing books (e.g., "FanDuel ${question} odds", "Caesars ${question} odds").
 
-You MUST format your response as a strict list using dashes. You MUST include a line item for every single sportsbook I gave you. If you cannot find the odds for a specific book, output 'N/A' next to its name. Do not include any introductory or concluding conversational text. Do not use bolding asterisks like **. 
+CRITICAL FORMAT RULE: For point spreads and totals, you MUST include both the line and the juice/vig (for example: -5.5 (-110) or O 220.5 (-115)).
+
+You MUST format your response as a strict list using dashes. You MUST include a line item for every single sportsbook I gave you. If you cannot find the odds for a specific book after thoroughly searching, output 'N/A' next to its name. Do not include any introductory or concluding conversational text. Do not use bolding asterisks like **. 
 
 End your response with an empty line, followed by 'Best Value: [Book name] ([Line and Juice])'.`;
 
