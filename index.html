@@ -142,6 +142,7 @@
             
             <div style="display: flex; gap: 8px;">
                 <div class="form-group checkbox-group" style="flex: 1; align-items: center; justify-content: center; height: 36px; margin-top: 17px;"><input type="checkbox" id="parlay"><label for="parlay">Parlay?</label></div>
+                <div class="form-group checkbox-group" style="flex: 1; align-items: center; justify-content: center; height: 36px; margin-top: 17px; border-color: #ff9900;"><input type="checkbox" id="freeBet"><label for="freeBet" style="color: #ff9900; font-weight: bold;">Free Bet</label></div>
                 <div class="form-group" style="flex: 1.5;"><label>Bet Type</label><select id="betType"><option value="Moneyline">Moneyline</option><option value="Spread">Spread</option><option value="Total">Total</option><option value="Prop">Prop</option><option value="Future">Future</option><option value="Teaser">Teaser</option><option value="Multi">Multi</option></select></div>
             </div>
             
@@ -269,7 +270,7 @@
 
                 <div class="dash-card" style="border-left-color: #ff9900;">
                     <h3 class="dash-title" style="color: #ff9900;">🌐 Live Line Shopper</h3>
-                    <p style="font-size: 10px; opacity: 0.7; margin-top: -5px; margin-bottom: 8px;">Note: Player props consume 10x API credits per search. <b>You MUST type the team name with the player (e.g. 'Knicks Brunson').</b></p>
+                    <p style="font-size: 10px; opacity: 0.7; margin-top: -5px; margin-bottom: 8px;">Note: Player props consume 10x API credits per search. <b>You MUST type the team name with the player (e.g. 'Devils Connor Brown').</b></p>
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <select id="oddsSport" class="lb-select" style="flex: 1; min-height: 36px; font-size: 13px;">
                             <option value="basketball_nba">NBA</option>
@@ -829,8 +830,22 @@
 
         function editBet(idx) {
             editingBet = rawBetsData[idx];
-            ['book','date','sport','betType','team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = editingBet[id]);
+            let w = editingBet.wager;
+            let det = editingBet.details || '';
+            let isFB = det.includes('🎁');
+            
+            if (isFB && editingBet.result === 'L') {
+                let match = det.match(/🎁 \$([0-9.]+) Free Bet/);
+                if (match) w = parseFloat(match[1]);
+            }
+            let cleanDetails = det.replace(/\s*\(?🎁 \$[0-9.]+ Free Bet\)?/, '').trim();
+
+            ['book','date','sport','betType','team1','team2','odds','result'].forEach(id => document.getElementById(id).value = editingBet[id]);
+            document.getElementById('details').value = cleanDetails;
+            document.getElementById('wager').value = w;
             document.getElementById('parlay').checked = editingBet.parlay;
+            document.getElementById('freeBet').checked = isFB;
+            
             document.getElementById('submitBtn').textContent = "UPDATE BET"; document.getElementById('cancelEditBtn').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -838,7 +853,7 @@
             editingBet = null; let d = new Date();
             document.getElementById('date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = "");
-            document.getElementById('parlay').checked = false; document.getElementById('submitBtn').textContent = "LOG BET"; document.getElementById('cancelEditBtn').style.display = "none";
+            document.getElementById('parlay').checked = false; document.getElementById('freeBet').checked = false; document.getElementById('submitBtn').textContent = "LOG BET"; document.getElementById('cancelEditBtn').style.display = "none";
         }
 
         function openModal(title, bets, isDayView) {
@@ -954,10 +969,27 @@
 
         function submitBet() {
             const btn = document.getElementById('submitBtn'); const statusDiv = document.getElementById('status'); const keepSlip = document.getElementById('keepSlip').checked;
-            const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: document.getElementById('parlay').checked, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: document.getElementById('details').value, odds: parseFloat(document.getElementById('odds').value), wager: parseFloat(document.getElementById('wager').value), result: document.getElementById('result').value };
-            if (!payload.team1 || isNaN(payload.odds) || isNaN(payload.wager)) { statusDiv.textContent = "Fill Team 1, Odds, and Wager."; statusDiv.className = "error"; statusDiv.style.display = "block"; return; }
+            
+            let isFreeBet = document.getElementById('freeBet').checked;
+            let originalWager = parseFloat(document.getElementById('wager').value);
+            let finalWager = originalWager;
+            let rawDetails = document.getElementById('details').value;
+            let resVal = document.getElementById('result').value;
+
+            if (isFreeBet) {
+                if (!rawDetails.includes('🎁')) {
+                    rawDetails = rawDetails ? rawDetails + ` (🎁 $${originalWager} Free Bet)` : `🎁 $${originalWager} Free Bet`;
+                }
+                if (resVal === 'L') finalWager = 0;
+            }
+
+            const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: document.getElementById('parlay').checked, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: rawDetails, odds: parseFloat(document.getElementById('odds').value), wager: finalWager, result: resVal };
+            
+            if (!payload.team1 || isNaN(payload.odds) || isNaN(originalWager)) { statusDiv.textContent = "Fill Team 1, Odds, and Wager."; statusDiv.className = "error"; statusDiv.style.display = "block"; return; }
+            
             let finalData = editingBet ? { action: "edit", old: editingBet, new: payload } : { action: "log", ...payload };
             btn.disabled = true; btn.textContent = "SENDING...";
+            
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) }).then(async res => { const text = await res.text(); try { return JSON.parse(text); } catch (e) { throw new Error("SAFARI ITP BLOCK"); } })
             .then(data => { if (data.status === "success") { statusDiv.textContent = editingBet ? "Bet Updated!" : "Bet Logged!"; statusDiv.className = "success"; if (editingBet || !keepSlip) { cancelEdit(); } dataFetched = false; fetchMasterData(true); } else { statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error"; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; } statusDiv.style.display = "block"; btn.disabled = false; })
             .catch(e => { statusDiv.textContent = "CRASH: " + e.message; statusDiv.className = "error"; statusDiv.style.display = "block"; btn.disabled = false; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; });
