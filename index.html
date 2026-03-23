@@ -616,7 +616,16 @@
         }
 
         function showDayBets(dateStr) { const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d); openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true); }
-        function showEntityBets(entity) { const bets = rawBetsData.filter(b => b.team1 === entity || b.team2 === entity).sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(entity + " History", bets, false); }
+        
+        function showEntityBets(entity) { 
+            const filter = document.getElementById('lbSportFilter').value;
+            const bets = rawBetsData.filter(b => 
+                ((b.team1 && b.team1.trim() === entity) || (b.team2 && b.team2.trim() === entity)) &&
+                (filter === 'ALL' || b.sport === filter)
+            ).sort((a, b) => new Date(b.date) - new Date(a.date)); 
+            openModal(entity + " History", bets, false); 
+        }
+
         function showSpecialtyBets(type) {
             let bets = [], title = ""; const goalKws = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
             if (type === 'ENG') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG')); title = "ENG Tracker History"; } 
@@ -636,12 +645,31 @@
         }
 
         function renderLeaderboard() {
-            const filter = document.getElementById('lbSportFilter').value; let entities = {};
-            rawBetsData.forEach(bet => { if (filter !== 'ALL' && bet.sport !== filter) return; ['team1', 'team2'].forEach(t => { let team = bet[t]; if (team && team.trim() !== "") { if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; entities[team].bets += 1; entities[team].pl += bet.pl; } }); });
+            const filter = document.getElementById('lbSportFilter').value; 
+            let entities = {};
+            
+            rawBetsData.forEach(bet => { 
+                if (filter !== 'ALL' && bet.sport !== filter) return; 
+                
+                let teamsInBet = new Set();
+                if (bet.team1 && bet.team1.trim() !== "") teamsInBet.add(bet.team1.trim());
+                if (bet.team2 && bet.team2.trim() !== "") teamsInBet.add(bet.team2.trim());
+
+                teamsInBet.forEach(team => {
+                    if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; 
+                    entities[team].bets += 1; 
+                    entities[team].pl += bet.pl; 
+                });
+            });
+            
             let sorted = Object.keys(entities).map(k => [k, entities[k].bets, entities[k].pl]).sort((a, b) => b[2] - a[2]);
             if (sorted.length === 0) { document.getElementById('tableMostProf').innerHTML = '<p style="font-size:13px;">No bets logged.</p>'; return; }
+            
             let html = '<div class="table-wrapper"><table><tr><th>Player/Team</th><th class="text-right">Bets</th><th class="text-right">P/L</th></tr>';
-            for (let i = 0; i < sorted.length; i++) { let entity = sorted[i][0], bets = sorted[i][1], plText = formatPL(sorted[i][2]); html += `<tr class="clickable-row" onclick="showEntityBets('${entity.replace(/'/g, "\\'")}')"><td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`; }
+            for (let i = 0; i < sorted.length; i++) { 
+                let entity = sorted[i][0], bets = sorted[i][1], plText = formatPL(sorted[i][2]); 
+                html += `<tr class="clickable-row" onclick="showEntityBets('${entity.replace(/'/g, "\\'")}')"><td style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">${entity}</td><td class="text-right">${bets}</td><td class="text-right" style="color:${getColor(plText)}; font-weight:bold;">${plText}</td></tr>`; 
+            }
             document.getElementById('tableMostProf').innerHTML = html + '</table></div>';
         }
 
