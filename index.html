@@ -134,7 +134,7 @@
         </div>
 
         <div id="viewLog" class="view-section active">
-            <div class="form-group"><label>Sportsbook</label><select id="book"><option value="DraftKings">DraftKings</option><option value="FanDuel">FanDuel</option><option value="Caesars">Caesars</option><option value="BetRivers">BetRivers</option><option value="MGM">MGM</option><option value="Bet365">Bet365</option><option value="PrizePicks">PrizePicks</option></select></div>
+            <div class="form-group"><label>Sportsbook</label><select id="book"><option value="DraftKings">DraftKings</option><option value="FanDuel">FanDuel</option><option value="Caesars">Caesars</option><option value="BetRivers">BetRivers</option><option value="MGM">MGM</option><option value="Bet365">Bet365</option><option value="PrizePicks">PrizePicks</option><option value="ProphetX">ProphetX</option><option value="Fanatics">Fanatics</option></select></div>
             <div style="display: flex; gap: 8px;">
                 <div class="form-group" style="flex: 1;"><label>Date</label><input type="date" id="date"></div>
                 <div class="form-group" style="flex: 1;"><label>Sport</label><select id="sport"><option value="NHL">NHL</option><option value="NFL">NFL</option><option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option><option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option><option value="GOLF">GOLF</option><option value="MULTI">MULTI</option></select></div>
@@ -240,61 +240,22 @@
             <div id="dashLoader" class="loading-text">Fetching data...</div>
             <div id="dashContainer" style="display:none;">
                 
-                <div class="dash-card" style="border-left-color: #8a2be2;">
-                    <h3 class="dash-title" style="color: #8a2be2;">🤖 Gemini AI Analyst</h3>
-                    <div id="aiSetup" style="margin-bottom: 5px;">
-                        <input type="password" id="geminiKeyInput" placeholder="Paste Gemini API Key here..." style="min-height: 36px; padding: 8px; font-size: 13px; margin-bottom: 8px;">
-                        <button class="btn-primary" onclick="saveGeminiKey()" style="background-color: #8a2be2; padding: 10px; font-size: 14px; margin-top: 0;">Save Key Locally</button>
-                    </div>
-                    <div id="aiControls" style="display: none;">
-                        <div style="display: flex; gap: 6px; margin-top: 0;">
-                            <button class="btn-primary" onclick="runAIAnalysis('7D')" style="background-color: #8a2be2; padding: 10px 4px; margin-top: 0; flex: 1; font-size: 13px;">7 DAYS</button>
-                            <button class="btn-primary" onclick="runAIAnalysis('MONTH')" style="background-color: #8a2be2; padding: 10px 4px; margin-top: 0; flex: 1; font-size: 13px;">1 MONTH</button>
-                            <button class="btn-primary" onclick="runAIAnalysis('YTD')" style="background-color: #8a2be2; padding: 10px 4px; margin-top: 0; flex: 1; font-size: 13px;">YTD</button>
-                        </div>
-                        <button onclick="localStorage.removeItem('geminiKey'); checkGeminiKey();" style="background: transparent; border: none; color: var(--text-main); opacity: 0.6; font-size: 11px; cursor: pointer; display: block; margin: 10px auto 0; text-decoration: underline;">Reset API Key</button>
-                    </div>
-                    <div id="aiResponse" style="margin-top: 15px; font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
-                </div>
-
                 <div class="dash-card" style="border-left-color: #007bff;">
                     <h3 class="dash-title" style="color: #007bff;">💬 Chat With Your Data</h3>
-                    <div id="dataChatControls">
+                    
+                    <div id="aiSetup" style="margin-bottom: 10px;">
+                        <input type="password" id="geminiKeyInput" placeholder="Paste Gemini API Key here..." style="min-height: 36px; padding: 8px; font-size: 13px; margin-bottom: 8px;">
+                        <button class="btn-primary" onclick="saveGeminiKey()" style="background-color: #007bff; padding: 10px; font-size: 14px; margin-top: 0;">Save Key Locally</button>
+                    </div>
+
+                    <div id="aiControls" style="display: none;">
                         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                             <input type="text" id="chatQuestion" placeholder="e.g. What's my ROI on NBA Unders?" style="flex: 1; min-height: 36px; padding: 8px; font-size: 13px;">
                             <button class="btn-primary" id="btnChatSend" onclick="runDataChat()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #007bff;">Ask</button>
                         </div>
                         <div id="chatResponse" style="font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
+                        <button onclick="localStorage.removeItem('geminiKey'); checkGeminiKey();" style="background: transparent; border: none; color: var(--text-main); opacity: 0.6; font-size: 11px; cursor: pointer; display: block; margin: 10px auto 0; text-decoration: underline;">Reset API Key</button>
                     </div>
-                </div>
-
-                <div class="dash-card" style="border-left-color: #ff9900;">
-                    <h3 class="dash-title" style="color: #ff9900;">🌐 Live Line Shopper</h3>
-                    <p style="font-size: 10px; opacity: 0.7; margin-top: -5px; margin-bottom: 8px;">Note: Player props consume 10x API credits per search. <b>You MUST type the team name with the player (e.g. 'Devils Connor Brown').</b></p>
-                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <select id="oddsSport" class="lb-select" style="flex: 1; min-height: 36px; font-size: 13px;">
-                            <option value="basketball_nba">NBA</option>
-                            <option value="basketball_ncaab">NCAAB</option>
-                            <option value="americanfootball_nfl">NFL</option>
-                            <option value="americanfootball_ncaaf">NCAAF</option>
-                            <option value="icehockey_nhl">NHL</option>
-                            <option value="baseball_mlb">MLB</option>
-                        </select>
-                        <select id="oddsMarket" class="lb-select" style="flex: 1; min-height: 36px; font-size: 13px;">
-                            <option value="spreads">Spread</option>
-                            <option value="totals">Total</option>
-                            <option value="h2h">Moneyline</option>
-                            <option value="player_points">Player Points (NBA/NHL)</option>
-                            <option value="player_assists">Player Assists (NBA/NHL)</option>
-                            <option value="player_shots_on_goal">Shots on Goal (NHL)</option>
-                            <option value="player_goal_scorer_anytime">Anytime Goal (NHL)</option>
-                        </select>
-                    </div>
-                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                        <input type="text" id="oddsTeam" placeholder="e.g. Devils Connor Brown" style="flex: 2; min-height: 36px; padding: 8px; font-size: 13px;">
-                        <button class="btn-primary" id="btnOddsSend" onclick="runRealLineShopper()" style="margin-top: 0; width: auto; padding: 0 15px; background-color: #ff9900;">Search</button>
-                    </div>
-                    <div id="oddsResponse" style="font-size: 13px; line-height: 1.5; color: var(--text-main); display: none; padding: 10px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--input-border);"></div>
                 </div>
 
                 <div class="dash-card">
@@ -345,7 +306,9 @@
                         <h3 class="dash-title">Most Profitable</h3>
                         <select id="lbSportFilter" class="lb-select" onchange="renderLeaderboard()">
                             <option value="ALL">All Sports</option><option value="NHL">NHL</option><option value="NFL">NFL</option>
-                            <option value="NBA">NBA</option><option value="MLB">MLB</option>
+                            <option value="NBA">NBA</option><option value="MLB">MLB</option><option value="NCAAB">NCAAB</option>
+                            <option value="NCAAF">NCAAF</option><option value="TENNIS">TENNIS</option><option value="SOCCER">SOCCER</option>
+                            <option value="GOLF">GOLF</option><option value="MULTI">MULTI</option>
                         </select>
                     </div>
                     <div id="tableMostProf"></div>
@@ -402,47 +365,13 @@
             if (key) {
                 document.getElementById('aiSetup').style.display = 'none';
                 document.getElementById('aiControls').style.display = 'block';
-                document.getElementById('aiResponse').style.display = 'none';
+                document.getElementById('chatResponse').style.display = 'none';
             } else {
                 document.getElementById('aiSetup').style.display = 'block';
                 document.getElementById('aiControls').style.display = 'none';
-                document.getElementById('aiResponse').style.display = 'none';
+                document.getElementById('chatResponse').style.display = 'none';
                 document.getElementById('geminiKeyInput').value = '';
             }
-        }
-
-        async function runAIAnalysis(timeframe) {
-            const key = localStorage.getItem('geminiKey');
-            if (!key) { alert("Please save your Gemini API Key first!"); return; }
-            
-            const resDiv = document.getElementById('aiResponse');
-            resDiv.style.display = "block";
-            resDiv.innerHTML = "<i>Crunching the numbers...</i>";
-            
-            let todayObj = new Date();
-            let limitDate = new Date();
-            let label = "";
-            
-            if (timeframe === '7D') { limitDate.setDate(todayObj.getDate() - 7); label = "Last 7 Days"; } 
-            else if (timeframe === 'MONTH') { limitDate.setDate(todayObj.getDate() - 30); label = "Past 30 Days"; } 
-            else if (timeframe === 'YTD') { limitDate = new Date(todayObj.getFullYear(), 0, 1); label = "Year-to-Date"; }
-            
-            const limitStr = formatDateObj(limitDate);
-            const filteredBets = rawBetsData.filter(b => b.date >= limitStr);
-            
-            if (filteredBets.length === 0) { resDiv.innerHTML = `<strong>${label} Analysis:</strong><br><br>No bets found for this timeframe.`; return; }
-            
-            const recentBets = filteredBets.slice(0, 300).map(b => `${b.date} | ${b.sport} | ${b.betType} | Details: ${b.details || 'None'} | $${b.wager} | PL: ${b.pl}`);
-            const prompt = `Act as an expert sports betting analyst. I am giving you my betting history for the ${label}. \n\n${recentBets.join('\n')}\n\nAnalyze my performance over this specific timeframe. Tell me what sport or bet type I am best at, where I am losing money, and give me 2 actionable, blunt pieces of advice to improve my ROI. Keep it under 3 paragraphs. Do not use asterisks or markdown formatting.`;
-            
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-                resDiv.innerHTML = `<strong>${label} Analysis:</strong><br><br>` + data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
-            } catch (err) { resDiv.innerHTML = `<span style="color:var(--loss-text)">Error: ${err.message}</span>`; }
         }
 
         async function runDataChat() {
@@ -473,199 +402,6 @@
 
             btn.textContent = "Ask"; btn.disabled = false;
         }
-
-        // --- REAL DATA API LINE SHOPPER WITH BULLETPROOF PROP MATCHING ---
-        async function runRealLineShopper() {
-            const apiKey = "8d394324b96f75beb3566f481dd33315"; 
-            const sport = document.getElementById('oddsSport').value;
-            const market = document.getElementById('oddsMarket').value;
-            const rawSearch = document.getElementById('oddsTeam').value.trim().toLowerCase();
-            
-            const btn = document.getElementById('btnOddsSend');
-            const resDiv = document.getElementById('oddsResponse');
-            
-            if (!rawSearch) {
-                alert("Please enter a team (or Team + Player)!");
-                return;
-            }
-
-            btn.textContent = "⏳...";
-            btn.disabled = true;
-            resDiv.style.display = "block";
-            resDiv.innerHTML = "<i>Fetching live Vegas odds...</i>";
-
-            try {
-                const isProp = market.startsWith('player_');
-                const searchTerms = rawSearch.split(' ');
-                let dataList = [];
-
-                if (isProp) {
-                    resDiv.innerHTML = "<i>Locating game...</i>";
-                    const eventsUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${apiKey}`;
-                    const eventsRes = await fetch(eventsUrl);
-                    const eventsData = await eventsRes.json();
-
-                    if (eventsData.message) throw new Error(eventsData.message);
-
-                    let targetEvent = eventsData.find(g => 
-                        searchTerms.some(term => g.home_team.toLowerCase().includes(term) || g.away_team.toLowerCase().includes(term))
-                    );
-
-                    if (!targetEvent) {
-                        throw new Error("Could not find a game. For props, you MUST include the team name (e.g., 'Devils Connor Brown').");
-                    }
-
-                    resDiv.innerHTML = `<i>Found game (${targetEvent.away_team} @ ${targetEvent.home_team}). Fetching props...</i>`;
-                    const propUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${targetEvent.id}/odds?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
-                    const propRes = await fetch(propUrl);
-                    const propData = await propRes.json();
-                    
-                    if (propData.message) throw new Error(propData.message);
-                    dataList = [propData]; 
-                    
-                } else {
-                    const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=us&markets=${market}&oddsFormat=american`;
-                    const response = await fetch(url);
-                    dataList = await response.json();
-                    if (dataList.message) throw new Error(dataList.message);
-                }
-
-                let targetGame = null;
-
-                for (const game of dataList) {
-                    if (!isProp && searchTerms.some(term => game.home_team.toLowerCase().includes(term) || game.away_team.toLowerCase().includes(term))) {
-                        targetGame = game;
-                        break;
-                    }
-                    if (isProp) { targetGame = game; break; }
-                }
-
-                if (!targetGame) {
-                    throw new Error(`Could not find data for "${rawSearch}". Make sure you selected the right sport and bet type!`);
-                }
-
-                let playerTerms = [];
-                if (isProp) {
-                    playerTerms = searchTerms.filter(term => !targetGame.home_team.toLowerCase().includes(term) && !targetGame.away_team.toLowerCase().includes(term));
-                    if (playerTerms.length === 0) throw new Error("Found the game, but couldn't isolate the player's name. Try typing 'Team Player' (e.g. 'Devils Connor Brown').");
-                }
-
-                const myBooks = { "draftkings": "DraftKings", "fanduel": "FanDuel", "williamhill_us": "Caesars", "betrivers": "BetRivers", "betmgm": "MGM", "bet365": "Bet365" };
-
-                let displayPlayerName = playerTerms.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ');
-                
-                // Try to grab the official formatted name from the API for the header
-                if (isProp) {
-                    for (const book of targetGame.bookmakers) {
-                        let tm = book.markets && book.markets[0];
-                        if (tm) {
-                            let oc = tm.outcomes.find(o => {
-                                let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
-                                return playerTerms.every(pt => text.includes(pt));
-                            });
-                            if (oc) { displayPlayerName = oc.description || oc.name; break; }
-                        }
-                    }
-                }
-
-                let headerText = isProp ? `<strong>${displayPlayerName}</strong> (${targetGame.away_team} @ ${targetGame.home_team})` : `<strong>${targetGame.away_team} @ ${targetGame.home_team}</strong>`;
-                let resultsHTML = `${headerText}<br><br><ul style="margin:0; padding-left:20px;">`;
-
-                Object.keys(myBooks).forEach(bookKey => {
-                    let bookData = targetGame.bookmakers.find(b => b.key === bookKey);
-                    
-                    if (bookData && bookData.markets) {
-                        let targetMarket = bookData.markets.find(m => m.key === market) || bookData.markets[0];
-                        
-                        if (targetMarket && targetMarket.outcomes) {
-                            const isOverUnder = ['totals', 'player_points', 'player_assists', 'player_shots_on_goal'].includes(market);
-
-                            if (isOverUnder) {
-                                let over = null; let under = null;
-                                
-                                if (isProp) {
-                                    // 1. Try to match ALL search terms exactly
-                                    let localOutcome = targetMarket.outcomes.find(o => {
-                                        let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
-                                        return playerTerms.every(pt => text.includes(pt));
-                                    });
-                                    // 2. Fallback for "C. Brown" scenarios (Match just the last name)
-                                    if (!localOutcome) {
-                                        let lastName = playerTerms[playerTerms.length - 1];
-                                        localOutcome = targetMarket.outcomes.find(o => {
-                                            let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
-                                            return text.includes(lastName);
-                                        });
-                                    }
-                                    
-                                    if (localOutcome) {
-                                        let localName = localOutcome.description || localOutcome.name;
-                                        over = targetMarket.outcomes.find(o => o.name === 'Over' && (o.description === localName || o.name === localName));
-                                        under = targetMarket.outcomes.find(o => o.name === 'Under' && (o.description === localName || o.name === localName));
-                                    }
-                                } else {
-                                    over = targetMarket.outcomes.find(o => o.name === 'Over');
-                                    under = targetMarket.outcomes.find(o => o.name === 'Under');
-                                }
-
-                                if (over && under) {
-                                    let overPrice = over.price > 0 ? '+' + over.price : over.price;
-                                    let underPrice = under.price > 0 ? '+' + under.price : under.price;
-                                    resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> O ${over.point} (${overPrice}) | U ${under.point} (${underPrice})</li>`;
-                                } else {
-                                    resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
-                                }
-                            } else {
-                                // Spreads, Moneyline, Anytime Goal
-                                let outcome = null;
-                                if (isProp) {
-                                    outcome = targetMarket.outcomes.find(o => {
-                                        let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
-                                        return playerTerms.every(pt => text.includes(pt));
-                                    });
-                                    if (!outcome) {
-                                        let lastName = playerTerms[playerTerms.length - 1];
-                                        outcome = targetMarket.outcomes.find(o => {
-                                            let text = ((o.description || '') + " " + (o.name || '')).toLowerCase();
-                                            return text.includes(lastName);
-                                        });
-                                    }
-                                } else {
-                                    let teamTerms = searchTerms.filter(term => targetGame.home_team.toLowerCase().includes(term) || targetGame.away_team.toLowerCase().includes(term));
-                                    if(teamTerms.length === 0) teamTerms = searchTerms;
-                                    outcome = targetMarket.outcomes.find(o => teamTerms.some(term => o.name.toLowerCase().includes(term)));
-                                }
-
-                                if (outcome) {
-                                    let pointStr = outcome.point !== undefined ? outcome.point : '';
-                                    if (pointStr > 0 && market === 'spreads') pointStr = '+' + pointStr;
-                                    let priceStr = outcome.price > 0 ? '+' + outcome.price : outcome.price;
-                                    let space = pointStr !== '' ? ' ' : '';
-                                    resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> ${pointStr}${space}(${priceStr})</li>`;
-                                } else {
-                                    resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
-                                }
-                            }
-                        } else {
-                            resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
-                        }
-                    } else {
-                        resultsHTML += `<li style="margin-bottom: 4px;"><b>${myBooks[bookKey]}:</b> N/A</li>`;
-                    }
-                });
-
-                resultsHTML += "</ul><br><i style='font-size:10px; opacity:0.7;'>Powered by The Odds API. PrizePicks excluded from standard game odds.</i>";
-                resDiv.innerHTML = resultsHTML;
-
-            } catch (err) {
-                resDiv.innerHTML = `<span style="color:var(--loss-text)">API Error: ${err.message}</span>`;
-            }
-
-            btn.textContent = "Search";
-            btn.disabled = false;
-            document.getElementById('oddsTeam').value = '';
-        }
-        // ---------------------------
 
         function getUniqueEntities() {
             let entities = new Set();
