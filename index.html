@@ -288,11 +288,17 @@
                         <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valEngRecord">--</span></div>
                         <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valEngROI">--</span></div>
                     </div>
-                    <div class="clickable-row" onclick="showSpecialtyBets('NCAAT')" style="padding: 8px 6px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
+                    <div class="clickable-row" onclick="showSpecialtyBets('NCAAT')" style="padding: 8px 6px; margin-bottom: 5px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
                         <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">March Madness <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
                         <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valNcaatPL">--</span></div>
                         <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valNcaatRecord">--</span></div>
                         <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valNcaatROI">--</span></div>
+                    </div>
+                    <div class="clickable-row" onclick="showSpecialtyBets('BREWERS')" style="padding: 8px 6px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
+                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Brewers Tracker <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
+                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valBrewersPL">--</span></div>
+                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valBrewersRecord">--</span></div>
+                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valBrewersROI">--</span></div>
                     </div>
                 </div>
 
@@ -631,6 +637,7 @@
             if (type === 'ENG') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG')); title = "ENG Tracker History"; } 
             else if (type === 'GOAL') { bets = rawBetsData.filter(b => b.details && goalKws.some(kw => b.details.toUpperCase().includes(kw))); title = "Goal Props History"; } 
             else if (type === 'NCAAT') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('NCAAT')); title = "March Madness History"; }
+            else if (type === 'BREWERS') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('BREWERS')); title = "Brewers Tracker History"; }
             bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(title, bets, false);
         }
 
@@ -707,12 +714,14 @@
                     rawBetsData = data.rawBets || []; rawBetsData.forEach(b => { b.pl = parseFloat(b.pl) || 0; b.wager = parseFloat(b.wager) || 0; });
                     dailyPLData = data.dailyData || {}; for (let key in dailyPLData) { dailyPLData[key] = parseFloat(dailyPLData[key]) || 0; }
 
-                    let engPL=0, engWagered=0, engW=0, engL=0, engP=0; let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0; let ncaatPL=0, ncaatWagered=0, ncaatW=0, ncaatL=0, ncaatP=0; const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
-                    rawBetsData.forEach(bet => { if (bet.details) { let dUp = bet.details.toUpperCase(); if (dUp.includes('ENG')) { engPL += bet.pl; engWagered += bet.wager; if (bet.pl>0) engW++; else if (bet.pl<0) engL++; else engP++; } if (goalKeywords.some(kw => dUp.includes(kw))) { goalPL += bet.pl; goalWagered += bet.wager; if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; } if (dUp.includes('NCAAT')) { ncaatPL += bet.pl; ncaatWagered += bet.wager; if (bet.pl>0) ncaatW++; else if (bet.pl<0) ncaatL++; else ncaatP++; } } });
+                    let engPL=0, engWagered=0, engW=0, engL=0, engP=0; let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0; let ncaatPL=0, ncaatWagered=0, ncaatW=0, ncaatL=0, ncaatP=0; let brewersPL=0, brewersWagered=0, brewersW=0, brewersL=0, brewersP=0;
+                    const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
+                    rawBetsData.forEach(bet => { if (bet.details) { let dUp = bet.details.toUpperCase(); if (dUp.includes('ENG')) { engPL += bet.pl; engWagered += bet.wager; if (bet.pl>0) engW++; else if (bet.pl<0) engL++; else engP++; } if (goalKeywords.some(kw => dUp.includes(kw))) { goalPL += bet.pl; goalWagered += bet.wager; if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; } if (dUp.includes('NCAAT')) { ncaatPL += bet.pl; ncaatWagered += bet.wager; if (bet.pl>0) ncaatW++; else if (bet.pl<0) ncaatL++; else ncaatP++; } if (dUp.includes('BREWERS')) { brewersPL += bet.pl; brewersWagered += bet.wager; if (bet.pl>0) brewersW++; else if (bet.pl<0) brewersL++; else brewersP++; } } });
                     
                     let engROIVal = engWagered > 0 ? (engPL / engWagered * 100) : 0; document.getElementById('valEngPL').textContent = formatPL(engPL); document.getElementById('valEngPL').style.color = getColor(formatPL(engPL)); document.getElementById('valEngRecord').textContent = `${engW}W - ${engL}L - ${engP}P`; document.getElementById('valEngROI').textContent = (engROIVal > 0 ? '+' : '') + engROIVal.toFixed(2) + '%'; document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));
                     let goalROIVal = goalWagered > 0 ? (goalPL / goalWagered * 100) : 0; document.getElementById('valGoalPL').textContent = formatPL(goalPL); document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL)); document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
                     let ncaatROIVal = ncaatWagered > 0 ? (ncaatPL / ncaatWagered * 100) : 0; document.getElementById('valNcaatPL').textContent = formatPL(ncaatPL); document.getElementById('valNcaatPL').style.color = getColor(formatPL(ncaatPL)); document.getElementById('valNcaatRecord').textContent = `${ncaatW}W - ${ncaatL}L - ${ncaatP}P`; document.getElementById('valNcaatROI').textContent = (ncaatROIVal > 0 ? '+' : '') + ncaatROIVal.toFixed(2) + '%'; document.getElementById('valNcaatROI').style.color = getColor(formatPL(ncaatPL));
+                    let brewersROIVal = brewersWagered > 0 ? (brewersPL / brewersWagered * 100) : 0; document.getElementById('valBrewersPL').textContent = formatPL(brewersPL); document.getElementById('valBrewersPL').style.color = getColor(formatPL(brewersPL)); document.getElementById('valBrewersRecord').textContent = `${brewersW}W - ${brewersL}L - ${brewersP}P`; document.getElementById('valBrewersROI').textContent = (brewersROIVal > 0 ? '+' : '') + brewersROIVal.toFixed(2) + '%'; document.getElementById('valBrewersROI').style.color = getColor(formatPL(brewersPL));
 
                     renderLeaderboard(); renderBetLists(); dataFetched = true;
                     if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
