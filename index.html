@@ -858,9 +858,9 @@
                     let ncaatROIVal = ncaatWagered > 0 ? (ncaatPL / ncaatWagered * 100) : 0; document.getElementById('valNcaatPL').textContent = formatPL(ncaatPL); document.getElementById('valNcaatPL').style.color = getColor(formatPL(ncaatPL)); document.getElementById('valNcaatRecord').textContent = `${ncaatW}W - ${ncaatL}L - ${ncaatP}P`; document.getElementById('valNcaatROI').textContent = (ncaatROIVal > 0 ? '+' : '') + ncaatROIVal.toFixed(2) + '%'; document.getElementById('valNcaatROI').style.color = getColor(formatPL(ncaatPL));
 
                     renderCustomTrackers();
-                    drawDowChart(); // Make sure the new chart fires!
+                    drawDowChart(); 
                     renderLeaderboard(); renderBetLists(); dataFetched = true;
-                    if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'none'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
+                    if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
                 }
             }).catch(e => { document.getElementById('refreshBtn').textContent = "⟳ Refresh"; if(!isSilent) alert("CRASH: " + e.message); document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; });
         }
