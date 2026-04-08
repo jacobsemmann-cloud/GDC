@@ -411,7 +411,6 @@
             btn.textContent = "Ask"; btn.disabled = false;
         }
 
-        // --- DYNAMIC CUSTOM TRACKERS LOGIC ---
         function addCustomTracker() {
             let kw = document.getElementById('newTrackerKeyword').value.trim().toUpperCase();
             if (!kw) return;
@@ -444,8 +443,12 @@
             trackers.forEach(kw => {
                 let pl=0, wag=0, w=0, l=0, p=0;
                 rawBetsData.forEach(bet => {
-                    // LOCKED TO DETAILS ONLY AS REQUESTED
-                    if (bet.details && bet.details.toUpperCase().includes(kw)) {
+                    let matchFound = 
+                        (bet.details && bet.details.toUpperCase().includes(kw)) ||
+                        (bet.team1 && bet.team1.toUpperCase().includes(kw)) ||
+                        (bet.team2 && bet.team2.toUpperCase().includes(kw));
+
+                    if (matchFound) {
                         pl += bet.pl; wag += bet.wager;
                         if (bet.pl > 0) w++; else if (bet.pl < 0) l++; else p++;
                     }
@@ -694,8 +697,11 @@
             else if (type === 'NCAAT') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('NCAAT')); title = "March Madness History"; }
             else if (type.startsWith('CUSTOM_')) {
                 let kw = type.replace('CUSTOM_', '');
-                // LOCKED TO DETAILS ONLY AS REQUESTED
-                bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes(kw)); 
+                bets = rawBetsData.filter(b => {
+                    return (b.details && b.details.toUpperCase().includes(kw)) ||
+                           (b.team1 && b.team1.toUpperCase().includes(kw)) ||
+                           (b.team2 && b.team2.toUpperCase().includes(kw));
+                });
                 title = kw + " Tracker History"; 
             }
             bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(title, bets, false);
