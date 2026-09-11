@@ -155,11 +155,21 @@
                 <div class="form-group autocomplete-wrapper" style="flex:1;"><label>Team 2 (Optional)</label><input type="text" id="team2" placeholder="e.g. Rangers" autocomplete="off"></div>
             </div>
 
-            <div style="display: flex; gap: 8px; align-items: flex-end;">
+            <!-- DYNAMIC DETAILS OR PARLAY BUILDER -->
+            <div style="display: flex; gap: 8px; align-items: flex-end;" id="detailsGroup">
                 <div class="form-group" style="flex: 2;"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
                 <div class="form-group" style="width: auto; margin-bottom: 8px;">
                     <button type="button" class="btn-primary" id="btnLinkGame" onclick="openGameLinker()" style="margin-top:0; background-color:#007bff; padding: 0 10px; height: 36px; font-size: 11px;">🔗 Link Game</button>
                 </div>
+            </div>
+
+            <div id="parlayBuilder" style="display:none; width:100%; margin-bottom:8px; border:1px solid var(--input-border); padding:8px; border-radius:6px; background:var(--bg-base);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="margin:0;">Parlay Legs</label>
+                    <button type="button" class="btn-primary" id="btnLinkGameParlay" onclick="openGameLinker()" style="margin:0; background-color:#007bff; padding: 4px 8px; height: 24px; font-size: 10px; width:auto;">🔗 Link Game</button>
+                </div>
+                <div id="parlayLegsContainer" style="display:flex; flex-direction:column; gap:4px; margin-bottom:6px;"></div>
+                <button type="button" onclick="addParlayLeg()" style="background:transparent; border:1px dashed var(--text-label); color:var(--text-label); padding:6px; border-radius:4px; cursor:pointer; width:100%; font-size:12px; font-weight:bold;">+ Add Leg</button>
             </div>
             
             <div style="display: flex; gap: 8px;">
@@ -169,10 +179,11 @@
             
             <div class="form-group"><label>Result</label><select id="result"><option value="">Pending</option><option value="W">Win (W)</option><option value="L">Loss (L)</option><option value="P">Push (P)</option></select></div>
 
-            <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <div style="display: flex; gap: 5px; margin-top: 10px;">
                 <button onclick="submitBet()" id="submitBtn" class="btn-primary" style="margin-top: 0; flex: 1;">LOG BET</button>
-                <button onclick="deleteBet()" id="deleteBtn" class="btn-primary" style="display: none; background-color: var(--loss-text); color: #fff; margin-top: 0; width: 25%;">DELETE</button>
-                <button onclick="cancelEdit()" id="cancelEditBtn" class="btn-primary" style="display: none; background-color: var(--loss-color); color: var(--loss-text); border: 1px solid var(--loss-text); margin-top: 0; width: 25%;">CANCEL</button>
+                <button onclick="cloneBet()" id="cloneBtn" class="btn-primary" style="display: none; background-color: #007bff; color: #fff; margin-top: 0; width: 18%; padding: 8px 0;">👯<br><span style="font-size:9px">CLONE</span></button>
+                <button onclick="deleteBet()" id="deleteBtn" class="btn-primary" style="display: none; background-color: var(--loss-text); color: #fff; margin-top: 0; width: 18%; padding: 8px 0;">🗑️<br><span style="font-size:9px">DEL</span></button>
+                <button onclick="cancelEdit()" id="cancelEditBtn" class="btn-primary" style="display: none; background-color: var(--loss-color); color: var(--loss-text); border: 1px solid var(--loss-text); margin-top: 0; width: 18%; padding: 8px 0;">✖️<br><span style="font-size:9px">CANCEL</span></button>
             </div>
             
             <div id="status"></div>
@@ -204,6 +215,13 @@
                     <div class="cal-summary-box"><div class="cal-summary-label">Month P/L</div><div class="cal-summary-val" id="calMonthPL">--</div></div>
                     <div class="cal-summary-box"><div class="cal-summary-label">YTD</div><div class="cal-summary-val" id="calYtdPL">--</div></div>
                 </div>
+                <!-- NEW STREAK TRACKING UI -->
+                <div class="cal-summary-cards" style="margin-top:-5px;">
+                    <div class="cal-summary-box"><div class="cal-summary-label">Day Streak</div><div class="cal-summary-val" id="streakDay">--</div></div>
+                    <div class="cal-summary-box"><div class="cal-summary-label">Week Streak</div><div class="cal-summary-val" id="streakWeek">--</div></div>
+                    <div class="cal-summary-box"><div class="cal-summary-label">Month Streak</div><div class="cal-summary-val" id="streakMonth">--</div></div>
+                </div>
+
                 <div class="cal-header"><button class="cal-nav" onclick="changeMonth(-1)">&#9664;</button><div class="cal-month" id="monthLabel">Month Year</div><button class="cal-nav" onclick="changeMonth(1)">&#9654;</button></div>
                 <div class="calendar-grid" id="calendarGrid"></div>
                 
@@ -394,6 +412,18 @@
                 document.body.classList.remove('dark-mode'); 
                 document.getElementById('themeBtn').textContent = 'Dark Mode'; 
             }
+            
+            // Parlay Builder Toggle Event
+            document.getElementById('parlay').addEventListener('change', function(e) {
+                let isP = this.checked;
+                document.getElementById('parlayBuilder').style.display = isP ? 'block' : 'none';
+                document.getElementById('detailsGroup').style.display = isP ? 'none' : 'flex';
+                if(isP && document.getElementById('parlayLegsContainer').children.length === 0) {
+                    addParlayLeg('', false); 
+                    addParlayLeg('', false); 
+                }
+            });
+
             fetchMasterData(true); 
         };
 
@@ -431,9 +461,10 @@
         function selectEspnGame(id) {
             document.getElementById('espnId').value = id;
             document.getElementById('gameLinkModal').style.display = 'none';
-            let btn = document.getElementById('btnLinkGame');
-            btn.textContent = "✅ Linked";
-            btn.style.backgroundColor = "#32CD32";
+            ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
+                let btn = document.getElementById(btnId);
+                if(btn) { btn.textContent = "✅ Linked"; btn.style.backgroundColor = "#32CD32"; }
+            });
         }
 
         function fetchLiveScores(pendingItems) {
@@ -519,6 +550,69 @@
             });
         }
 
+        // --- NEW: PARLAY BUILDER LOGIC ---
+        function addParlayLeg(val = '', isChecked = false) {
+            let div = document.createElement('div');
+            div.style.display = 'flex'; div.style.gap = '4px'; div.style.alignItems = 'center';
+            div.innerHTML = `
+                <input type="checkbox" ${isChecked ? 'checked' : ''} class="leg-check" style="width:16px; height:16px; accent-color:var(--text-label);">
+                <input type="text" class="leg-text" value="${val.replace(/"/g, '&quot;')}" placeholder="Leg description..." style="flex:1; min-height:30px; font-size:12px; padding:4px 8px;">
+                <button type="button" onclick="this.parentElement.remove()" style="background:transparent; border:none; color:var(--loss-text); font-weight:bold; cursor:pointer; padding:0 5px;">X</button>
+            `;
+            document.getElementById('parlayLegsContainer').appendChild(div);
+        }
+
+        function getParlayDetails() {
+            let legs = [];
+            document.querySelectorAll('#parlayLegsContainer > div').forEach(div => {
+                let text = div.querySelector('.leg-text').value.trim();
+                if(text) {
+                    let chk = div.querySelector('.leg-check').checked;
+                    legs.push(`${chk ? '[x]' : '[ ]'} ${text}`);
+                }
+            });
+            return legs.join(' ~~ ');
+        }
+
+        function toggleLeg(event, bIdx, lIdx) {
+            event.stopPropagation();
+            let chk = event.target;
+            chk.disabled = true;
+            
+            let bet = rawBetsData[bIdx];
+            let cleanDetails = bet.details ? bet.details.replace(/\|ESPN:\d+\|/, '').trim() : '';
+            let eIdMatch = bet.details ? bet.details.match(/\|ESPN:\d+\|/) : null;
+            
+            let legs = cleanDetails.split('~~');
+            let leg = legs[lIdx].trim();
+            if(leg.startsWith('[ ]')) legs[lIdx] = leg.replace('[ ]', '[x]');
+            else if(leg.startsWith('[x]')) legs[lIdx] = leg.replace('[x]', '[ ]');
+            
+            let newDetails = legs.join(' ~~ ');
+            if (eIdMatch) newDetails += ` ${eIdMatch[0]}`;
+            
+            let payload = {...bet, details: newDetails};
+            
+            fetch(WEB_APP_URL, {method:'POST', body:JSON.stringify({action:'edit', old:bet, new:payload})})
+            .then(r=>r.json()).then(d => fetchMasterData(true))
+            .catch(e => { chk.checked = !chk.checked; chk.disabled = false; alert("Error saving leg."); });
+        }
+
+        // --- NEW: QUICK SETTLE LOGIC ---
+        function quickSettle(event, idx, res) {
+            event.stopPropagation();
+            let btn = event.target;
+            let ogText = btn.textContent;
+            btn.textContent = "⏳";
+            btn.disabled = true;
+            
+            let bet = rawBetsData[idx];
+            let payload = {...bet, result: res};
+            
+            fetch(WEB_APP_URL, {method:'POST', body:JSON.stringify({action:'edit', old:bet, new:payload})})
+            .then(r=>r.json()).then(d => fetchMasterData(true))
+            .catch(e => { btn.textContent = ogText; btn.disabled = false; alert("Error: " + e.message); });
+        }
 
         function addCustomTracker() {
             let kw = document.getElementById('newTrackerKeyword').value.trim().toUpperCase();
@@ -775,6 +869,53 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
+        // --- NEW: CALENDAR STREAK LOGIC ---
+        function calculateStreaks() {
+            let daily = Object.entries(dailyPLData).sort((a, b) => b[0].localeCompare(a[0]));
+            
+            let dStreak = 0, dType = null;
+            for(let [d, pl] of daily) {
+                if(Math.abs(pl) < 0.01) continue;
+                let t = pl > 0 ? 'W' : 'L';
+                if(dType === null) dType = t;
+                if(t === dType) dStreak++; else break;
+            }
+
+            let weekly = {};
+            daily.forEach(([d, pl]) => {
+                let dateObj = new Date(d + "T00:00:00");
+                let sun = new Date(dateObj); 
+                sun.setDate(dateObj.getDate() - dateObj.getDay());
+                let w = sun.toISOString().split('T')[0];
+                weekly[w] = (weekly[w] || 0) + pl;
+            });
+            let wArr = Object.entries(weekly).sort((a,b) => b[0].localeCompare(a[0]));
+            let wStreak = 0, wType = null;
+            for(let [w, pl] of wArr) {
+                if(Math.abs(pl) < 0.01) continue;
+                let t = pl > 0 ? 'W' : 'L';
+                if(wType === null) wType = t;
+                if(t === wType) wStreak++; else break;
+            }
+
+            let monthly = {};
+            daily.forEach(([d, pl]) => {
+                let m = d.substring(0, 7);
+                monthly[m] = (monthly[m] || 0) + pl;
+            });
+            let mArr = Object.entries(monthly).sort((a,b) => b[0].localeCompare(a[0]));
+            let mStreak = 0, mType = null;
+            for(let [m, pl] of mArr) {
+                if(Math.abs(pl) < 0.01) continue;
+                let t = pl > 0 ? 'W' : 'L';
+                if(mType === null) mType = t;
+                if(t === mType) mStreak++; else break;
+            }
+
+            return { day: {count: dStreak, type: dType}, week: {count: wStreak, type: wType}, month: {count: mStreak, type: mType} };
+        }
+
+        // --- UPDATED: Generate cards with Leg Builders & Quick Settle ---
         function generateBetCardHTML(b, idx, isSettled) {
             let odds = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
@@ -809,11 +950,29 @@
                 wagerDisplay = b.wager > 0 ? `$${b.wager.toFixed(2)} (🎁)` : `$0.00 (🎁 $${wagerAmt.toFixed(2)})`;
             }
 
+            // Parlay Leg UI Logic
+            let detailsHtml = cleanDetails || 'Moneyline';
+            if (b.parlay && cleanDetails.includes('~~')) {
+                let legs = cleanDetails.split('~~');
+                detailsHtml = `<div style="display:flex; flex-direction:column; gap:3px; margin-top:4px;">` + 
+                    legs.map((leg, lIdx) => {
+                        let isChecked = leg.trim().startsWith('[x]');
+                        let text = leg.replace(/\[x\]|\[ \]/g, '').trim();
+                        let checkBox = isSettled ? (isChecked ? '✅' : '❌') : `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="toggleLeg(event, ${idx}, ${lIdx})" style="width:14px; height:14px; accent-color:var(--text-label); vertical-align:middle; margin:0 4px 0 0;">`;
+                        let textSty = isChecked ? 'text-decoration: line-through; opacity:0.6;' : '';
+                        return `<div>${checkBox}<span style="${textSty}">${text}</span></div>`;
+                    }).join('') + `</div>`;
+            }
+
             let statusHtml = '';
             if (isSettled) {
                 statusHtml = `<span style="color:${getColor(plText)}; font-weight:bold;">${b.result}: ${plText}</span>`;
             } else {
-                statusHtml = `<span style="color:#ff9900; font-weight:bold;">⏳ Pending</span>`;
+                statusHtml = `
+                <div style="display:flex; gap:5px; align-items:center;">
+                    <button onclick="quickSettle(event, ${idx}, 'W')" style="background:var(--win-color); color:var(--win-text); border:1px solid var(--win-text); border-radius:4px; padding:2px 8px; font-weight:bold; cursor:pointer;">W</button>
+                    <button onclick="quickSettle(event, ${idx}, 'L')" style="background:var(--loss-color); color:var(--loss-text); border:1px solid var(--loss-text); border-radius:4px; padding:2px 8px; font-weight:bold; cursor:pointer;">L</button>
+                </div>`;
             }
 
             let gamecastHtml = '';
@@ -835,7 +994,7 @@
                     ${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}
                 </div>
                 <div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">
-                    ${cleanDetails || 'Moneyline'}
+                    ${detailsHtml}
                 </div>
                 <div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none; align-items:center;">
                     <span>Wager: ${wagerDisplay} &bull; Pot. Win: <span style="color:var(--win-text); font-weight:bold;">${potWinText}</span>${gamecastHtml}</span>
@@ -912,6 +1071,20 @@
             container.innerHTML = html;
         }
 
+        // --- NEW: CLONE BET LOGIC ---
+        function cloneBet() {
+            editingBet = null; 
+            document.getElementById('result').value = ""; 
+            let d = new Date();
+            document.getElementById('date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            
+            document.getElementById('submitBtn').textContent = "LOG BET"; 
+            document.getElementById('cancelEditBtn').style.display = "none";
+            document.getElementById('deleteBtn').style.display = "none";
+            document.getElementById('cloneBtn').style.display = "none";
+            document.getElementById('status').style.display = "none";
+        }
+
         function editBet(idx) {
             editingBet = rawBetsData[idx];
             let w = editingBet.wager;
@@ -921,14 +1094,16 @@
             if (espnMatch) {
                 document.getElementById('espnId').value = espnMatch[1];
                 det = det.replace(/\|ESPN:\d+\|/, '').trim();
-                let btn = document.getElementById('btnLinkGame');
-                btn.textContent = "✅ Linked";
-                btn.style.backgroundColor = "#32CD32";
+                ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
+                    let btn = document.getElementById(btnId);
+                    if(btn) { btn.textContent = "✅ Linked"; btn.style.backgroundColor = "#32CD32"; }
+                });
             } else {
                 document.getElementById('espnId').value = "";
-                let btn = document.getElementById('btnLinkGame');
-                btn.textContent = "🔗 Link Game";
-                btn.style.backgroundColor = "#007bff";
+                ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
+                    let btn = document.getElementById(btnId);
+                    if(btn) { btn.textContent = "🔗 Link"; btn.style.backgroundColor = "#007bff"; }
+                });
             }
 
             let isFB = det.includes('🎁');
@@ -939,14 +1114,32 @@
             let cleanDetails = det.replace(/\s*\(?🎁 \$[0-9.]+ Free Bet\)?/, '').trim();
 
             ['book','date','sport','betType','team1','team2','odds','result'].forEach(id => document.getElementById(id).value = editingBet[id]);
-            document.getElementById('details').value = cleanDetails;
             document.getElementById('wager').value = w;
             document.getElementById('parlay').checked = editingBet.parlay;
             document.getElementById('freeBet').checked = isFB;
             
+            // Reconstruct Parlay Builder or standard details
+            let isP = editingBet.parlay;
+            document.getElementById('parlayBuilder').style.display = isP ? 'block' : 'none';
+            document.getElementById('detailsGroup').style.display = isP ? 'none' : 'flex';
+            document.getElementById('parlayLegsContainer').innerHTML = '';
+            
+            if(isP && cleanDetails.includes('~~')) {
+                cleanDetails.split('~~').forEach(leg => {
+                    let chk = leg.trim().startsWith('[x]');
+                    let txt = leg.replace(/\[x\]|\[ \]/g, '').trim();
+                    addParlayLeg(txt, chk);
+                });
+                document.getElementById('details').value = "";
+            } else {
+                document.getElementById('details').value = cleanDetails;
+                if(isP) { addParlayLeg(cleanDetails, false); addParlayLeg('', false); }
+            }
+
             document.getElementById('submitBtn').textContent = "UPDATE BET"; 
             document.getElementById('cancelEditBtn').style.display = "block"; 
             document.getElementById('deleteBtn').style.display = "block";
+            document.getElementById('cloneBtn').style.display = "block";
             
             switchTab('log'); 
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -957,15 +1150,21 @@
             document.getElementById('date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             ['team1','team2','details','odds','wager','result', 'espnId'].forEach(id => document.getElementById(id).value = "");
             
-            let btn = document.getElementById('btnLinkGame');
-            btn.textContent = "🔗 Link Game";
-            btn.style.backgroundColor = "#007bff";
+            ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
+                let btn = document.getElementById(btnId);
+                if(btn) { btn.textContent = "🔗 Link"; btn.style.backgroundColor = "#007bff"; }
+            });
 
             document.getElementById('parlay').checked = false; 
             document.getElementById('freeBet').checked = false; 
+            document.getElementById('parlayBuilder').style.display = 'none';
+            document.getElementById('detailsGroup').style.display = 'flex';
+            document.getElementById('parlayLegsContainer').innerHTML = '';
+
             document.getElementById('submitBtn').textContent = "LOG BET"; 
             document.getElementById('cancelEditBtn').style.display = "none";
             document.getElementById('deleteBtn').style.display = "none";
+            document.getElementById('cloneBtn').style.display = "none";
         }
 
         function deleteBet() {
@@ -1165,6 +1364,14 @@
             const viewMonthPrefix = `${year}-${String(month+1).padStart(2,'0')}`, viewYearPrefix = `${year}-`;
             for (const [dateStr, pl] of Object.entries(dailyPLData)) { if (dateStr.startsWith(viewYearPrefix)) { ytdPl += pl; if (dateStr.startsWith(viewMonthPrefix)) monthPl += pl; } }
             document.getElementById('calWeekPL').textContent = formatPL(weekPl); document.getElementById('calWeekPL').style.color = getColor(formatPL(weekPl)); document.getElementById('calMonthPL').textContent = formatPL(monthPl); document.getElementById('calMonthPL').style.color = getColor(formatPL(monthPl)); document.getElementById('calYtdPL').textContent = formatPL(ytdPl); document.getElementById('calYtdPL').style.color = getColor(formatPL(ytdPl));
+
+            let streaks = calculateStreaks();
+            document.getElementById('streakDay').textContent = streaks.day.count > 0 ? `${streaks.day.count}${streaks.day.type}` : '--';
+            document.getElementById('streakDay').style.color = streaks.day.type === 'W' ? 'var(--win-text)' : 'var(--loss-text)';
+            document.getElementById('streakWeek').textContent = streaks.week.count > 0 ? `${streaks.week.count}${streaks.week.type}` : '--';
+            document.getElementById('streakWeek').style.color = streaks.week.type === 'W' ? 'var(--win-text)' : 'var(--loss-text)';
+            document.getElementById('streakMonth').textContent = streaks.month.count > 0 ? `${streaks.month.count}${streaks.month.type}` : '--';
+            document.getElementById('streakMonth').style.color = streaks.month.type === 'W' ? 'var(--win-text)' : 'var(--loss-text)';
         }
 
         function fetchMasterData(isSilent = false) {
@@ -1252,11 +1459,18 @@
             const btn = document.getElementById('submitBtn'); const statusDiv = document.getElementById('status'); const keepSlip = document.getElementById('keepSlip').checked;
             
             let isFreeBet = document.getElementById('freeBet').checked;
+            let isParlay = document.getElementById('parlay').checked;
             let originalWager = parseFloat(document.getElementById('wager').value);
             let finalWager = originalWager;
-            let rawDetails = document.getElementById('details').value;
             let resVal = document.getElementById('result').value;
             let eId = document.getElementById('espnId').value;
+
+            let rawDetails = "";
+            if (isParlay) {
+                rawDetails = getParlayDetails();
+            } else {
+                rawDetails = document.getElementById('details').value;
+            }
 
             if (isFreeBet) {
                 if (!rawDetails.includes('🎁')) {
@@ -1269,7 +1483,7 @@
                 rawDetails += ` |ESPN:${eId}|`;
             }
 
-            const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: document.getElementById('parlay').checked, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: rawDetails, odds: parseFloat(document.getElementById('odds').value), wager: finalWager, result: resVal };
+            const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: isParlay, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: rawDetails, odds: parseFloat(document.getElementById('odds').value), wager: finalWager, result: resVal };
             
             if (!payload.team1 || isNaN(payload.odds) || isNaN(originalWager)) { statusDiv.textContent = "Fill Team 1, Odds, and Wager."; statusDiv.className = "error"; statusDiv.style.display = "block"; return; }
             
