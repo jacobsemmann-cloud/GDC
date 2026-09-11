@@ -113,6 +113,11 @@
         .bet-card-header { display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: bold; color: var(--text-main); font-size: 13px;}
         .bet-card-details { color: var(--text-main); margin-bottom: 6px; opacity: 0.8; font-size: 12px;}
         .bet-card-footer { display: flex; justify-content: space-between; border-top: 1px dashed var(--input-border); padding-top: 6px; font-weight: bold; font-size: 12px; align-items: center;}
+        
+        /* Tag Grid Styles */
+        .tag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .tag-card { background: var(--bg-base); border: 1px solid var(--input-border); border-radius: 6px; padding: 8px; font-size: 11px; cursor: pointer; transition: background-color 0.2s; }
+        .tag-card:active { background-color: rgba(128,128,128,0.2); }
     </style>
 </head>
 <body class="dark-mode">
@@ -155,9 +160,10 @@
                 <div class="form-group autocomplete-wrapper" style="flex:1;"><label>Team 2 (Optional)</label><input type="text" id="team2" placeholder="e.g. Rangers" autocomplete="off"></div>
             </div>
 
-            <!-- DYNAMIC DETAILS OR PARLAY BUILDER -->
+            <!-- DYNAMIC DETAILS OR PARLAY BUILDER WITH TAGS -->
             <div style="display: flex; gap: 8px; align-items: flex-end;" id="detailsGroup">
                 <div class="form-group" style="flex: 2;"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
+                <div class="form-group" style="flex: 1;"><label>Tags</label><input type="text" id="tags" placeholder="e.g. ENG, PRIME"></div>
                 <div class="form-group" style="width: auto; margin-bottom: 8px;">
                     <button type="button" class="btn-primary" id="btnLinkGame" onclick="openGameLinker()" style="margin-top:0; background-color:#007bff; padding: 0 10px; height: 36px; font-size: 11px;">🔗 Link Game</button>
                 </div>
@@ -169,7 +175,8 @@
                     <button type="button" class="btn-primary" id="btnLinkGameParlay" onclick="openGameLinker()" style="margin:0; background-color:#007bff; padding: 4px 8px; height: 24px; font-size: 10px; width:auto;">🔗 Link Game</button>
                 </div>
                 <div id="parlayLegsContainer" style="display:flex; flex-direction:column; gap:4px; margin-bottom:6px;"></div>
-                <button type="button" onclick="addParlayLeg()" style="background:transparent; border:1px dashed var(--text-label); color:var(--text-label); padding:6px; border-radius:4px; cursor:pointer; width:100%; font-size:12px; font-weight:bold;">+ Add Leg</button>
+                <button type="button" onclick="addParlayLeg()" style="background:transparent; border:1px dashed var(--text-label); color:var(--text-label); padding:6px; border-radius:4px; cursor:pointer; width:100%; font-size:12px; font-weight:bold; margin-bottom: 6px;">+ Add Leg</button>
+                <div class="form-group" style="margin-bottom: 0;"><input type="text" id="parlayTags" placeholder="Tags (e.g. MNF, PRIME)" style="min-height: 30px; font-size: 12px; padding: 4px 8px;"></div>
             </div>
             
             <div style="display: flex; gap: 8px;">
@@ -307,34 +314,10 @@
                     <div style="position:relative; height:180px; width:100%;"><canvas id="dowChart"></canvas></div>
                 </div>
 
+                <!-- NEW COMPACT TAG GRID -->
                 <div class="dash-card">
-                    <h3 class="dash-title">Specialty Tracking</h3>
-                    <div class="clickable-row" onclick="showSpecialtyBets('GOAL')" style="padding: 8px 6px; margin-bottom: 5px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
-                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Goal Props (All) <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
-                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valGoalPL">--</span></div>
-                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valGoalRecord">--</span></div>
-                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valGoalROI">--</span></div>
-                    </div>
-                    <div class="clickable-row" onclick="showSpecialtyBets('ENG')" style="padding: 8px 6px; margin-bottom: 5px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
-                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">Empty Net Goals <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
-                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valEngPL">--</span></div>
-                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valEngRecord">--</span></div>
-                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valEngROI">--</span></div>
-                    </div>
-                    <div class="clickable-row" onclick="showSpecialtyBets('NCAAT')" style="padding: 8px 6px; margin-bottom: 15px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
-                        <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">March Madness <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right;">TAP TO VIEW</span></h4>
-                        <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" id="valNcaatPL">--</span></div>
-                        <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value" id="valNcaatRecord">--</span></div>
-                        <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" id="valNcaatROI">--</span></div>
-                    </div>
-
-                    <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 8px; text-transform: uppercase;">Custom Trackers</h4>
-                    <div style="display:flex; gap:8px; margin-bottom:10px;">
-                        <input type="text" id="newTrackerKeyword" placeholder="Keyword (e.g. Brewers)" style="flex:1; min-height:30px; font-size:13px; padding:6px;">
-                        <button class="btn-primary" onclick="addCustomTracker()" style="margin-top:0; width:auto; padding:0 15px; font-size:12px;">Add</button>
-                    </div>
-                    <div id="customTrackersContainer"></div>
-
+                    <h3 class="dash-title">Tag Performance</h3>
+                    <div id="tagGridContainer" class="tag-grid"></div>
                 </div>
 
                 <div class="dash-card"><h3 class="dash-title">By Book</h3><div id="tableBooks"></div></div>
@@ -550,7 +533,6 @@
             });
         }
 
-        // --- NEW: PARLAY BUILDER LOGIC ---
         function addParlayLeg(val = '', isChecked = false) {
             let div = document.createElement('div');
             div.style.display = 'flex'; div.style.gap = '4px'; div.style.alignItems = 'center';
@@ -580,13 +562,19 @@
             chk.disabled = true;
             
             let bet = rawBetsData[bIdx];
-            let cleanDetails = bet.details ? bet.details.replace(/\|ESPN:\d+\|/, '').trim() : '';
-            let eIdMatch = bet.details ? bet.details.match(/\|ESPN:\d+\|/) : null;
+            let cleanDetails = bet.details ? bet.details : '';
             
-            // Extract and preserve the Free Bet text if it exists
+            let eIdMatch = cleanDetails.match(/\|ESPN:\d+\|/);
+            let tagMatch = cleanDetails.match(/\|TAGS:[^|]+\|/);
             let fbMatch = cleanDetails.match(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/);
+            
+            let eIdText = eIdMatch ? eIdMatch[0] : '';
+            let tagText = tagMatch ? tagMatch[0] : '';
             let fbText = fbMatch ? fbMatch[0] : '';
-            cleanDetails = cleanDetails.replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
+
+            cleanDetails = cleanDetails.replace(/\|ESPN:\d+\|/g, '')
+                                       .replace(/\|TAGS:[^|]+\|/g, '')
+                                       .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
             
             let legs = cleanDetails.split('~~');
             let leg = legs[lIdx].trim();
@@ -594,9 +582,9 @@
             else if(leg.startsWith('[x]')) legs[lIdx] = leg.replace('[x]', '[ ]');
             
             let newDetails = legs.join(' ~~ ');
-            // Re-append the Free Bet text and ESPN ID
             if (fbText) newDetails += fbText;
-            if (eIdMatch) newDetails += ` ${eIdMatch[0]}`;
+            if (eIdText) newDetails += ` ${eIdText}`;
+            if (tagText) newDetails += ` ${tagText}`;
             
             let payload = {...bet, details: newDetails};
             
@@ -605,7 +593,6 @@
             .catch(e => { chk.checked = !chk.checked; chk.disabled = false; alert("Error saving leg."); });
         }
 
-        // --- NEW: QUICK SETTLE LOGIC ---
         function quickSettle(event, idx, res) {
             event.stopPropagation();
             let btn = event.target;
@@ -621,58 +608,47 @@
             .catch(e => { btn.textContent = ogText; btn.disabled = false; alert("Error: " + e.message); });
         }
 
-        function addCustomTracker() {
-            let kw = document.getElementById('newTrackerKeyword').value.trim().toUpperCase();
-            if (!kw) return;
-            let trackers = JSON.parse(localStorage.getItem('customTrackers') || '[]');
-            if (!trackers.includes(kw)) {
-                trackers.push(kw);
-                localStorage.setItem('customTrackers', JSON.stringify(trackers));
-                renderCustomTrackers();
-            }
-            document.getElementById('newTrackerKeyword').value = '';
-        }
+        // --- NEW: DYNAMIC TAG GRID RENDERER ---
+        function renderTagGrid() {
+            let tagStats = {};
+            
+            rawBetsData.forEach(bet => {
+                let match = bet.details ? bet.details.match(/\|TAGS:([^|]+)\|/) : null;
+                if (match) {
+                    let tags = match[1].split(',');
+                    tags.forEach(t => {
+                        let tagClean = t.trim().toUpperCase();
+                        if (!tagClean) return;
+                        if (!tagStats[tagClean]) tagStats[tagClean] = { pl: 0, wagered: 0, w: 0, l: 0, p: 0 };
+                        
+                        if (bet.result === 'W' || bet.result === 'L' || bet.result === 'P') {
+                            tagStats[tagClean].pl += bet.pl;
+                            tagStats[tagClean].wagered += bet.wager;
+                            if (bet.result === 'W') tagStats[tagClean].w++;
+                            else if (bet.result === 'L') tagStats[tagClean].l++;
+                            else if (bet.result === 'P') tagStats[tagClean].p++;
+                        }
+                    });
+                }
+            });
 
-        function removeCustomTracker(e, kw) {
-            e.stopPropagation(); 
-            let trackers = JSON.parse(localStorage.getItem('customTrackers') || '[]');
-            trackers = trackers.filter(t => t !== kw);
-            localStorage.setItem('customTrackers', JSON.stringify(trackers));
-            renderCustomTrackers();
-        }
+            let container = document.getElementById('tagGridContainer');
+            let html = '';
+            let sortedTags = Object.keys(tagStats).sort((a,b) => tagStats[b].pl - tagStats[a].pl);
 
-        function renderCustomTrackers() {
-            let trackers = JSON.parse(localStorage.getItem('customTrackers') || '[]');
-            let container = document.getElementById('customTrackersContainer');
-            if (trackers.length === 0) {
-                container.innerHTML = '';
+            if (sortedTags.length === 0) {
+                container.innerHTML = '<div style="grid-column: span 2; text-align:center; opacity:0.7; font-size:12px;">No tags logged yet.</div>';
                 return;
             }
-            
-            let html = '';
-            trackers.forEach(kw => {
-                let pl=0, wag=0, w=0, l=0, p=0;
-                rawBetsData.forEach(bet => {
-                    let cleanDetails = bet.details ? bet.details.replace(/\|ESPN:\d+\|/, '') : '';
-                    let matchFound = 
-                        (cleanDetails.toUpperCase().includes(kw)) ||
-                        (bet.team1 && bet.team1.toUpperCase().includes(kw)) ||
-                        (bet.team2 && bet.team2.toUpperCase().includes(kw));
 
-                    if (matchFound) {
-                        pl += bet.pl; wag += bet.wager;
-                        if (bet.pl > 0) w++; else if (bet.pl < 0) l++; else p++;
-                    }
-                });
-                let roi = wag > 0 ? (pl / wag * 100) : 0;
-                
+            sortedTags.forEach(t => {
+                let s = tagStats[t];
+                let plText = formatPL(s.pl);
                 html += `
-                <div class="clickable-row" onclick="showSpecialtyBets('CUSTOM_${kw}')" style="position:relative; padding: 8px 6px; margin-bottom: 5px; border-radius: 6px; background-color: var(--bg-base); border: 1px solid var(--input-border);">
-                    <button onclick="removeCustomTracker(event, '${kw}')" style="position:absolute; top:5px; right:5px; background:none; border:none; color:var(--loss-text); font-size: 16px; font-weight:bold; cursor:pointer; padding:0 5px;">×</button>
-                    <h4 style="color: var(--text-label); font-size: 13px; margin-top: 0; margin-bottom: 5px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; text-transform: uppercase;">${kw} Tracker <span style="font-size:10px; color:var(--text-main); font-weight:normal; opacity:0.6; float:right; margin-right: 20px;">TAP TO VIEW</span></h4>
-                    <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" style="color:${getColor(formatPL(pl))}">${formatPL(pl)}</span></div>
-                    <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value">${w}W - ${l}L - ${p}P</span></div>
-                    <div class="stat-row" style="margin-bottom:0;"><span class="stat-label">ROI:</span><span class="stat-value" style="color:${getColor(formatPL(pl))}">${(roi>0?'+':'') + roi.toFixed(2)}%</span></div>
+                <div class="tag-card" onclick="showTagBets('${t}')" style="border-left: 3px solid ${s.pl >= 0 ? 'var(--win-text)' : 'var(--loss-text)'}">
+                    <div style="font-weight:bold; color:var(--text-label); margin-bottom:4px;">#${t}</div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Record:</span><span>${s.w}-${s.l}-${s.p}</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>P/L:</span><span style="color:${getColor(plText)}; font-weight:bold;">${plText}</span></div>
                 </div>`;
             });
             container.innerHTML = html;
@@ -880,6 +856,51 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
+        function calculateStreaks() {
+            let daily = Object.entries(dailyPLData).sort((a, b) => b[0].localeCompare(a[0]));
+            
+            let dStreak = 0, dType = null;
+            for(let [d, pl] of daily) {
+                if(Math.abs(pl) < 0.01) continue;
+                let t = pl > 0 ? 'W' : 'L';
+                if(dType === null) dType = t;
+                if(t === dType) dStreak++; else break;
+            }
+
+            let weekly = {};
+            daily.forEach(([d, pl]) => {
+                let dateObj = new Date(d + "T00:00:00");
+                let sun = new Date(dateObj); 
+                sun.setDate(dateObj.getDate() - dateObj.getDay());
+                let w = sun.toISOString().split('T')[0];
+                weekly[w] = (weekly[w] || 0) + pl;
+            });
+            let wArr = Object.entries(weekly).sort((a,b) => b[0].localeCompare(a[0]));
+            let wStreak = 0, wType = null;
+            for(let [w, pl] of wArr) {
+                if(Math.abs(pl) < 0.01) continue;
+                let t = pl > 0 ? 'W' : 'L';
+                if(wType === null) wType = t;
+                if(t === wType) wStreak++; else break;
+            }
+
+            let monthly = {};
+            daily.forEach(([d, pl]) => {
+                let m = d.substring(0, 7);
+                monthly[m] = (monthly[m] || 0) + pl;
+            });
+            let mArr = Object.entries(monthly).sort((a,b) => b[0].localeCompare(a[0]));
+            let mStreak = 0, mType = null;
+            for(let [m, pl] of mArr) {
+                if(Math.abs(pl) < 0.01) continue;
+                let t = pl > 0 ? 'W' : 'L';
+                if(mType === null) mType = t;
+                if(t === mType) mStreak++; else break;
+            }
+
+            return { day: {count: dStreak, type: dType}, week: {count: wStreak, type: wType}, month: {count: mStreak, type: mType} };
+        }
+
         function generateBetCardHTML(b, idx, isSettled) {
             let odds = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
@@ -897,12 +918,16 @@
                 cleanDetails = cleanDetails.replace(/\|ESPN:\d+\|/, '').trim();
             }
 
+            let tagMatch = cleanDetails.match(/\|TAGS:[^|]+\|/);
+            if (tagMatch) {
+                cleanDetails = cleanDetails.replace(/\|TAGS:[^|]+\|/g, '').trim();
+            }
+
             if (isFB && wagerAmt === 0 && !isSettled) {
                 let match = cleanDetails.match(/🎁 \$([0-9.]+) Free Bet/);
                 if (match) wagerAmt = parseFloat(match[1]);
             }
 
-            // Remove the free bet text from the details body since it's already shown in the footer
             cleanDetails = cleanDetails.replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
             
             let potWin = 0;
@@ -1037,7 +1062,6 @@
             container.innerHTML = html;
         }
 
-        // --- CLONE BET LOGIC ---
         function cloneBet() {
             editingBet = null; 
             document.getElementById('result').value = ""; 
@@ -1072,6 +1096,16 @@
                 });
             }
 
+            let tagMatch = det.match(/\|TAGS:([^|]+)\|/);
+            if (tagMatch) {
+                document.getElementById('tags').value = tagMatch[1];
+                document.getElementById('parlayTags').value = tagMatch[1];
+                det = det.replace(/\|TAGS:[^|]+\|/g, '').trim();
+            } else {
+                document.getElementById('tags').value = "";
+                document.getElementById('parlayTags').value = "";
+            }
+
             let isFB = det.includes('🎁');
             if (isFB && editingBet.result === 'L') {
                 let match = det.match(/🎁 \$([0-9.]+) Free Bet/);
@@ -1084,7 +1118,6 @@
             document.getElementById('parlay').checked = editingBet.parlay;
             document.getElementById('freeBet').checked = isFB;
             
-            // Reconstruct Parlay Builder or standard details
             let isP = editingBet.parlay;
             document.getElementById('parlayBuilder').style.display = isP ? 'block' : 'none';
             document.getElementById('detailsGroup').style.display = isP ? 'none' : 'flex';
@@ -1114,7 +1147,7 @@
         function cancelEdit() {
             editingBet = null; let d = new Date();
             document.getElementById('date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            ['team1','team2','details','odds','wager','result', 'espnId'].forEach(id => document.getElementById(id).value = "");
+            ['team1','team2','details','tags','parlayTags','odds','wager','result', 'espnId'].forEach(id => document.getElementById(id).value = "");
             
             ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
                 let btn = document.getElementById(btnId);
@@ -1258,22 +1291,17 @@
             openModal(entity + " History", bets, false); 
         }
 
-        function showSpecialtyBets(type) {
-            let bets = [], title = ""; const goalKws = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
-            if (type === 'ENG') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('ENG')); title = "ENG Tracker History"; } 
-            else if (type === 'GOAL') { bets = rawBetsData.filter(b => b.details && goalKws.some(kw => b.details.toUpperCase().includes(kw))); title = "Goal Props History"; } 
-            else if (type === 'NCAAT') { bets = rawBetsData.filter(b => b.details && b.details.toUpperCase().includes('NCAAT')); title = "March Madness History"; }
-            else if (type.startsWith('CUSTOM_')) {
-                let kw = type.replace('CUSTOM_', '');
-                bets = rawBetsData.filter(b => {
-                    let cleanDetails = b.details ? b.details.replace(/\|ESPN:\d+\|/, '') : '';
-                    return (cleanDetails.toUpperCase().includes(kw)) ||
-                           (b.team1 && b.team1.toUpperCase().includes(kw)) ||
-                           (b.team2 && b.team2.toUpperCase().includes(kw));
-                });
-                title = kw + " Tracker History"; 
-            }
-            bets = bets.sort((a, b) => new Date(b.date) - new Date(a.date)); openModal(title, bets, false);
+        function showTagBets(tag) {
+            let bets = rawBetsData.filter(b => {
+                let match = b.details ? b.details.match(/\|TAGS:([^|]+)\|/) : null;
+                if (match) {
+                    let tags = match[1].split(',').map(t => t.trim().toUpperCase());
+                    return tags.includes(tag.toUpperCase());
+                }
+                return false;
+            }).sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            openModal(`#${tag} History`, bets, false);
         }
 
         function closeModal() { document.getElementById('betsModal').style.display = 'none'; }
@@ -1321,7 +1349,7 @@
             let bestWeek = null, bestWeekVal = -Infinity; for (const [w, pl] of Object.entries(weeklyTotals)) { if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = w; } }
             document.getElementById('hofBestDay').textContent = bestDayVal > 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; document.getElementById('hofBestDay').style.color = bestDayVal > 0 ? getColor(formatPL(bestDayVal)) : ''; document.getElementById('hofBestWeek').textContent = bestWeekVal > 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; document.getElementById('hofBestWeek').style.color = bestWeekVal > 0 ? getColor(formatPL(bestWeekVal)) : '';
             let monsters = rawBetsData.filter(b => b.pl >= 300).sort((a,b) => b.pl - a.pl);
-            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { let cleanDet = m.details ? m.details.replace(/\|ESPN:\d+\|/, '') : ''; html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${cleanDet}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
+            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { let cleanDet = m.details ? m.details.replace(/\|ESPN:\d+\|/, '').replace(/\|TAGS:[^|]+\|/g, '') : ''; html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${cleanDet}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
         }
 
         function updateCalendarSummaries(month, year) {
@@ -1364,15 +1392,7 @@
                     rawBetsData = data.rawBets || []; rawBetsData.forEach(b => { b.pl = parseFloat(b.pl) || 0; b.wager = parseFloat(b.wager) || 0; });
                     dailyPLData = data.dailyData || {}; for (let key in dailyPLData) { dailyPLData[key] = parseFloat(dailyPLData[key]) || 0; }
 
-                    let engPL=0, engWagered=0, engW=0, engL=0, engP=0; let goalPL=0, goalWagered=0, goalW=0, goalL=0, goalP=0; let ncaatPL=0, ncaatWagered=0, ncaatW=0, ncaatL=0, ncaatP=0;
-                    const goalKeywords = ['ATG', 'OT GOAL', 'ENG', '1ST GOAL', 'NEXT GOAL', '2 GOALS', '3 GOALS', 'GOALS PARLAY'];
-                    rawBetsData.forEach(bet => { if (bet.details) { let dUp = bet.details.toUpperCase(); if (dUp.includes('ENG')) { engPL += bet.pl; engWagered += bet.wager; if (bet.pl>0) engW++; else if (bet.pl<0) engL++; else engP++; } if (goalKeywords.some(kw => dUp.includes(kw))) { goalPL += bet.pl; goalWagered += bet.wager; if (bet.pl>0) goalW++; else if (bet.pl<0) goalL++; else goalP++; } if (dUp.includes('NCAAT')) { ncaatPL += bet.pl; ncaatWagered += bet.wager; if (bet.pl>0) ncaatW++; else if (bet.pl<0) ncaatL++; else ncaatP++; } } });
-                    
-                    let engROIVal = engWagered > 0 ? (engPL / engWagered * 100) : 0; document.getElementById('valEngPL').textContent = formatPL(engPL); document.getElementById('valEngPL').style.color = getColor(formatPL(engPL)); document.getElementById('valEngRecord').textContent = `${engW}W - ${engL}L - ${engP}P`; document.getElementById('valEngROI').textContent = (engROIVal > 0 ? '+' : '') + engROIVal.toFixed(2) + '%'; document.getElementById('valEngROI').style.color = getColor(formatPL(engPL));
-                    let goalROIVal = goalWagered > 0 ? (goalPL / goalWagered * 100) : 0; document.getElementById('valGoalPL').textContent = formatPL(goalPL); document.getElementById('valGoalPL').style.color = getColor(formatPL(goalPL)); document.getElementById('valGoalRecord').textContent = `${goalW}W - ${goalL}L - ${goalP}P`; document.getElementById('valGoalROI').textContent = (goalROIVal > 0 ? '+' : '') + goalROIVal.toFixed(2) + '%'; document.getElementById('valGoalROI').style.color = getColor(formatPL(goalPL));
-                    let ncaatROIVal = ncaatWagered > 0 ? (ncaatPL / ncaatWagered * 100) : 0; document.getElementById('valNcaatPL').textContent = formatPL(ncaatPL); document.getElementById('valNcaatPL').style.color = getColor(formatPL(ncaatPL)); document.getElementById('valNcaatRecord').textContent = `${ncaatW}W - ${ncaatL}L - ${ncaatP}P`; document.getElementById('valNcaatROI').textContent = (ncaatROIVal > 0 ? '+' : '') + ncaatROIVal.toFixed(2) + '%'; document.getElementById('valNcaatROI').style.color = getColor(formatPL(ncaatPL));
-
-                    renderCustomTrackers();
+                    renderTagGrid(); 
                     drawDowChart(); 
                     renderLeaderboard(); 
                     renderPendingBets(); 
@@ -1430,6 +1450,8 @@
             let finalWager = originalWager;
             let resVal = document.getElementById('result').value;
             let eId = document.getElementById('espnId').value;
+            
+            let tagsVal = isParlay ? document.getElementById('parlayTags').value : document.getElementById('tags').value;
 
             let rawDetails = "";
             if (isParlay) {
@@ -1447,6 +1469,11 @@
 
             if (eId) {
                 rawDetails += ` |ESPN:${eId}|`;
+            }
+            
+            if (tagsVal) {
+                let cleanTags = tagsVal.split(',').map(t => t.trim().toUpperCase().replace(/^#/, '')).filter(t => t).join(',');
+                if (cleanTags) rawDetails += ` |TAGS:${cleanTags}|`;
             }
 
             const payload = { book: document.getElementById('book').value, date: document.getElementById('date').value, sport: document.getElementById('sport').value, parlay: isParlay, betType: document.getElementById('betType').value, team1: document.getElementById('team1').value, team2: document.getElementById('team2').value, details: rawDetails, odds: parseFloat(document.getElementById('odds').value), wager: finalWager, result: resVal };
