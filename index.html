@@ -845,7 +845,27 @@
             
             let html = '';
             if (isDayView) {
-                let sportSummary = {}; bets.forEach(b => { sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; });
+                let settledPL = 0;
+                let pendingPotential = 0;
+                let sportSummary = {}; 
+                bets.forEach(b => { 
+                    sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; 
+                    if (b.result === 'W' || b.result === 'L' || b.result === 'P') {
+                        settledPL += b.pl;
+                    } else {
+                        let pProfit = 0;
+                        if (b.odds > 0) pProfit = b.wager * (b.odds / 100);
+                        else if (b.odds < 0) pProfit = b.wager / (Math.abs(b.odds) / 100);
+                        pendingPotential += pProfit;
+                    }
+                });
+                let maxProfit = settledPL + pendingPotential;
+                
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--input-border);">`;
+                html += `<div style="font-size:13px; font-weight:bold; color:var(--text-main);">Max Potential Profit:</div>`;
+                html += `<div style="font-size:16px; font-weight:bold; color:${getColor(formatPL(maxProfit))}">${formatPL(maxProfit)}</div>`;
+                html += `</div>`;
+
                 html += '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border);">';
                 for (const [s, pl] of Object.entries(sportSummary)) { let plText = formatPL(pl), borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">${s}: <span style="color:${getColor(plText)}">${plText}</span></div>`; }
                 html += '</div>';
@@ -997,7 +1017,10 @@
                 let hasSettled = false;
                 rawBetsData.forEach(b => {
                     if (b.date === dStr) {
-                        if (!b.result || b.result === 'Pending') pendingAmt += b.wager;
+                        if (!b.result || b.result === 'Pending') {
+                            let isFreeBet = b.details && b.details.includes('🎁');
+                            if (!isFreeBet) pendingAmt += b.wager;
+                        }
                         else hasSettled = true;
                     }
                 });
