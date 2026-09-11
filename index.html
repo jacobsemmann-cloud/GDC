@@ -840,7 +840,9 @@
         }
 
         function openModal(title, bets, isDayView) {
-            const modal = document.getElementById('betsModal'); document.getElementById('modalTitle').textContent = title; const list = document.getElementById('modalBetsList');
+            const modal = document.getElementById('betsModal'); 
+            document.getElementById('modalTitle').textContent = title; 
+            const list = document.getElementById('modalBetsList');
             if (bets.length === 0) { list.innerHTML = '<p style="text-align:center; opacity:0.7;">No bets logged.</p>'; modal.style.display = 'flex'; return; }
             
             let html = '';
@@ -853,9 +855,18 @@
                     if (b.result === 'W' || b.result === 'L' || b.result === 'P') {
                         settledPL += b.pl;
                     } else {
+                        let wagerAmt = b.wager;
+                        let det = b.details || '';
+                        let isFB = det.includes('🎁');
+                        if (isFB && wagerAmt === 0) {
+                            let match = det.match(/🎁 \$([0-9.]+) Free Bet/);
+                            if (match) wagerAmt = parseFloat(match[1]);
+                        }
                         let pProfit = 0;
-                        if (b.odds > 0) pProfit = b.wager * (b.odds / 100);
-                        else if (b.odds < 0) pProfit = b.wager / (Math.abs(b.odds) / 100);
+                        if (!isNaN(b.odds) && b.odds !== 0) {
+                            if (b.odds > 0) pProfit = wagerAmt * (b.odds / 100);
+                            else if (b.odds < 0) pProfit = wagerAmt / (Math.abs(b.odds) / 100);
+                        }
                         pendingPotential += pProfit;
                     }
                 });
@@ -867,7 +878,10 @@
                 html += `</div>`;
 
                 html += '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border);">';
-                for (const [s, pl] of Object.entries(sportSummary)) { let plText = formatPL(pl), borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">${s}: <span style="color:${getColor(plText)}">${plText}</span></div>`; }
+                for (const [s, pl] of Object.entries(sportSummary)) { 
+                    let plText = formatPL(pl), borderCol = pl > 0 ? 'var(--win-text)' : (pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); 
+                    html += `<div style="background:var(--bg-base); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:1px solid ${borderCol};">${s}: <span style="color:${getColor(plText)}">${plText}</span></div>`; 
+                }
                 html += '</div>';
             } else {
                 let totalPL = 0, w=0, l=0, p=0; bets.forEach(b => { totalPL += b.pl; if(b.pl>0)w++; else if(b.pl<0)l++; else p++; });
@@ -876,10 +890,53 @@
             }
             
             bets.forEach(b => {
-                let odds = b.odds > 0 ? `+${b.odds}` : b.odds; let plText = formatPL(b.pl); let borderCol = b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)'); let headerDStr = isDayView ? b.sport : `${(b.date||'').substring(5).replace('-','/')} | ${b.sport}`;
-                html += `<div class="bet-card" style="border-left-color: ${borderCol}"><div class="bet-card-header"><span>${headerDStr}</span><span>${odds}</span></div><div class="bet-card-details" style="font-weight:bold; color:var(--text-label);">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div><div class="bet-card-details">${b.details || 'Moneyline'}</div><div class="bet-card-footer"><span>Wager: $${b.wager.toFixed(2)}</span><span style="color:${getColor(plText)}">${plText}</span></div></div>`;
+                let odds = b.odds > 0 ? `+${b.odds}` : b.odds; 
+                let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
+                let plText = formatPL(b.pl); 
+                let borderCol = isSettled ? (b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)')) : '#f39c12'; 
+                let headerDStr = isDayView ? b.sport : `${(b.date||'').substring(5).replace('-','/')} | ${b.sport}`;
+                
+                let wagerAmt = b.wager;
+                let det = b.details || '';
+                let isFB = det.includes('🎁');
+                if (isFB && wagerAmt === 0) {
+                    let match = det.match(/🎁 \$([0-9.]+) Free Bet/);
+                    if (match) wagerAmt = parseFloat(match[1]);
+                }
+                let potWin = 0;
+                if (!isNaN(b.odds) && b.odds !== 0) {
+                    if (b.odds > 0) potWin = wagerAmt * (b.odds / 100);
+                    else if (b.odds < 0) potWin = wagerAmt / (Math.abs(b.odds) / 100);
+                }
+                let potWinText = `+$${potWin.toFixed(2)}`;
+
+                let wagerDisplay = `$${b.wager.toFixed(2)}`;
+                if (isFB) {
+                    wagerDisplay = b.wager > 0 ? `$${b.wager.toFixed(2)} (🎁)` : `$0.00 (🎁 $${wagerAmt.toFixed(2)})`;
+                }
+
+                let statusHtml = '';
+                if (isSettled) {
+                    statusHtml = `<span style="color:${getColor(plText)}; font-weight:bold;">${b.result}: ${plText}</span>`;
+                } else {
+                    statusHtml = `<span style="color:#ff9900; font-weight:bold;">⏳ Pending</span>`;
+                }
+
+                let rawIdx = rawBetsData.indexOf(b);
+                let clickAttr = rawIdx !== -1 ? ` class="bet-card clickable-row" onclick="closeModal(); editBet(${rawIdx})"` : ` class="bet-card"`;
+
+                html += `<div${clickAttr} style="border-left-color: ${borderCol}">
+                    <div class="bet-card-header"><span>${headerDStr}</span><span>${odds}</span></div>
+                    <div class="bet-card-details" style="font-weight:bold; color:var(--text-label);">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div>
+                    <div class="bet-card-details">${b.details || 'Moneyline'}</div>
+                    <div class="bet-card-footer">
+                        <span>Wager: ${wagerDisplay} &bull; Pot. Win: <span style="color:var(--win-text); font-weight:bold;">${potWinText}</span></span>
+                        ${statusHtml}
+                    </div>
+                </div>`;
             });
-            list.innerHTML = html; modal.style.display = 'flex';
+            list.innerHTML = html; 
+            modal.style.display = 'flex';
         }
 
         function showDayBets(dateStr) { const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d); openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true); }
