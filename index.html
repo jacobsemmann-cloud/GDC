@@ -181,7 +181,7 @@
 
             <div style="display: flex; gap: 5px; margin-top: 10px;">
                 <button onclick="submitBet()" id="submitBtn" class="btn-primary" style="margin-top: 0; flex: 1;">LOG BET</button>
-                <button onclick="cloneBet()" id="cloneBtn" class="btn-primary" style="display: none; background-color: #007bff; color: #fff; margin-top: 0; width: 18%; padding: 8px 0;">👯<br><span style="font-size:9px">CLONE</span></button>
+                <button onclick="cloneBet()" id="cloneBtn" class="btn-primary" style="display: none; background-color: #007bff; color: #fff; margin-top: 0; width: 18%; padding: 8px 0;">🧬<br><span style="font-size:9px">CLONE</span></button>
                 <button onclick="deleteBet()" id="deleteBtn" class="btn-primary" style="display: none; background-color: var(--loss-text); color: #fff; margin-top: 0; width: 18%; padding: 8px 0;">🗑️<br><span style="font-size:9px">DEL</span></button>
                 <button onclick="cancelEdit()" id="cancelEditBtn" class="btn-primary" style="display: none; background-color: var(--loss-color); color: var(--loss-text); border: 1px solid var(--loss-text); margin-top: 0; width: 18%; padding: 8px 0;">✖️<br><span style="font-size:9px">CANCEL</span></button>
             </div>
@@ -583,12 +583,19 @@
             let cleanDetails = bet.details ? bet.details.replace(/\|ESPN:\d+\|/, '').trim() : '';
             let eIdMatch = bet.details ? bet.details.match(/\|ESPN:\d+\|/) : null;
             
+            // Extract and preserve the Free Bet text if it exists
+            let fbMatch = cleanDetails.match(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/);
+            let fbText = fbMatch ? fbMatch[0] : '';
+            cleanDetails = cleanDetails.replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
+            
             let legs = cleanDetails.split('~~');
             let leg = legs[lIdx].trim();
             if(leg.startsWith('[ ]')) legs[lIdx] = leg.replace('[ ]', '[x]');
             else if(leg.startsWith('[x]')) legs[lIdx] = leg.replace('[x]', '[ ]');
             
             let newDetails = legs.join(' ~~ ');
+            // Re-append the Free Bet text and ESPN ID
+            if (fbText) newDetails += fbText;
             if (eIdMatch) newDetails += ` ${eIdMatch[0]}`;
             
             let payload = {...bet, details: newDetails};
@@ -770,7 +777,6 @@
             drawChart();
         }
 
-        // --- UPDATED: ALL TIME CHART FIX INCLUDED ---
         function drawChart() {
             if(plChart) plChart.destroy();
             let ctx = document.getElementById('plChart').getContext('2d');
@@ -781,7 +787,6 @@
             else if (currentChartRange === '7D') { let startObj = new Date(); startObj.setDate(startObj.getDate() - 6); dates = getDates(formatDateObj(startObj), todayStr); } 
             else if (currentChartRange === '30D') { let startObj = new Date(); startObj.setDate(startObj.getDate() - 29); dates = getDates(formatDateObj(startObj), todayStr); } 
             else if (currentChartRange === 'ALL') { 
-                // Ignore blank dates so they don't break the 'earliest' calculation
                 let validDates = rawBetsData.map(b => b.date).filter(d => d);
                 let earliest = validDates.length > 0 ? validDates.reduce((min, d) => d < min ? d : min, validDates[0]) : todayStr;
                 dates = getDates(earliest, todayStr); 
@@ -875,53 +880,6 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
-        // --- CALENDAR STREAK LOGIC ---
-        function calculateStreaks() {
-            let daily = Object.entries(dailyPLData).sort((a, b) => b[0].localeCompare(a[0]));
-            
-            let dStreak = 0, dType = null;
-            for(let [d, pl] of daily) {
-                if(Math.abs(pl) < 0.01) continue;
-                let t = pl > 0 ? 'W' : 'L';
-                if(dType === null) dType = t;
-                if(t === dType) dStreak++; else break;
-            }
-
-            let weekly = {};
-            daily.forEach(([d, pl]) => {
-                let dateObj = new Date(d + "T00:00:00");
-                let sun = new Date(dateObj); 
-                sun.setDate(dateObj.getDate() - dateObj.getDay());
-                let w = sun.toISOString().split('T')[0];
-                weekly[w] = (weekly[w] || 0) + pl;
-            });
-            let wArr = Object.entries(weekly).sort((a,b) => b[0].localeCompare(a[0]));
-            let wStreak = 0, wType = null;
-            for(let [w, pl] of wArr) {
-                if(Math.abs(pl) < 0.01) continue;
-                let t = pl > 0 ? 'W' : 'L';
-                if(wType === null) wType = t;
-                if(t === wType) wStreak++; else break;
-            }
-
-            let monthly = {};
-            daily.forEach(([d, pl]) => {
-                let m = d.substring(0, 7);
-                monthly[m] = (monthly[m] || 0) + pl;
-            });
-            let mArr = Object.entries(monthly).sort((a,b) => b[0].localeCompare(a[0]));
-            let mStreak = 0, mType = null;
-            for(let [m, pl] of mArr) {
-                if(Math.abs(pl) < 0.01) continue;
-                let t = pl > 0 ? 'W' : 'L';
-                if(mType === null) mType = t;
-                if(t === mType) mStreak++; else break;
-            }
-
-            return { day: {count: dStreak, type: dType}, week: {count: wStreak, type: wType}, month: {count: mStreak, type: mType} };
-        }
-
-        // --- Generate cards with Leg Builders & Quick Settle ---
         function generateBetCardHTML(b, idx, isSettled) {
             let odds = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
@@ -943,6 +901,9 @@
                 let match = cleanDetails.match(/🎁 \$([0-9.]+) Free Bet/);
                 if (match) wagerAmt = parseFloat(match[1]);
             }
+
+            // Remove the free bet text from the details body since it's already shown in the footer
+            cleanDetails = cleanDetails.replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
             
             let potWin = 0;
             if (!isNaN(b.odds) && b.odds !== 0) {
@@ -956,7 +917,6 @@
                 wagerDisplay = b.wager > 0 ? `$${b.wager.toFixed(2)} (🎁)` : `$0.00 (🎁 $${wagerAmt.toFixed(2)})`;
             }
 
-            // Parlay Leg UI Logic
             let detailsHtml = cleanDetails || 'Moneyline';
             if (b.parlay && cleanDetails.includes('~~')) {
                 let legs = cleanDetails.split('~~');
