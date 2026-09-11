@@ -770,6 +770,7 @@
             drawChart();
         }
 
+        // --- UPDATED: ALL TIME CHART FIX INCLUDED ---
         function drawChart() {
             if(plChart) plChart.destroy();
             let ctx = document.getElementById('plChart').getContext('2d');
@@ -779,7 +780,12 @@
             if (currentChartRange === 'MONTH') { let firstDay = new Date(currentYear, currentMonth, 1), lastDay = new Date(currentYear, currentMonth + 1, 0); dates = getDates(formatDateObj(firstDay), formatDateObj(lastDay)); } 
             else if (currentChartRange === '7D') { let startObj = new Date(); startObj.setDate(startObj.getDate() - 6); dates = getDates(formatDateObj(startObj), todayStr); } 
             else if (currentChartRange === '30D') { let startObj = new Date(); startObj.setDate(startObj.getDate() - 29); dates = getDates(formatDateObj(startObj), todayStr); } 
-            else if (currentChartRange === 'ALL') { if (rawBetsData.length > 0) { let earliest = rawBetsData.reduce((min, b) => b.date < min ? b.date : min, rawBetsData[0].date); dates = getDates(earliest || todayStr, todayStr); } else { dates = [todayStr]; } }
+            else if (currentChartRange === 'ALL') { 
+                // Ignore blank dates so they don't break the 'earliest' calculation
+                let validDates = rawBetsData.map(b => b.date).filter(d => d);
+                let earliest = validDates.length > 0 ? validDates.reduce((min, d) => d < min ? d : min, validDates[0]) : todayStr;
+                dates = getDates(earliest, todayStr); 
+            }
 
             let labels = [], data = [], cum = 0;
             dates.forEach(dStr => {
@@ -869,7 +875,7 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
-        // --- NEW: CALENDAR STREAK LOGIC ---
+        // --- CALENDAR STREAK LOGIC ---
         function calculateStreaks() {
             let daily = Object.entries(dailyPLData).sort((a, b) => b[0].localeCompare(a[0]));
             
@@ -915,7 +921,7 @@
             return { day: {count: dStreak, type: dType}, week: {count: wStreak, type: wType}, month: {count: mStreak, type: mType} };
         }
 
-        // --- UPDATED: Generate cards with Leg Builders & Quick Settle ---
+        // --- Generate cards with Leg Builders & Quick Settle ---
         function generateBetCardHTML(b, idx, isSettled) {
             let odds = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
@@ -1071,7 +1077,7 @@
             container.innerHTML = html;
         }
 
-        // --- NEW: CLONE BET LOGIC ---
+        // --- CLONE BET LOGIC ---
         function cloneBet() {
             editingBet = null; 
             document.getElementById('result').value = ""; 
