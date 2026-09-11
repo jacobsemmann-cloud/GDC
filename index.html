@@ -31,8 +31,8 @@
         .theme-toggle { background: transparent; border: 2px solid var(--text-label); color: var(--text-label); font-size: 10px; font-weight: bold; cursor: pointer; padding: 6px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;}
         .theme-toggle:active { background: var(--text-label); color: var(--bg-base); }
         
-        .tab-container { display: flex; gap: 6px; margin-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 8px 2px; background: transparent; border: 2px solid var(--text-label); color: var(--text-label); border-radius: 8px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+        .tab-container { display: flex; gap: 4px; margin-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 8px 1px; background: transparent; border: 2px solid var(--text-label); color: var(--text-label); border-radius: 8px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 10.5px; transition: all 0.2s; }
         .tab-btn.active { background: var(--text-label); color: var(--bg-base); }
         
         .chart-btn { flex: 1; padding: 6px 2px; background: transparent; border: 1px solid var(--text-label); color: var(--text-label); border-radius: 6px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 10px; transition: all 0.2s; }
@@ -129,10 +129,13 @@
 
         <div class="tab-container">
             <button class="tab-btn active" id="btnLog" onclick="switchTab('log')">Log</button>
+            <button class="tab-btn" id="btnPending" onclick="switchTab('pending')">Pending</button>
+            <button class="tab-btn" id="btnSettled" onclick="switchTab('settled')">Settled</button>
             <button class="tab-btn" id="btnCal" onclick="switchTab('cal')">Calendar</button>
             <button class="tab-btn" id="btnDash" onclick="switchTab('dash')">Dashboard</button>
         </div>
 
+        <!-- LOG BET VIEW -->
         <div id="viewLog" class="view-section active">
             <div class="form-group"><label>Sportsbook</label><select id="book"><option value="DraftKings">DraftKings</option><option value="FanDuel">FanDuel</option><option value="Caesars">Caesars</option><option value="BetRivers">BetRivers</option><option value="MGM">MGM</option><option value="Bet365">Bet365</option><option value="PrizePicks">PrizePicks</option><option value="ProphetX">ProphetX</option><option value="Fanatics">Fanatics</option></select></div>
             <div style="display: flex; gap: 8px;">
@@ -160,23 +163,31 @@
 
             <div style="display: flex; gap: 8px; margin-top: 10px;">
                 <button onclick="submitBet()" id="submitBtn" class="btn-primary" style="margin-top: 0; flex: 1;">LOG BET</button>
-                <button onclick="cancelEdit()" id="cancelEditBtn" class="btn-primary" style="display: none; background-color: var(--loss-color); color: var(--loss-text); border: 1px solid var(--loss-text); margin-top: 0; width: 30%;">CANCEL</button>
+                <button onclick="deleteBet()" id="deleteBtn" class="btn-primary" style="display: none; background-color: var(--loss-text); color: #fff; margin-top: 0; width: 25%;">DELETE</button>
+                <button onclick="cancelEdit()" id="cancelEditBtn" class="btn-primary" style="display: none; background-color: var(--loss-color); color: var(--loss-text); border: 1px solid var(--loss-text); margin-top: 0; width: 25%;">CANCEL</button>
             </div>
             
             <div id="status"></div>
             <div class="sticky-options"><div class="form-group checkbox-group"><input type="checkbox" id="keepSlip"><label for="keepSlip">Keep Bet In Slip</label></div></div>
-
-            <div style="margin-top: 20px;">
-                <h3 style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--input-border); color: var(--text-label); font-size: 13px; text-transform: uppercase;">Pending Bets (Tap to Edit)</h3>
-                <div id="pendingBetsContainer"></div>
-            </div>
-
-            <div style="margin-top: 15px;">
-                <h3 style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--input-border); color: var(--text-label); font-size: 13px; text-transform: uppercase;">Last 10 Settled Bets</h3>
-                <div id="recentBetsContainer"></div>
-            </div>
         </div>
 
+        <!-- PENDING BETS VIEW -->
+        <div id="viewPending" class="view-section">
+            <h3 style="margin-top: 0; margin-bottom: 12px; color: var(--text-label); font-size: 15px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">Pending Bets</h3>
+            <div id="pendingBetsList"></div>
+        </div>
+
+        <!-- SETTLED BETS VIEW -->
+        <div id="viewSettled" class="view-section">
+            <h3 style="margin-top: 0; margin-bottom: 12px; color: var(--text-label); font-size: 15px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">Settled Bets</h3>
+            <div style="display:flex; gap:10px; margin-bottom:12px;">
+                <div style="flex:1;"><label style="font-size:12px; margin-bottom:4px;">Start Date</label><input type="date" id="settledStart" onchange="renderSettledBets()" style="min-height:36px; padding:8px; font-size:13px;"></div>
+                <div style="flex:1;"><label style="font-size:12px; margin-bottom:4px;">End Date</label><input type="date" id="settledEnd" onchange="renderSettledBets()" style="min-height:36px; padding:8px; font-size:13px;"></div>
+            </div>
+            <div id="settledBetsList"></div>
+        </div>
+
+        <!-- CALENDAR VIEW -->
         <div id="viewCal" class="view-section">
             <div id="calLoader" class="loading-text">Fetching data...</div>
             <div id="calContainer" style="display:none;">
@@ -236,6 +247,7 @@
             </div>
         </div>
 
+        <!-- DASHBOARD VIEW -->
         <div id="viewDash" class="view-section">
             <div id="dashLoader" class="loading-text">Fetching data...</div>
             <div id="dashContainer" style="display:none;">
@@ -362,7 +374,7 @@
         let dataFetched = false; 
         let editingBet = null; 
         let plChart = null; 
-        let dowChart = null; // New chart variable
+        let dowChart = null; 
         let currentChartRange = 'MONTH';
 
         window.onload = function() {
@@ -542,10 +554,12 @@
         }
 
         function switchTab(tab) {
-            ['viewLog', 'viewCal', 'viewDash'].forEach(id => document.getElementById(id).classList.remove('active'));
-            ['btnLog', 'btnCal', 'btnDash'].forEach(id => document.getElementById(id).classList.remove('active'));
+            ['viewLog', 'viewPending', 'viewSettled', 'viewCal', 'viewDash'].forEach(id => document.getElementById(id).classList.remove('active'));
+            ['btnLog', 'btnPending', 'btnSettled', 'btnCal', 'btnDash'].forEach(id => document.getElementById(id).classList.remove('active'));
             
             if(tab === 'log') { document.getElementById('viewLog').classList.add('active'); document.getElementById('btnLog').classList.add('active'); } 
+            else if (tab === 'pending') { document.getElementById('viewPending').classList.add('active'); document.getElementById('btnPending').classList.add('active'); if(!dataFetched) fetchMasterData(false); else renderPendingBets(); }
+            else if (tab === 'settled') { document.getElementById('viewSettled').classList.add('active'); document.getElementById('btnSettled').classList.add('active'); if(!dataFetched) fetchMasterData(false); else renderSettledBets(); }
             else if (tab === 'cal') { document.getElementById('viewCal').classList.add('active'); document.getElementById('btnCal').classList.add('active'); if(!dataFetched) fetchMasterData(false); else renderCalendar(currentMonth, currentYear); } 
             else if (tab === 'dash') { document.getElementById('viewDash').classList.add('active'); document.getElementById('btnDash').classList.add('active'); if(!dataFetched) fetchMasterData(false); }
         }
@@ -607,18 +621,16 @@
             });
         }
 
-        // --- NEW: DOW CHART FUNCTION ---
         function drawDowChart() {
             if (dowChart) dowChart.destroy();
             let ctx = document.getElementById('dowChart').getContext('2d');
             let filter = document.getElementById('dowSportFilter').value;
 
-            let dowTotals = [0, 0, 0, 0, 0, 0, 0]; // Sun, Mon, Tue, Wed, Thu, Fri, Sat
+            let dowTotals = [0, 0, 0, 0, 0, 0, 0]; 
 
             rawBetsData.forEach(b => {
                 if (filter === 'ALL' || b.sport === filter) {
                     if (b.date && b.result) { 
-                        // Only count settled bets
                         if(b.result === 'W' || b.result === 'L' || b.result === 'P'){
                             let d = new Date(b.date + "T00:00:00");
                             dowTotals[d.getDay()] += b.pl;
@@ -679,22 +691,78 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
-        function renderBetLists() {
-            const pendContainer = document.getElementById('pendingBetsContainer'); const settContainer = document.getElementById('recentBetsContainer');
-            if (rawBetsData.length === 0) { pendContainer.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center;">No pending bets.</p>'; settContainer.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center;">No settled bets.</p>'; return; }
+        // --- NEW: RENDER PENDING BETS LOGIC ---
+        function generateBetCardHTML(b, idx, isSettled) {
+            let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
+            let plText = isSettled ? formatPL(b.pl) : ''; 
+            let plColor = isSettled ? getColor(plText) : 'var(--text-main)';
+            let borderCol = isSettled ? (b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)')) : '#f39c12';
+            let dStr = b.date ? b.date.substring(5).replace('-', '/') : ''; 
+            let resText = isSettled ? b.result + ': ' + plText : 'Pending';
             
-            let pendHtml = '', settHtml = '', settCount = 0;
-            rawBetsData.forEach((b, idx) => {
-                let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds; let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
-                let plText = isSettled ? formatPL(b.pl) : ''; let plColor = isSettled ? getColor(plText) : 'var(--text-main)';
-                let borderCol = isSettled ? (b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)')) : '#f39c12';
-                let dStr = b.date ? b.date.substring(5).replace('-', '/') : ''; let resText = isSettled ? b.result + ': ' + plText : 'Pending';
-                
-                let card = `<div class="bet-card clickable-row" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})"><div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;"><span>${dStr} | ${b.book} | ${b.sport}</span><span>${oddsText}</span></div><div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div><div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">${b.details || ''}</div><div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;"><span>$${b.wager.toFixed(2)}</span><span style="color:${plColor}; font-weight:bold;">${resText}</span></div></div>`;
-                if (isSettled) { if (settCount < 10) { settHtml += card; settCount++; } } else { pendHtml += card; }
+            return `<div class="bet-card clickable-row" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})"><div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;"><span>${dStr} | ${b.book} | ${b.sport}</span><span>${oddsText}</span></div><div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div><div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">${b.details || ''}</div><div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;"><span>$${b.wager.toFixed(2)}</span><span style="color:${plColor}; font-weight:bold;">${resText}</span></div></div>`;
+        }
+
+        function renderPendingBets() {
+            const container = document.getElementById('pendingBetsList');
+            if (!container) return; 
+            
+            let pendingItems = rawBetsData.map((b, i) => ({bet: b, idx: i})).filter(item => !item.bet.result || item.bet.result === 'Pending' || item.bet.result === '');
+            
+            if (pendingItems.length === 0) { 
+                container.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center; margin-top:20px;">No pending bets.</p>'; 
+                return; 
+            }
+            
+            pendingItems.sort((a, b) => {
+                if (a.bet.sport < b.bet.sport) return -1;
+                if (a.bet.sport > b.bet.sport) return 1;
+                let dA = new Date(a.bet.date); let dB = new Date(b.bet.date);
+                return dA - dB;
             });
             
-            pendContainer.innerHTML = pendHtml || '<p style="font-size:13px; opacity:0.7; text-align:center;">No pending bets right now.</p>'; settContainer.innerHTML = settHtml || '<p style="font-size:13px; opacity:0.7; text-align:center;">No settled bets yet.</p>';
+            let html = '';
+            let currentSport = '';
+            pendingItems.forEach(item => {
+                if (item.bet.sport !== currentSport) {
+                    currentSport = item.bet.sport;
+                    html += `<h4 style="color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase;">${currentSport}</h4>`;
+                }
+                html += generateBetCardHTML(item.bet, item.idx, false);
+            });
+            container.innerHTML = html;
+        }
+
+        function renderSettledBets() {
+            const container = document.getElementById('settledBetsList');
+            if (!container) return;
+            
+            let start = document.getElementById('settledStart').value;
+            let end = document.getElementById('settledEnd').value;
+            
+            let settledItems = rawBetsData.map((b, i) => ({bet: b, idx: i})).filter(item => {
+                let isSettled = (item.bet.result === 'W' || item.bet.result === 'L' || item.bet.result === 'P');
+                if (!isSettled) return false;
+                if (start && item.bet.date < start) return false;
+                if (end && item.bet.date > end) return false;
+                return true;
+            });
+            
+            if (settledItems.length === 0) { 
+                container.innerHTML = '<p style="font-size:13px; opacity:0.7; text-align:center; margin-top:20px;">No settled bets found in range.</p>'; 
+                return; 
+            }
+            
+            settledItems.sort((a, b) => {
+                let dA = new Date(a.bet.date); let dB = new Date(b.bet.date);
+                return dB - dA;
+            });
+            
+            let html = '';
+            settledItems.forEach(item => {
+                html += generateBetCardHTML(item.bet, item.idx, true);
+            });
+            container.innerHTML = html;
         }
 
         function editBet(idx) {
@@ -715,14 +783,61 @@
             document.getElementById('parlay').checked = editingBet.parlay;
             document.getElementById('freeBet').checked = isFB;
             
-            document.getElementById('submitBtn').textContent = "UPDATE BET"; document.getElementById('cancelEditBtn').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('submitBtn').textContent = "UPDATE BET"; 
+            document.getElementById('cancelEditBtn').style.display = "block"; 
+            document.getElementById('deleteBtn').style.display = "block";
+            
+            switchTab('log'); 
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelEdit() {
             editingBet = null; let d = new Date();
             document.getElementById('date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             ['team1','team2','details','odds','wager','result'].forEach(id => document.getElementById(id).value = "");
-            document.getElementById('parlay').checked = false; document.getElementById('freeBet').checked = false; document.getElementById('submitBtn').textContent = "LOG BET"; document.getElementById('cancelEditBtn').style.display = "none";
+            document.getElementById('parlay').checked = false; 
+            document.getElementById('freeBet').checked = false; 
+            document.getElementById('submitBtn').textContent = "LOG BET"; 
+            document.getElementById('cancelEditBtn').style.display = "none";
+            document.getElementById('deleteBtn').style.display = "none";
+        }
+
+        function deleteBet() {
+            if (!editingBet) return;
+            if (!confirm("Are you sure you want to completely delete this bet? This cannot be undone.")) return;
+            
+            const btn = document.getElementById('deleteBtn');
+            const statusDiv = document.getElementById('status');
+            
+            btn.disabled = true; 
+            btn.textContent = "⏳...";
+            
+            const finalData = { action: "delete", bet: editingBet };
+            
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) })
+            .then(async res => { const text = await res.text(); try { return JSON.parse(text); } catch (e) { throw new Error("SAFARI ITP BLOCK"); } })
+            .then(data => { 
+                if (data.status === "success") { 
+                    statusDiv.textContent = "Bet Deleted!"; 
+                    statusDiv.className = "success"; 
+                    cancelEdit(); 
+                    dataFetched = false; 
+                    fetchMasterData(true); 
+                } else { 
+                    statusDiv.textContent = "Error: " + data.message; 
+                    statusDiv.className = "error"; 
+                    btn.textContent = "DELETE"; 
+                    btn.disabled = false;
+                } 
+                statusDiv.style.display = "block"; 
+            })
+            .catch(e => { 
+                statusDiv.textContent = "CRASH: " + e.message; 
+                statusDiv.className = "error"; 
+                statusDiv.style.display = "block"; 
+                btn.disabled = false; 
+                btn.textContent = "DELETE"; 
+            });
         }
 
         function openModal(title, bets, isDayView) {
@@ -859,7 +974,10 @@
 
                     renderCustomTrackers();
                     drawDowChart(); 
-                    renderLeaderboard(); renderBetLists(); dataFetched = true;
+                    renderLeaderboard(); 
+                    renderPendingBets(); 
+                    renderSettledBets(); 
+                    dataFetched = true;
                     if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
                 }
             }).catch(e => { document.getElementById('refreshBtn').textContent = "⟳ Refresh"; if(!isSilent) alert("CRASH: " + e.message); document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; });
