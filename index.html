@@ -691,15 +691,139 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
+        // --- NEW: UPDATED CARD GENERATOR FOR PENDING AND SETTLED ---
         function generateBetCardHTML(b, idx, isSettled) {
-            let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
+            let odds = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
-            let plColor = isSettled ? getColor(plText) : 'var(--text-main)';
             let borderCol = isSettled ? (b.pl > 0 ? 'var(--win-text)' : (b.pl < 0 ? 'var(--loss-text)' : 'var(--text-main)')) : '#f39c12';
             let dStr = b.date ? b.date.substring(5).replace('-', '/') : ''; 
-            let resText = isSettled ? b.result + ': ' + plText : 'Pending';
             
-            return `<div class="bet-card clickable-row" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})"><div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;"><span>${dStr} | ${b.book} | ${b.sport}</span><span>${oddsText}</span></div><div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;">${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}</div><div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">${b.details || ''}</div><div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;"><span>$${b.wager.toFixed(2)}</span><span style="color:${plColor}; font-weight:bold;">${resText}</span></div></div>`;
+            let wagerAmt = b.wager;
+            let det = b.details || '';
+            let isFB = det.includes('🎁');
+            
+            if (isFB && wagerAmt === 0 && !isSettled) {
+                let match = det.match(/🎁 \$([0-9.]+) Free Bet/);
+                if (match) wagerAmt = parseFloat(match[1]);
+            }
+            
+            let potWin = 0;
+            if (!isNaN(b.odds) && b.odds !== 0) {
+                if (b.odds > 0) potWin = wagerAmt * (b.odds / 100);
+                else if (b.odds < 0) potWin = wagerAmt / (Math.abs(b.odds) / 100);
+            }
+            let potWinText = `+$${potWin.toFixed(2)}`;
+
+            let wagerDisplay = `$${b.wager.toFixed(2)}`;
+            if (isFB) {
+                wagerDisplay = b.wager > 0 ? `$${b.wager.toFixed(2)} (🎁)` : `$0.00 (🎁 $${wagerAmt.toFixed(2)})`;
+            }
+
+            let statusHtml = '';
+            if (isSettled) {
+                statusHtml = `<span style="color:${getColor(plText)}; font-weight:bold;">${b.result}: ${plText}</span>`;
+            } else {
+                statusHtml = `<span style="color:#ff9900; font-weight:bold;">⏳ Pending</span>`;
+            }
+
+            return `
+            <div class="bet-card clickable-row" data-bet-idx="${idx}" data-sport="${b.sport}" data-team1="${(b.team1||'').replace(/"/g, '&quot;')}" data-team2="${(b.team2||'').replace(/"/g, '&quot;')}" style="border-left-color: ${borderCol}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
+                <div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;">
+                    <span>${dStr} | ${b.book} | ${b.sport}</span>
+                    <span>${odds}</span>
+                </div>
+                <div class="bet-card-details" style="font-weight:bold; color:var(--text-label); font-size: 13px;">
+                    ${b.team1} ${b.team2 ? 'vs '+b.team2 : ''}
+                </div>
+                <div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">
+                    ${b.details || 'Moneyline'}
+                </div>
+                <div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none;">
+                    <span>Wager: ${wagerDisplay} &bull; Pot. Win: <span style="color:var(--win-text); font-weight:bold;">${potWinText}</span></span>
+                    ${statusHtml}
+                </div>
+                <div id="live-score-${idx}" style="display:none; font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--input-border); color: #007bff; font-weight: bold;"></div>
+            </div>`;
+        }
+
+        // --- NEW: ESPN LIVE SCORE FETCHER ---
+        const espnSportMap = {
+            'NFL': 'football/nfl',
+            'NBA': 'basketball/nba',
+            'MLB': 'baseball/mlb',
+            'NHL': 'hockey/nhl',
+            'NCAAB': 'basketball/mens-college-basketball',
+            'NCAAF': 'football/college-football'
+        };
+
+        function fetchLiveScores(sportsSet) {
+            sportsSet.forEach(sport => {
+                if (espnSportMap[sport]) {
+                    let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[sport]}/scoreboard`;
+                    fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.events) return;
+                        let events = data.events;
+                        
+                        let cards = document.querySelectorAll(`.bet-card[data-sport="${sport}"]`);
+                        
+                        cards.forEach(card => {
+                            let t1 = card.getAttribute('data-team1').toLowerCase();
+                            let t2 = card.getAttribute('data-team2').toLowerCase();
+                            let idx = card.getAttribute('data-bet-idx');
+                            
+                            let matchedEvent = events.find(ev => {
+                                let match = false;
+                                ev.competitions[0].competitors.forEach(comp => {
+                                    let cName = (comp.team.displayName || '').toLowerCase();
+                                    let sName = (comp.team.shortDisplayName || '').toLowerCase();
+                                    let abbr = (comp.team.abbreviation || '').toLowerCase();
+                                    
+                                    if (cName.includes(t1) || sName.includes(t1) || abbr === t1 ||
+                                       (t2 && (cName.includes(t2) || sName.includes(t2) || abbr === t2))) {
+                                        match = true;
+                                    }
+                                });
+                                return match;
+                            });
+
+                            if (matchedEvent) {
+                                let status = matchedEvent.status.type.shortDetail; 
+                                let isLive = matchedEvent.status.type.state === 'in';
+                                let isPre = matchedEvent.status.type.state === 'pre';
+                                let isPost = matchedEvent.status.type.state === 'post';
+                                
+                                let home = matchedEvent.competitions[0].competitors.find(c => c.homeAway === 'home');
+                                let away = matchedEvent.competitions[0].competitors.find(c => c.homeAway === 'away');
+                                
+                                let scoreStr = "";
+                                if (home && away) {
+                                    scoreStr = `${away.team.abbreviation} ${away.score || 0} - ${home.team.abbreviation} ${home.score || 0}`;
+                                }
+                                
+                                let scoreDiv = document.getElementById(`live-score-${idx}`);
+                                if (scoreDiv) {
+                                    scoreDiv.style.display = 'block';
+                                    if (isLive) {
+                                        scoreDiv.innerHTML = `🔴 LIVE: ${scoreStr} (${status})`;
+                                        scoreDiv.style.color = '#dc3545';
+                                    } else if (isPre) {
+                                        let time = new Date(matchedEvent.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                        scoreDiv.innerHTML = `📅 Starts at ${time}`;
+                                        scoreDiv.style.color = 'var(--text-main)';
+                                        scoreDiv.style.opacity = '0.7';
+                                    } else if (isPost) {
+                                        scoreDiv.innerHTML = `🏁 FINAL: ${scoreStr}`;
+                                        scoreDiv.style.color = 'var(--text-main)';
+                                    }
+                                }
+                            }
+                        });
+                    })
+                    .catch(e => console.log("ESPN API Error for " + sport, e));
+                }
+            });
         }
 
         function renderPendingBets() {
@@ -722,14 +846,19 @@
             
             let html = '';
             let currentSport = '';
+            let sportsToFetch = new Set();
+
             pendingItems.forEach(item => {
                 if (item.bet.sport !== currentSport) {
                     currentSport = item.bet.sport;
                     html += `<h4 style="color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase;">${currentSport}</h4>`;
                 }
+                sportsToFetch.add(item.bet.sport);
                 html += generateBetCardHTML(item.bet, item.idx, false);
             });
             container.innerHTML = html;
+
+            fetchLiveScores(sportsToFetch);
         }
 
         function renderSettledBets() {
