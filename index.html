@@ -691,7 +691,6 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
-        // --- NEW: RENDER PENDING BETS LOGIC ---
         function generateBetCardHTML(b, idx, isSettled) {
             let oddsText = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
@@ -990,7 +989,31 @@
             const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
             ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { grid.innerHTML += `<div class="day-name">${d}</div>`; });
             for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="day-cell empty"></div>`; }
-            for (let i = 1; i <= daysInMonth; i++) { const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; let pl = dailyPLData[dStr] || 0; let plText = pl === 0 ? '-' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`); let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : ''); grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div class="pl-amt">${plText}</div></div>`; }
+            for (let i = 1; i <= daysInMonth; i++) { 
+                const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; 
+                let pl = dailyPLData[dStr] || 0; 
+                
+                let pendingAmt = 0;
+                let hasSettled = false;
+                rawBetsData.forEach(b => {
+                    if (b.date === dStr) {
+                        if (!b.result || b.result === 'Pending') pendingAmt += b.wager;
+                        else hasSettled = true;
+                    }
+                });
+
+                let plText = '';
+                if (hasSettled || pl !== 0) {
+                    plText = pl === 0 ? '$0' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`);
+                } else if (pendingAmt === 0) {
+                    plText = '-';
+                }
+
+                let pendText = pendingAmt > 0 ? `<div style="font-size:9.5px; color:#ff9900; text-align:center; font-weight:bold; margin-top:2px;">⏳ $${Math.round(pendingAmt)}</div>` : '';
+                let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : ''); 
+                
+                grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div><div class="pl-amt">${plText}</div>${pendText}</div></div>`; 
+            }
             updateCalendarSummaries(month, year); renderHallOfFame(); setChartRange('MONTH');
         }
 
