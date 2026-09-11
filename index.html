@@ -467,7 +467,6 @@
             btn.textContent = "Ask"; btn.disabled = false;
         }
 
-        // --- NEW: GAME LINKER MODAL ---
         function openGameLinker() {
             let sport = document.getElementById('sport').value;
             let dateStr = document.getElementById('date').value.replace(/-/g, '');
@@ -507,7 +506,6 @@
             btn.style.backgroundColor = "#32CD32";
         }
 
-        // --- NEW: FETCH LIVE SCORES ---
         function fetchLiveScores(pendingItems) {
             let fetchMap = {}; 
             
@@ -847,7 +845,6 @@
             document.getElementById('rngROI').textContent = (roi>0?'+':'') + roi.toFixed(2) + '%'; document.getElementById('rngROI').style.color = getColor(formatPL(pl));
         }
 
-        // --- UPDATED: Sanitize and generate cards ---
         function generateBetCardHTML(b, idx, isSettled) {
             let odds = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
@@ -939,11 +936,14 @@
             
             let html = '';
             let currentSport = '';
+            let sportsToFetch = new Set();
+
             pendingItems.forEach(item => {
                 if (item.bet.sport !== currentSport) {
                     currentSport = item.bet.sport;
                     html += `<h4 style="color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase;">${currentSport}</h4>`;
                 }
+                sportsToFetch.add(item.bet.sport);
                 html += generateBetCardHTML(item.bet, item.idx, false);
             });
             container.innerHTML = html;
@@ -1050,10 +1050,23 @@
             btn.disabled = true; 
             btn.textContent = "⏳...";
             
-            const finalData = { action: "delete", bet: editingBet };
+            const finalData = { 
+                action: "delete", 
+                bet: editingBet,
+                book: editingBet.book, 
+                old: editingBet 
+            };
             
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) })
-            .then(async res => { const text = await res.text(); try { return JSON.parse(text); } catch (e) { throw new Error("SAFARI ITP BLOCK"); } })
+            .then(async res => { 
+                const text = await res.text(); 
+                try { return JSON.parse(text); } 
+                catch (e) { 
+                    console.error("Non-JSON response from Google Apps Script:", text);
+                    let snippet = text.replace(/<[^>]*>?/gm, '').trim().substring(0, 120);
+                    throw new Error("Google Script Error: " + (snippet || "Invalid response format.")); 
+                } 
+            })
             .then(data => { 
                 if (data.status === "success") { 
                     statusDiv.textContent = "Bet Deleted!"; 
@@ -1132,7 +1145,6 @@
                 let rawIdx = rawBetsData.indexOf(b);
                 let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
                 let cardHtml = generateBetCardHTML(b, rawIdx, isSettled);
-                // Strip the onclick so it doesn't conflict with the modal if we want
                 if(rawIdx !== -1) {
                     cardHtml = cardHtml.replace(`onclick="editBet(${rawIdx})"`, `onclick="closeModal(); editBet(${rawIdx})"`);
                 }
@@ -1229,7 +1241,14 @@
 
         function fetchMasterData(isSilent = false) {
             if (!isSilent) { document.getElementById('calLoader').style.display = 'block'; document.getElementById('dashLoader').style.display = 'block'; document.getElementById('calContainer').style.display = 'none'; document.getElementById('dashContainer').style.display = 'none'; }
-            fetch(WEB_APP_URL).then(async res => { const text = await res.text(); try { return JSON.parse(text); } catch (e) { throw new Error("SAFARI ITP BLOCK: Make sure deployment is set exactly to 'Anyone'"); } })
+            fetch(WEB_APP_URL).then(async res => { 
+                const text = await res.text(); 
+                try { return JSON.parse(text); } 
+                catch (e) { 
+                    let snippet = text.replace(/<[^>]*>?/gm, '').trim().substring(0, 120);
+                    throw new Error("Google Script Error: " + (snippet || "Invalid response format. Make sure deployment is set exactly to 'Anyone'")); 
+                } 
+            })
             .then(data => {
                 document.getElementById('refreshBtn').textContent = "⟳ Refresh";
                 if (data.status === "success") {
@@ -1329,7 +1348,14 @@
             let finalData = editingBet ? { action: "edit", old: editingBet, new: payload } : { action: "log", ...payload };
             btn.disabled = true; btn.textContent = "SENDING...";
             
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) }).then(async res => { const text = await res.text(); try { return JSON.parse(text); } catch (e) { throw new Error("SAFARI ITP BLOCK"); } })
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(finalData) }).then(async res => { 
+                const text = await res.text(); 
+                try { return JSON.parse(text); } 
+                catch (e) { 
+                    let snippet = text.replace(/<[^>]*>?/gm, '').trim().substring(0, 120);
+                    throw new Error("Google Script Error: " + (snippet || "Invalid response format.")); 
+                } 
+            })
             .then(data => { if (data.status === "success") { statusDiv.textContent = editingBet ? "Bet Updated!" : "Bet Logged!"; statusDiv.className = "success"; if (editingBet || !keepSlip) { cancelEdit(); } dataFetched = false; fetchMasterData(true); } else { statusDiv.textContent = "Error: " + data.message; statusDiv.className = "error"; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; } statusDiv.style.display = "block"; btn.disabled = false; })
             .catch(e => { statusDiv.textContent = "CRASH: " + e.message; statusDiv.className = "error"; statusDiv.style.display = "block"; btn.disabled = false; btn.textContent = editingBet ? "UPDATE BET" : "LOG BET"; });
         }
