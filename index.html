@@ -905,7 +905,6 @@
             return { day: {count: dStreak, type: dType}, week: {count: wStreak, type: wType}, month: {count: mStreak, type: mType} };
         }
 
-        // --- NEW: Gets accurate background tint based on Sportsbook ---
         function getBookBgColor(book) {
             const isDk = document.body.classList.contains('dark-mode');
             const a = isDk ? '0.2' : '0.1';
@@ -940,8 +939,16 @@
                 cleanDetails = cleanDetails.replace(/\|ESPN:\d+\|/, '').trim();
             }
 
-            let tagMatch = cleanDetails.match(/\|TAGS:[^|]+\|/);
+            // EXTRACT TAGS FOR UI DISPLAY
+            let tagsHtml = '';
+            let tagMatch = cleanDetails.match(/\|TAGS:([^|]+)\|/);
             if (tagMatch) {
+                let tagsList = tagMatch[1].split(',').map(t => t.trim()).filter(t => t);
+                if (tagsList.length > 0) {
+                    tagsHtml = `<div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap;">` + 
+                               tagsList.map(t => `<span style="background: var(--bg-base); border: 1px solid var(--input-border); border-radius: 4px; padding: 2px 6px; font-size: 9.5px; font-weight: bold; color: var(--text-main); opacity: 0.8;">#${t}</span>`).join('') + 
+                               `</div>`;
+                }
                 cleanDetails = cleanDetails.replace(/\|TAGS:[^|]+\|/g, '').trim();
             }
 
@@ -1008,6 +1015,7 @@
                 </div>
                 <div class="bet-card-details" style="font-size: 11px; margin-bottom: 6px;">
                     ${detailsHtml}
+                    ${tagsHtml}
                 </div>
                 <div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none; align-items:center;">
                     <span>Wager: ${wagerDisplay} &bull; To Win: <span style="color:var(--win-text); font-weight:bold;">${potWinText}</span>${gamecastHtml}</span>
