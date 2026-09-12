@@ -411,6 +411,7 @@
             fetchMasterData(true); 
         };
 
+        // --- UPDATED: Allow appending multiple ESPN IDs for parlays ---
         function openGameLinker() {
             let sport = document.getElementById('sport').value;
             let dateStr = document.getElementById('date').value.replace(/-/g, '');
@@ -443,14 +444,26 @@
         }
 
         function selectEspnGame(id) {
-            document.getElementById('espnId').value = id;
-            document.getElementById('gameLinkModal').style.display = 'none';
-            ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
-                let btn = document.getElementById(btnId);
+            let isParlay = document.getElementById('parlay').checked;
+            let espnInput = document.getElementById('espnId');
+            
+            if (isParlay) {
+                let currentIds = espnInput.value ? espnInput.value.split(',') : [];
+                if (!currentIds.includes(String(id))) {
+                    currentIds.push(id);
+                    espnInput.value = currentIds.join(',');
+                }
+                let btn = document.getElementById('btnLinkGameParlay');
+                if(btn) { btn.textContent = `✅ Linked (${currentIds.length})`; btn.style.backgroundColor = "#32CD32"; }
+            } else {
+                espnInput.value = id;
+                let btn = document.getElementById('btnLinkGame');
                 if(btn) { btn.textContent = "✅ Linked"; btn.style.backgroundColor = "#32CD32"; }
-            });
+            }
+            document.getElementById('gameLinkModal').style.display = 'none';
         }
 
+        // --- UPDATED: Fetch and render multiple live scores ---
         function fetchLiveScores(pendingItems) {
             let fetchMap = {}; 
             
@@ -472,17 +485,21 @@
                     cards.forEach(card => {
                         if (card.getAttribute('data-date') !== req.fullDate) return;
 
-                        let eId = card.getAttribute('data-espn-id');
+                        let eIdStr = card.getAttribute('data-espn-id');
                         let t1 = card.getAttribute('data-team1').toLowerCase();
                         let t2 = card.getAttribute('data-team2').toLowerCase();
                         let idx = card.getAttribute('data-bet-idx');
 
-                        let matchedEvent = null;
+                        let matchedEvents = [];
 
-                        if (eId) {
-                            matchedEvent = data.events.find(ev => ev.id === eId);
+                        if (eIdStr) {
+                            let eIds = eIdStr.split(',');
+                            eIds.forEach(eId => {
+                                let ev = data.events.find(e => String(e.id) === String(eId));
+                                if (ev) matchedEvents.push(ev);
+                            });
                         } else {
-                            matchedEvent = data.events.find(ev => {
+                            let matchedEvent = data.events.find(ev => {
                                 let match = false;
                                 ev.competitions[0].competitors.forEach(comp => {
                                     let cName = (comp.team.displayName || '').toLowerCase();
@@ -495,38 +512,49 @@
                                 });
                                 return match;
                             });
+                            if(matchedEvent) matchedEvents.push(matchedEvent);
                         }
 
-                        if (matchedEvent) {
-                            let status = matchedEvent.status.type.shortDetail; 
-                            let isLive = matchedEvent.status.type.state === 'in';
-                            let isPre = matchedEvent.status.type.state === 'pre';
-                            let isPost = matchedEvent.status.type.state === 'post';
-                            
-                            let home = matchedEvent.competitions[0].competitors.find(c => c.homeAway === 'home');
-                            let away = matchedEvent.competitions[0].competitors.find(c => c.homeAway === 'away');
-                            
-                            let scoreStr = "";
-                            if (home && away) {
-                                scoreStr = `${away.team.abbreviation} ${away.score || 0} - ${home.team.abbreviation} ${home.score || 0}`;
-                            }
-                            
+                        if (matchedEvents.length > 0) {
                             let scoreDiv = document.getElementById(`live-score-${idx}`);
                             if (scoreDiv) {
                                 scoreDiv.style.display = 'block';
-                                if (isLive) {
-                                    scoreDiv.innerHTML = `🔴 LIVE: ${scoreStr} (${status})`;
-                                    scoreDiv.style.color = '#dc3545';
-                                } else if (isPre) {
-                                    let time = new Date(matchedEvent.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                                    scoreDiv.innerHTML = `📅 Starts at ${time}`;
-                                    scoreDiv.style.color = 'var(--text-main)';
-                                    scoreDiv.style.opacity = '0.7';
-                                } else if (isPost) {
-                                    scoreDiv.innerHTML = `🏁 FINAL: ${scoreStr}`;
-                                    scoreDiv.style.color = 'var(--text-main)';
-                                    scoreDiv.style.opacity = '0.8';
-                                }
+                                scoreDiv.innerHTML = ''; // Clear fallback 
+                                
+                                matchedEvents.forEach(matchedEvent => {
+                                    let status = matchedEvent.status.type.shortDetail; 
+                                    let isLive = matchedEvent.status.type.state === 'in';
+                                    let isPre = matchedEvent.status.type.state === 'pre';
+                                    let isPost = matchedEvent.status.type.state === 'post';
+                                    
+                                    let home = matchedEvent.competitions[0].competitors.find(c => c.homeAway === 'home');
+                                    let away = matchedEvent.competitions[0].competitors.find(c => c.homeAway === 'away');
+                                    
+                                    let scoreStr = "";
+                                    if (home && away) {
+                                        scoreStr = `${away.team.abbreviation} ${away.score || 0} - ${home.team.abbreviation} ${home.score || 0}`;
+                                    }
+                                    
+                                    let color = 'var(--text-main)';
+                                    let displayStr = '';
+                                    
+                                    if (isLive) {
+                                        displayStr = `🔴 LIVE: ${scoreStr} (${status})`;
+                                        color = '#dc3545';
+                                    } else if (isPre) {
+                                        let time = new Date(matchedEvent.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                        displayStr = `📅 Starts at ${time} (${away.team.abbreviation} @ ${home.team.abbreviation})`;
+                                    } else if (isPost) {
+                                        displayStr = `🏁 FINAL: ${scoreStr}`;
+                                    }
+                                    
+                                    let lineDiv = document.createElement('div');
+                                    lineDiv.style.color = color;
+                                    lineDiv.style.marginBottom = '3px';
+                                    if(isPre || isPost) lineDiv.style.opacity = '0.8';
+                                    lineDiv.innerHTML = displayStr;
+                                    scoreDiv.appendChild(lineDiv);
+                                });
                             }
                         }
                     });
@@ -557,6 +585,7 @@
             return legs.join(' ~~ ');
         }
 
+        // --- UPDATED: Regexes to preserve multiple ESPN IDs ---
         function toggleLeg(event, bIdx, lIdx) {
             event.stopPropagation();
             let chk = event.target;
@@ -565,7 +594,7 @@
             let bet = rawBetsData[bIdx];
             let cleanDetails = bet.details ? bet.details : '';
             
-            let eIdMatch = cleanDetails.match(/\|ESPN:\d+\|/);
+            let eIdMatch = cleanDetails.match(/\|ESPN:([\d,]+)\|/);
             let tagMatch = cleanDetails.match(/\|TAGS:[^|]+\|/);
             let fbMatch = cleanDetails.match(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/);
             
@@ -573,7 +602,7 @@
             let tagText = tagMatch ? tagMatch[0] : '';
             let fbText = fbMatch ? fbMatch[0] : '';
 
-            cleanDetails = cleanDetails.replace(/\|ESPN:\d+\|/g, '')
+            cleanDetails = cleanDetails.replace(/\|ESPN:[\d,]+\|/g, '')
                                        .replace(/\|TAGS:[^|]+\|/g, '')
                                        .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
             
@@ -922,6 +951,7 @@
             }
         }
 
+        // --- UPDATED: Render multiple gamecast links + handle array of ESPN IDs ---
         function generateBetCardHTML(b, idx, isSettled) {
             let odds = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
@@ -932,14 +962,13 @@
             let cleanDetails = b.details || '';
             let isFB = cleanDetails.includes('🎁');
             
-            let eId = null;
-            let espnMatch = cleanDetails.match(/\|ESPN:(\d+)\|/);
+            let eIds = [];
+            let espnMatch = cleanDetails.match(/\|ESPN:([\d,]+)\|/);
             if (espnMatch) {
-                eId = espnMatch[1];
-                cleanDetails = cleanDetails.replace(/\|ESPN:\d+\|/, '').trim();
+                eIds = espnMatch[1].split(',');
+                cleanDetails = cleanDetails.replace(/\|ESPN:[\d,]+\|/, '').trim();
             }
 
-            // EXTRACT TAGS FOR UI DISPLAY
             let tagsHtml = '';
             let tagMatch = cleanDetails.match(/\|TAGS:([^|]+)\|/);
             if (tagMatch) {
@@ -996,16 +1025,21 @@
             }
 
             let gamecastHtml = '';
-            if (eId && !isSettled && espnSportMap[b.sport]) {
+            if (eIds.length > 0 && !isSettled && espnSportMap[b.sport]) {
                 let urlSlug = espnSportMap[b.sport].split('/')[1];
                 if(b.sport === 'NCAAF') urlSlug = 'college-football';
                 if(b.sport === 'NCAAB') urlSlug = 'mens-college-basketball';
-                let url = `https://www.espn.com/${urlSlug}/game/_/gameId/${eId}`;
-                gamecastHtml = `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>`;
+                
+                if (eIds.length === 1) {
+                    let url = `https://www.espn.com/${urlSlug}/game/_/gameId/${eIds[0]}`;
+                    gamecastHtml = `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>`;
+                } else {
+                    gamecastHtml = `<span style="margin-left:10px;">` + eIds.map((id, i) => `<a href="https://www.espn.com/${urlSlug}/game/_/gameId/${id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-right:4px;">📈 G${i+1}</a>`).join('') + `</span>`;
+                }
             }
 
             return `
-            <div class="bet-card clickable-row" data-bet-idx="${idx}" data-sport="${b.sport}" data-date="${b.date}" data-team1="${(b.team1||'').replace(/"/g, '&quot;')}" data-team2="${(b.team2||'').replace(/"/g, '&quot;')}" data-espn-id="${eId || ''}" style="border-left-color: ${borderCol}; background-color: ${getBookBgColor(b.book)}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
+            <div class="bet-card clickable-row" data-bet-idx="${idx}" data-sport="${b.sport}" data-date="${b.date}" data-team1="${(b.team1||'').replace(/"/g, '&quot;')}" data-team2="${(b.team2||'').replace(/"/g, '&quot;')}" data-espn-id="${eIds.join(',')}" style="border-left-color: ${borderCol}; background-color: ${getBookBgColor(b.book)}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
                 <div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;">
                     <span>${dStr} | ${b.book} | ${b.sport}</span>
                     <span>${odds}</span>
@@ -1116,19 +1150,21 @@
             let w = editingBet.wager;
             let det = editingBet.details || '';
             
-            let espnMatch = det.match(/\|ESPN:(\d+)\|/);
+            let espnMatch = det.match(/\|ESPN:([\d,]+)\|/);
             if (espnMatch) {
                 document.getElementById('espnId').value = espnMatch[1];
-                det = det.replace(/\|ESPN:\d+\|/, '').trim();
-                ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
-                    let btn = document.getElementById(btnId);
-                    if(btn) { btn.textContent = "✅ Linked"; btn.style.backgroundColor = "#32CD32"; }
-                });
+                let ids = espnMatch[1].split(',');
+                det = det.replace(/\|ESPN:[\d,]+\|/, '').trim();
+                
+                let btnGame = document.getElementById('btnLinkGame');
+                if(btnGame) { btnGame.textContent = "✅ Linked"; btnGame.style.backgroundColor = "#32CD32"; }
+                let btnParlay = document.getElementById('btnLinkGameParlay');
+                if(btnParlay) { btnParlay.textContent = `✅ Linked (${ids.length})`; btnParlay.style.backgroundColor = "#32CD32"; }
             } else {
                 document.getElementById('espnId').value = "";
                 ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
                     let btn = document.getElementById(btnId);
-                    if(btn) { btn.textContent = "🔗 Link"; btn.style.backgroundColor = "#007bff"; }
+                    if(btn) { btn.textContent = "🔗 Link Game"; btn.style.backgroundColor = "#007bff"; }
                 });
             }
 
@@ -1187,7 +1223,7 @@
             
             ['btnLinkGame', 'btnLinkGameParlay'].forEach(btnId => {
                 let btn = document.getElementById(btnId);
-                if(btn) { btn.textContent = "🔗 Link"; btn.style.backgroundColor = "#007bff"; }
+                if(btn) { btn.textContent = "🔗 Link Game"; btn.style.backgroundColor = "#007bff"; }
             });
 
             document.getElementById('parlay').checked = false; 
@@ -1385,7 +1421,7 @@
             let bestWeek = null, bestWeekVal = -Infinity; for (const [w, pl] of Object.entries(weeklyTotals)) { if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = w; } }
             document.getElementById('hofBestDay').textContent = bestDayVal > 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; document.getElementById('hofBestDay').style.color = bestDayVal > 0 ? getColor(formatPL(bestDayVal)) : ''; document.getElementById('hofBestWeek').textContent = bestWeekVal > 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; document.getElementById('hofBestWeek').style.color = bestWeekVal > 0 ? getColor(formatPL(bestWeekVal)) : '';
             let monsters = rawBetsData.filter(b => b.pl >= 300).sort((a,b) => b.pl - a.pl);
-            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { let cleanDet = m.details ? m.details.replace(/\|ESPN:\d+\|/, '').replace(/\|TAGS:[^|]+\|/g, '') : ''; html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${cleanDet}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
+            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { let cleanDet = m.details ? m.details.replace(/\|ESPN:[\d,]+\|/, '').replace(/\|TAGS:[^|]+\|/g, '') : ''; html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${cleanDet}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
         }
 
         function updateCalendarSummaries(month, year) {
