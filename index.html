@@ -463,7 +463,7 @@
             document.getElementById('gameLinkModal').style.display = 'none';
         }
 
-        // --- UPDATED: Fetch and render multiple live scores ---
+        // --- UPDATED: Fetch and render multiple live scores + Gamecast Link Inline ---
         function fetchLiveScores(pendingItems) {
             let fetchMap = {}; 
             
@@ -519,8 +519,12 @@
                             let scoreDiv = document.getElementById(`live-score-${idx}`);
                             if (scoreDiv) {
                                 scoreDiv.style.display = 'block';
-                                scoreDiv.innerHTML = ''; // Clear fallback 
+                                scoreDiv.innerHTML = ''; 
                                 
+                                let urlSlug = espnSportMap[req.sport].split('/')[1];
+                                if(req.sport === 'NCAAF') urlSlug = 'college-football';
+                                if(req.sport === 'NCAAB') urlSlug = 'mens-college-basketball';
+
                                 matchedEvents.forEach(matchedEvent => {
                                     let status = matchedEvent.status.type.shortDetail; 
                                     let isLive = matchedEvent.status.type.state === 'in';
@@ -548,11 +552,17 @@
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                     }
                                     
+                                    let gcLink = `<a href="https://www.espn.com/${urlSlug}/game/_/gameId/${matchedEvent.id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>`;
+                                    
                                     let lineDiv = document.createElement('div');
                                     lineDiv.style.color = color;
-                                    lineDiv.style.marginBottom = '3px';
+                                    lineDiv.style.marginBottom = '4px';
+                                    lineDiv.style.display = 'flex';
+                                    lineDiv.style.justifyContent = 'space-between';
+                                    lineDiv.style.alignItems = 'center';
                                     if(isPre || isPost) lineDiv.style.opacity = '0.8';
-                                    lineDiv.innerHTML = displayStr;
+                                    
+                                    lineDiv.innerHTML = `<span>${displayStr}</span><span>${gcLink}</span>`;
                                     scoreDiv.appendChild(lineDiv);
                                 });
                             }
@@ -1024,18 +1034,18 @@
                 </div>`;
             }
 
-            let gamecastHtml = '';
+            let gamecastFallback = '';
             if (eIds.length > 0 && !isSettled && espnSportMap[b.sport]) {
                 let urlSlug = espnSportMap[b.sport].split('/')[1];
                 if(b.sport === 'NCAAF') urlSlug = 'college-football';
                 if(b.sport === 'NCAAB') urlSlug = 'mens-college-basketball';
                 
-                if (eIds.length === 1) {
-                    let url = `https://www.espn.com/${urlSlug}/game/_/gameId/${eIds[0]}`;
-                    gamecastHtml = `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>`;
-                } else {
-                    gamecastHtml = `<span style="margin-left:10px;">` + eIds.map((id, i) => `<a href="https://www.espn.com/${urlSlug}/game/_/gameId/${id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-right:4px;">📈 G${i+1}</a>`).join('') + `</span>`;
-                }
+                gamecastFallback = eIds.map((id, i) => {
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; opacity:0.8; color:var(--text-main);">
+                        <span>📅 Pending Score Data...</span> 
+                        <a href="https://www.espn.com/${urlSlug}/game/_/gameId/${id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>
+                    </div>`;
+                }).join('');
             }
 
             return `
@@ -1052,10 +1062,12 @@
                     ${tagsHtml}
                 </div>
                 <div class="bet-card-footer" style="padding-top: 4px; font-size: 12px; border-top:none; align-items:center;">
-                    <span>Wager: ${wagerDisplay} &bull; To Win: <span style="color:var(--win-text); font-weight:bold;">${potWinText}</span>${gamecastHtml}</span>
+                    <span>Wager: ${wagerDisplay} &bull; To Win: <span style="color:var(--win-text); font-weight:bold;">${potWinText}</span></span>
                     ${statusHtml}
                 </div>
-                <div id="live-score-${idx}" style="display:none; font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--input-border); color: #007bff; font-weight: bold;"></div>
+                <div id="live-score-${idx}" style="${gamecastFallback ? 'display:block;' : 'display:none;'} font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--input-border); font-weight: bold;">
+                    ${gamecastFallback}
+                </div>
             </div>`;
         }
 
