@@ -462,6 +462,7 @@
             document.getElementById('gameLinkModal').style.display = 'none';
         }
 
+        // --- UPDATED: Fetch multiple scores and display situation context inline with Gamecast ---
         function fetchLiveScores(pendingItems) {
             let fetchMap = {}; 
             
@@ -486,6 +487,7 @@
                         let eIdStr = card.getAttribute('data-espn-id');
                         let t1 = card.getAttribute('data-team1').toLowerCase();
                         let t2 = card.getAttribute('data-team2').toLowerCase();
+                        let idx = card.getAttribute('data-bet-idx');
 
                         let matchedEvents = [];
 
@@ -513,16 +515,19 @@
                         }
 
                         if (matchedEvents.length > 0) {
-                            let scoreDiv = card.querySelector('.live-score-display');
-                            if (scoreDiv) {
-                                scoreDiv.style.display = 'block';
-                                scoreDiv.innerHTML = ''; 
+                            let scoreDiv = document.getElementById(`live-score-${idx}`);
+                            // Also grab modal-generated scoreDivs if present using class lookup instead of ID
+                            let scoreDivs = document.querySelectorAll(`.live-score-display[data-idx="${idx}"], #live-score-${idx}`);
+                            
+                            scoreDivs.forEach(div => {
+                                div.style.display = 'block';
+                                div.innerHTML = ''; 
                                 
                                 let urlSlug = espnSportMap[req.sport].split('/')[1];
                                 if(req.sport === 'NCAAF') urlSlug = 'college-football';
                                 if(req.sport === 'NCAAB') urlSlug = 'mens-college-basketball';
 
-                                matchedEvents.forEach(matchedEvent => {
+                                matchedEvents.forEach((matchedEvent, evIdx) => {
                                     let status = matchedEvent.status.type.shortDetail; 
                                     let isLive = matchedEvent.status.type.state === 'in';
                                     let isPre = matchedEvent.status.type.state === 'pre';
@@ -549,20 +554,66 @@
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                     }
                                     
+                                    // Live Situation Context (Down, Distance, Outs, etc.)
+                                    let situationText = "";
+                                    if (isLive && matchedEvent.competitions[0].situation) {
+                                        let sit = matchedEvent.competitions[0].situation;
+                                        let parts = [];
+                                        
+                                        let posAbbr = "";
+                                        if (sit.possession) {
+                                            let posTeam = matchedEvent.competitions[0].competitors.find(c => String(c.id) === String(sit.possession) || String(c.team.id) === String(sit.possession));
+                                            if (posTeam) posAbbr = posTeam.team.abbreviation;
+                                        }
+
+                                        if (sit.downDistanceText) {
+                                            parts.push(sit.downDistanceText);
+                                            if (posAbbr) parts.push(`🏈 ${posAbbr}`);
+                                        } else if (sit.outs !== undefined) {
+                                            let bases = [];
+                                            if (sit.onFirst) bases.push('1B');
+                                            if (sit.onSecond) bases.push('2B');
+                                            if (sit.onThird) bases.push('3B');
+                                            parts.push(`${sit.outs} Outs`);
+                                            parts.push(bases.length ? `On ${bases.join(', ')}` : 'Bases Empty');
+                                        } else if (posAbbr) {
+                                            parts.push(`Poss: ${posAbbr}`);
+                                        }
+
+                                        if (parts.length > 0) {
+                                            situationText = `<div style="font-size: 9.5px; opacity: 0.85; font-weight: normal; margin-top: 2px;">↳ ${parts.join(' • ')}</div>`;
+                                        }
+                                    }
+                                    
                                     let gcLink = `<a href="https://www.espn.com/${urlSlug}/game/_/gameId/${matchedEvent.id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>`;
                                     
                                     let lineDiv = document.createElement('div');
-                                    lineDiv.style.color = color;
-                                    lineDiv.style.marginBottom = '4px';
-                                    lineDiv.style.display = 'flex';
-                                    lineDiv.style.justifyContent = 'space-between';
-                                    lineDiv.style.alignItems = 'center';
-                                    if(isPre || isPost) lineDiv.style.opacity = '0.8';
+                                    lineDiv.style.marginBottom = '6px';
+                                    lineDiv.style.paddingBottom = '4px';
+                                    if (evIdx < matchedEvents.length - 1) {
+                                        lineDiv.style.borderBottom = '1px dotted var(--input-border)';
+                                    }
                                     
-                                    lineDiv.innerHTML = `<span>${displayStr}</span><span>${gcLink}</span>`;
-                                    scoreDiv.appendChild(lineDiv);
+                                    let topRow = document.createElement('div');
+                                    topRow.style.color = color;
+                                    topRow.style.display = 'flex';
+                                    topRow.style.justifyContent = 'space-between';
+                                    topRow.style.alignItems = 'center';
+                                    if(isPre || isPost) topRow.style.opacity = '0.8';
+                                    topRow.innerHTML = `<span>${displayStr}</span><span>${gcLink}</span>`;
+                                    
+                                    lineDiv.appendChild(topRow);
+                                    
+                                    if (situationText) {
+                                        let sitRow = document.createElement('div');
+                                        sitRow.style.color = color;
+                                        sitRow.innerHTML = situationText;
+                                        lineDiv.appendChild(sitRow);
+                                    }
+                                    
+                                    div.appendChild(lineDiv);
                                 });
-                            }
+                            });
                         }
                     });
                 }).catch(e => console.log("ESPN API Error for " + req.sport, e));
@@ -956,6 +1007,7 @@
             }
         }
 
+        // --- UPDATED: Render multiple gamecast links inline with Live Scores ---
         function generateBetCardHTML(b, idx, isSettled) {
             let odds = b.odds > 0 ? `+${b.odds}` : b.odds;
             let plText = isSettled ? formatPL(b.pl) : ''; 
@@ -1035,7 +1087,7 @@
                 if(b.sport === 'NCAAB') urlSlug = 'mens-college-basketball';
                 
                 gamecastFallback = eIds.map((id, i) => {
-                    return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; opacity:0.8; color:var(--text-main);">
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:4px; border-bottom: ${i < eIds.length - 1 ? '1px dotted var(--input-border)' : 'none'}; opacity:0.8; color:var(--text-main);">
                         <span>📅 Pending Score Data...</span> 
                         <a href="https://www.espn.com/${urlSlug}/game/_/gameId/${id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>
                     </div>`;
@@ -1059,7 +1111,7 @@
                     <span>Wager: ${wagerDisplay} &bull; To Win: <span style="color:var(--win-text); font-weight:bold;">${potWinText}</span></span>
                     ${statusHtml}
                 </div>
-                <div class="live-score-display" style="${gamecastFallback ? 'display:block;' : 'display:none;'} font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--input-border); font-weight: bold;">
+                <div class="live-score-display" data-idx="${idx}" style="${gamecastFallback ? 'display:block;' : 'display:none;'} font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--input-border); font-weight: bold;">
                     ${gamecastFallback}
                 </div>
             </div>`;
