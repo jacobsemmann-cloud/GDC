@@ -687,7 +687,15 @@
                                             let detailsEl = card.querySelector('.bet-card-details:nth-child(3)');
                                             if (detailsEl) {
                                                 let cleanDetails = detailsEl.textContent.toLowerCase();
-                                                targetNames.push(...cleanDetails.split(/~~|,|\n|\+/).map(s => s.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '')));
+                                                targetNames.push(...cleanDetails.split(/~~|,|\n|\+/).map(s => {
+                                                    let cleanName = s.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                                                    let isSpawns = (card.getAttribute('data-team1')||'').trim().toUpperCase() === 'SPAWNS';
+                                                    if (isSpawns) {
+                                                        if (cleanName.includes('|')) cleanName = cleanName.split('|').slice(1).join('|').trim();
+                                                        else if (cleanName.includes(':')) cleanName = cleanName.split(':').slice(1).join(':').trim();
+                                                    }
+                                                    return cleanName;
+                                                }));
                                             }
 
                                             let foundStats = [];
@@ -778,10 +786,16 @@
             let picker = '';
             let legText = val.replace(/"/g, '&quot;');
 
-            if (isSpawns && val.includes('|')) {
-                let parts = val.split('|');
-                picker = parts[0].trim().replace(/"/g, '&quot;');
-                legText = parts[1].trim().replace(/"/g, '&quot;');
+            if (isSpawns) {
+                if (val.includes('|')) {
+                    let parts = val.split('|');
+                    picker = parts[0].trim().replace(/"/g, '&quot;');
+                    legText = parts.slice(1).join('|').trim().replace(/"/g, '&quot;');
+                } else if (val.includes(':')) {
+                    let parts = val.split(':');
+                    picker = parts[0].trim().replace(/"/g, '&quot;');
+                    legText = parts.slice(1).join(':').trim().replace(/"/g, '&quot;');
+                }
             }
 
             let div = document.createElement('div');
@@ -799,7 +813,6 @@
             `;
             document.getElementById('parlayLegsContainer').appendChild(div);
             
-            // Auto-fill works for each new leg input
             setupAutocomplete(div.querySelector('.leg-text'));
         }
 
@@ -814,7 +827,7 @@
                     if (isSpawns) {
                         let pickerInp = div.querySelector('.leg-picker');
                         if(pickerInp && pickerInp.value.trim()) {
-                            pickerText = pickerInp.value.trim() + '|';
+                            pickerText = pickerInp.value.trim() + ': ';
                         }
                     }
                     legs.push(`${chk ? '[x]' : '[ ]'} ${pickerText}${text}`);
@@ -842,9 +855,12 @@
                                        .replace(/\|TAGS:[^|]+\|/g, '')
                                        .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
             
-            let legs = cleanDetails.split('~~');
-            let legText = legs[lIdx].replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
-            legs[lIdx] = (chk.checked ? '[x] ' : '[ ] ') + legText;
+            // Clean ALL legs to fix stack issues, toggle the exact one clicked
+            let legs = cleanDetails.split('~~').map((leg, index) => {
+                let isChk = index === lIdx ? chk.checked : /^\s*\[\s*x\s*\]/i.test(leg);
+                let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                return (isChk ? '[x] ' : '[ ] ') + text;
+            });
             
             let newDetails = legs.join(' ~~ ');
             if (fbText) newDetails += fbText;
@@ -852,7 +868,6 @@
             if (tagText) newDetails += ` ${tagText}`;
             
             let oldBet = JSON.parse(JSON.stringify(bet));
-            
             bet.details = newDetails;
             
             let span = chk.nextElementSibling;
@@ -948,7 +963,6 @@
             container.innerHTML = html;
         }
 
-        // SPAWNS: Group Tracker Generator
         function renderSpawnsTracker() {
             let stats = {};
             rawBetsData.forEach(b => {
@@ -959,12 +973,17 @@
                         let legs = cleanDet.split('~~');
                         legs.forEach(leg => {
                             let isWin = /^\s*\[\s*x\s*\]/i.test(leg);
-                            let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                            let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                             if (text.includes('|')) {
                                 let picker = text.split('|')[0].trim();
                                 if (!stats[picker]) stats[picker] = { w: 0, l: 0 };
                                 if (isWin) stats[picker].w++;
                                 else stats[picker].l++; 
+                            } else if (text.includes(':')) {
+                                let picker = text.split(':')[0].trim();
+                                if (!stats[picker]) stats[picker] = { w: 0, l: 0 };
+                                if (isWin) stats[picker].w++;
+                                else stats[picker].l++;
                             }
                         });
                     }
@@ -1000,9 +1019,10 @@
                 if (bet.parlay && bet.details && bet.details.includes('~~')) {
                     let cleanDet = bet.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                     cleanDet.split('~~').forEach(leg => {
-                        let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
-                        if (bet.team1.trim().toUpperCase() === 'SPAWNS' && text.includes('|')) {
-                            text = text.split('|')[1].trim();
+                        let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                        if (bet.team1.trim().toUpperCase() === 'SPAWNS') {
+                            if (text.includes('|')) text = text.split('|').slice(1).join('|').trim();
+                            else if (text.includes(':')) text = text.split(':').slice(1).join(':').trim();
                         }
                         if (text) entities.add(text);
                     });
@@ -1051,7 +1071,6 @@
         
         setupAutocomplete(document.getElementById("team1")); setupAutocomplete(document.getElementById("team2"));
 
-        // Multi-autocomplete specifically built for comma-separated TAG fields
         function setupMultiAutocomplete(inp, getListFunc) {
             inp.addEventListener("input", function(e) {
                 let a, b, i, val = this.value;
@@ -1371,12 +1390,17 @@
                 detailsHtml = `<div style="display:flex; flex-direction:column; gap:3px; margin-top:4px;">` + 
                     legs.map((leg, lIdx) => {
                         let isChecked = /^\s*\[\s*x\s*\]/i.test(leg);
-                        let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                        let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                         
                         let displayTxt = text;
-                        if (isSpawns && text.includes('|')) {
-                            let parts = text.split('|');
-                            displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${parts[0]}:</span>${parts[1]}`;
+                        if (isSpawns) {
+                            if (text.includes('|')) {
+                                let parts = text.split('|');
+                                displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${parts[0]}:</span>${parts.slice(1).join('|').trim()}`;
+                            } else if (text.includes(':')) {
+                                let parts = text.split(':');
+                                displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${parts[0]}:</span>${parts.slice(1).join(':').trim()}`;
+                            }
                         }
 
                         let checkBox = isSettled ? (isChecked ? '✅' : '❌') : `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="toggleLeg(event, ${idx}, ${lIdx})" style="width:14px; height:14px; accent-color:var(--text-label); vertical-align:middle; margin:0 4px 0 0;">`;
@@ -1602,7 +1626,7 @@
             if(isP && cleanDetails.includes('~~')) {
                 cleanDetails.split('~~').forEach(leg => {
                     let chk = /^\s*\[\s*x\s*\]/i.test(leg);
-                    let txt = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                    let txt = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                     addParlayLeg(txt, chk);
                 });
                 document.getElementById('details').value = "";
