@@ -199,7 +199,10 @@
 
         <!-- PENDING BETS VIEW -->
         <div id="viewPending" class="view-section">
-            <h3 style="margin-top: 0; margin-bottom: 12px; color: var(--text-label); font-size: 15px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">Pending Bets</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">
+                <h3 style="margin: 0; color: var(--text-label); font-size: 15px; text-transform: uppercase; font-weight: 800;">Pending Bets</h3>
+                <button id="pendingToggleAllBtn" onclick="toggleAllPendingGroups()" style="background:transparent; border:1px solid var(--text-label); color:var(--text-label); border-radius:4px; font-size:10px; padding:4px 8px; cursor:pointer; font-weight:bold;">MINIMIZE ALL</button>
+            </div>
             <div id="pendingBetsList"></div>
         </div>
 
@@ -411,6 +414,30 @@
             fetchMasterData(true); 
         };
 
+        function togglePendingGroup(headerEl) {
+            let container = headerEl.nextElementSibling;
+            let icon = headerEl.querySelector('.toggle-icon');
+            if (container.style.display === 'none') {
+                container.style.display = 'flex';
+                icon.textContent = '▼';
+            } else {
+                container.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        }
+
+        function toggleAllPendingGroups() {
+            let btn = document.getElementById('pendingToggleAllBtn');
+            let isMinimizing = btn.textContent.includes('MINIMIZE');
+            let groups = document.querySelectorAll('.pending-cards-container');
+            let icons = document.querySelectorAll('.pending-sport-group .toggle-icon');
+            
+            groups.forEach(g => g.style.display = isMinimizing ? 'none' : 'flex');
+            icons.forEach(i => i.textContent = isMinimizing ? '▶' : '▼');
+            
+            btn.textContent = isMinimizing ? 'EXPAND ALL' : 'MINIMIZE ALL';
+        }
+
         function openGameLinker() {
             let sport = document.getElementById('sport').value;
             let dateStr = document.getElementById('date').value.replace(/-/g, '');
@@ -514,6 +541,7 @@
                         }
 
                         if (matchedEvents.length > 0) {
+                            let earliestTime = null;
                             let scoreDivs = document.querySelectorAll(`.live-score-display[data-idx="${idx}"], #live-score-${idx}`);
                             
                             scoreDivs.forEach(div => {
@@ -525,6 +553,9 @@
                                 if(req.sport === 'NCAAB') urlSlug = 'mens-college-basketball';
 
                                 matchedEvents.forEach((matchedEvent, evIdx) => {
+                                    let evTime = new Date(matchedEvent.date).getTime();
+                                    if (!earliestTime || evTime < earliestTime) earliestTime = evTime;
+
                                     let status = matchedEvent.status.type.shortDetail; 
                                     let isLive = matchedEvent.status.type.state === 'in';
                                     let isPre = matchedEvent.status.type.state === 'pre';
@@ -551,6 +582,7 @@
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                     }
                                     
+                                    // Live Situation Context
                                     let situationText = "";
                                     if (isLive && matchedEvent.competitions[0].situation) {
                                         let sit = matchedEvent.competitions[0].situation;
@@ -596,8 +628,8 @@
                                     topRow.style.justifyContent = 'space-between';
                                     topRow.style.alignItems = 'center';
                                     if(isPre || isPost) topRow.style.opacity = '0.8';
-                                    
                                     topRow.innerHTML = `<span>${displayStr}</span><span>${gcLink}</span>`;
+                                    
                                     lineDiv.appendChild(topRow);
                                     
                                     if (situationText) {
@@ -609,6 +641,7 @@
                                     
                                     div.appendChild(lineDiv);
 
+                                    // --- FETCH PLAYER STATS ---
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
@@ -693,6 +726,11 @@
                                     }
                                 });
                             });
+                            
+                            // Re-order the card visually within the sport container based on the earliest game time
+                            if (earliestTime && card.parentElement && card.parentElement.classList.contains('pending-cards-container')) {
+                                card.style.order = Math.floor(earliestTime / 1000);
+                            }
                         }
                     });
                 }).catch(e => console.log("ESPN API Error for " + req.sport, e));
@@ -1233,12 +1271,27 @@
 
             pendingItems.forEach(item => {
                 if (item.bet.sport !== currentSport) {
+                    if (currentSport !== '') {
+                        html += `</div></div>`; 
+                    }
                     currentSport = item.bet.sport;
-                    html += `<h4 style="color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase;">${currentSport}</h4>`;
+                    html += `<div class="pending-sport-group">`;
+                    html += `<h4 onclick="togglePendingGroup(this)" style="cursor:pointer; color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase; display:flex; justify-content:space-between; align-items:center;"><span>${currentSport}</span><span class="toggle-icon" style="font-size:10px;">▼</span></h4>`;
+                    html += `<div class="pending-cards-container" style="display:flex; flex-direction:column;">`;
                 }
                 sportsToFetch.add(item.bet.sport);
-                html += generateBetCardHTML(item.bet, item.idx, false);
+                
+                let dObj = new Date(item.bet.date + "T23:59:59");
+                let baseTime = !isNaN(dObj.getTime()) ? Math.floor(dObj.getTime() / 1000) : 9999999999;
+                
+                let cardHtml = generateBetCardHTML(item.bet, item.idx, false);
+                cardHtml = cardHtml.replace('style="', `style="order: ${baseTime}; `);
+                
+                html += cardHtml;
             });
+            if (currentSport !== '') {
+                html += `</div></div>`; 
+            }
             container.innerHTML = html;
 
             fetchLiveScores(pendingItems);
@@ -1439,7 +1492,6 @@
             });
         }
 
-        // --- UPDATED: Modal Header for Potential Profit and Today's Record ---
         function openModal(title, bets, isDayView) {
             const modal = document.getElementById('betsModal'); 
             document.getElementById('modalTitle').textContent = title; 
