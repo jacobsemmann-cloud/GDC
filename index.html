@@ -163,7 +163,7 @@
             <!-- DYNAMIC DETAILS OR PARLAY BUILDER WITH TAGS -->
             <div style="display: flex; gap: 8px; align-items: flex-end;" id="detailsGroup">
                 <div class="form-group" style="flex: 2;"><label>Details</label><input type="text" id="details" placeholder="e.g. O 5.5 Goals"></div>
-                <div class="form-group" style="flex: 1;"><label>Tags</label><input type="text" id="tags" placeholder="e.g. ENG, PRIME"></div>
+                <div class="form-group autocomplete-wrapper" style="flex: 1;"><label>Tags</label><input type="text" id="tags" placeholder="e.g. ENG, PRIME" autocomplete="off"></div>
                 <div class="form-group" style="width: auto; margin-bottom: 8px;">
                     <button type="button" class="btn-primary" id="btnLinkGame" onclick="openGameLinker()" style="margin-top:0; background-color:#007bff; padding: 0 10px; height: 36px; font-size: 11px;">🔗 Link Game</button>
                 </div>
@@ -176,7 +176,7 @@
                 </div>
                 <div id="parlayLegsContainer" style="display:flex; flex-direction:column; gap:4px; margin-bottom:6px;"></div>
                 <button type="button" onclick="addParlayLeg()" style="background:transparent; border:1px dashed var(--text-label); color:var(--text-label); padding:6px; border-radius:4px; cursor:pointer; width:100%; font-size:12px; font-weight:bold; margin-bottom: 6px;">+ Add Leg</button>
-                <div class="form-group" style="margin-bottom: 0;"><input type="text" id="parlayTags" placeholder="Tags (e.g. MNF, PRIME)" style="min-height: 30px; font-size: 12px; padding: 4px 8px;"></div>
+                <div class="form-group autocomplete-wrapper" style="margin-bottom: 0;"><input type="text" id="parlayTags" placeholder="Tags (e.g. MNF, PRIME)" style="min-height: 30px; font-size: 12px; padding: 4px 8px;" autocomplete="off"></div>
             </div>
             
             <div style="display: flex; gap: 8px;">
@@ -323,6 +323,12 @@
                     <h3 class="dash-title">Tag Performance</h3>
                     <div id="tagGridContainer" class="tag-grid"></div>
                 </div>
+                
+                <!-- SPAWNS GROUP TRACKER -->
+                <div class="dash-card">
+                    <h3 class="dash-title">Spawns Group Tracker</h3>
+                    <div id="spawnsTrackerTable"></div>
+                </div>
 
                 <div class="dash-card"><h3 class="dash-title">By Book</h3><div id="tableBooks"></div></div>
                 <div class="dash-card"><h3 class="dash-title">By Sport</h3><div id="tableSports"></div></div>
@@ -411,6 +417,13 @@
                 }
             });
 
+            // Initialize Tag Autocomplete Listeners
+            setupMultiAutocomplete(document.getElementById("tags"), getUniqueTags);
+            setupMultiAutocomplete(document.getElementById("parlayTags"), getUniqueTags);
+
+            // Spawns Mode Listener
+            document.getElementById('team1').addEventListener('input', toggleSpawnsMode);
+
             fetchMasterData(true); 
         };
 
@@ -442,6 +455,25 @@
             stats.forEach(s => s.style.display = isMinimizing ? 'inline' : 'none');
             
             btn.textContent = isMinimizing ? 'EXPAND ALL' : 'MINIMIZE ALL';
+        }
+
+        // SPAWNS LOGIC
+        function toggleSpawnsMode() {
+            let isSpawns = document.getElementById('team1').value.trim().toUpperCase() === 'SPAWNS';
+            let legs = document.querySelectorAll('#parlayLegsContainer > div');
+            legs.forEach(div => {
+                let picker = div.querySelector('.leg-picker');
+                if (isSpawns && !picker) {
+                    picker = document.createElement('input');
+                    picker.type = 'text';
+                    picker.className = 'leg-picker';
+                    picker.placeholder = 'Picker';
+                    picker.style.cssText = 'width:80px; min-height:30px; font-size:12px; padding:4px 8px; margin-right:4px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);';
+                    div.insertBefore(picker, div.querySelector('.autocomplete-wrapper'));
+                } else if (!isSpawns && picker) {
+                    picker.remove();
+                }
+            });
         }
 
         function openGameLinker() {
@@ -588,7 +620,6 @@
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                     }
                                     
-                                    // Live Situation Context
                                     let situationText = "";
                                     if (isLive && matchedEvent.competitions[0].situation) {
                                         let sit = matchedEvent.competitions[0].situation;
@@ -647,7 +678,6 @@
                                     
                                     div.appendChild(lineDiv);
 
-                                    // --- FETCH PLAYER STATS ---
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
@@ -743,23 +773,50 @@
         }
 
         function addParlayLeg(val = '', isChecked = false) {
+            let isSpawns = document.getElementById('team1').value.trim().toUpperCase() === 'SPAWNS';
+            let picker = '';
+            let legText = val.replace(/"/g, '&quot;');
+
+            if (isSpawns && val.includes('|')) {
+                let parts = val.split('|');
+                picker = parts[0].trim().replace(/"/g, '&quot;');
+                legText = parts[1].trim().replace(/"/g, '&quot;');
+            }
+
             let div = document.createElement('div');
             div.style.display = 'flex'; div.style.gap = '4px'; div.style.alignItems = 'center';
+            
+            let pickerHtml = isSpawns ? `<input type="text" class="leg-picker" value="${picker}" placeholder="Picker" style="width:80px; min-height:30px; font-size:12px; padding:4px 8px; margin-right:4px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);">` : '';
+
             div.innerHTML = `
-                <input type="checkbox" ${isChecked ? 'checked' : ''} class="leg-check" style="width:16px; height:16px; accent-color:var(--text-label);">
-                <input type="text" class="leg-text" value="${val.replace(/"/g, '&quot;')}" placeholder="Leg description..." style="flex:1; min-height:30px; font-size:12px; padding:4px 8px;">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} class="leg-check" style="width:16px; height:16px; accent-color:var(--text-label); margin-right:4px;">
+                ${pickerHtml}
+                <div class="autocomplete-wrapper" style="flex:1; margin-right:4px;">
+                    <input type="text" class="leg-text" value="${legText}" placeholder="Leg description..." style="width:100%; min-height:30px; font-size:12px; padding:4px 8px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);" autocomplete="off">
+                </div>
                 <button type="button" onclick="this.parentElement.remove()" style="background:transparent; border:none; color:var(--loss-text); font-weight:bold; cursor:pointer; padding:0 5px;">X</button>
             `;
             document.getElementById('parlayLegsContainer').appendChild(div);
+            
+            // Auto-fill works for each new leg input
+            setupAutocomplete(div.querySelector('.leg-text'));
         }
 
         function getParlayDetails() {
+            let isSpawns = document.getElementById('team1').value.trim().toUpperCase() === 'SPAWNS';
             let legs = [];
             document.querySelectorAll('#parlayLegsContainer > div').forEach(div => {
                 let text = div.querySelector('.leg-text').value.trim();
                 if(text) {
                     let chk = div.querySelector('.leg-check').checked;
-                    legs.push(`${chk ? '[x]' : '[ ]'} ${text}`);
+                    let pickerText = '';
+                    if (isSpawns) {
+                        let pickerInp = div.querySelector('.leg-picker');
+                        if(pickerInp && pickerInp.value.trim()) {
+                            pickerText = pickerInp.value.trim() + '|';
+                        }
+                    }
+                    legs.push(`${chk ? '[x]' : '[ ]'} ${pickerText}${text}`);
                 }
             });
             return legs.join(' ~~ ');
@@ -831,6 +888,20 @@
             .catch(e => { btn.textContent = ogText; btn.disabled = false; alert("Error: " + e.message); });
         }
 
+        function getUniqueTags() {
+            let tags = new Set();
+            rawBetsData.forEach(b => {
+                let match = b.details ? b.details.match(/\|TAGS:([^|]+)\|/) : null;
+                if(match) {
+                    match[1].split(',').forEach(t => {
+                        let cln = t.trim().toUpperCase();
+                        if(cln) tags.add(cln);
+                    });
+                }
+            });
+            return Array.from(tags);
+        }
+
         function renderTagGrid() {
             let tagStats = {};
             
@@ -876,11 +947,65 @@
             container.innerHTML = html;
         }
 
+        // SPAWNS: Group Tracker Generator
+        function renderSpawnsTracker() {
+            let stats = {};
+            rawBetsData.forEach(b => {
+                if (b.team1 && b.team1.trim().toUpperCase() === 'SPAWNS') {
+                    let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
+                    if (isSettled && b.details && b.details.includes('~~')) {
+                        let cleanDet = b.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
+                        let legs = cleanDet.split('~~');
+                        legs.forEach(leg => {
+                            let isWin = leg.trim().startsWith('[x]');
+                            let text = leg.replace(/^\[[x ]\]\s*/i, '').trim();
+                            if (text.includes('|')) {
+                                let picker = text.split('|')[0].trim();
+                                if (!stats[picker]) stats[picker] = { w: 0, l: 0 };
+                                if (isWin) stats[picker].w++;
+                                else stats[picker].l++; // assuming missed leg if unchecked
+                            }
+                        });
+                    }
+                }
+            });
+
+            let sorted = Object.keys(stats).map(k => {
+                let total = stats[k].w + stats[k].l;
+                let winPct = total > 0 ? (stats[k].w / total * 100).toFixed(1) : 0;
+                return { picker: k, w: stats[k].w, l: stats[k].l, pct: winPct };
+            }).sort((a,b) => b.w - a.w);
+
+            let container = document.getElementById('spawnsTrackerTable');
+            if (sorted.length === 0) {
+                container.innerHTML = '<p style="font-size:13px; opacity:0.7;">No Spawns group data logged yet.</p>';
+                return;
+            }
+
+            let html = '<div class="table-wrapper"><table><tr><th>Picker</th><th class="text-right">Leg Record</th><th class="text-right">Win %</th></tr>';
+            sorted.forEach(s => {
+                html += `<tr><td>${s.picker}</td><td class="text-right">${s.w}-${s.l}</td><td class="text-right">${s.pct}%</td></tr>`;
+            });
+            html += '</table></div>';
+            container.innerHTML = html;
+        }
+
         function getUniqueEntities() {
             let entities = new Set();
             rawBetsData.forEach(bet => {
                 if (bet.team1 && bet.team1.trim() !== "") entities.add(bet.team1.trim());
                 if (bet.team2 && bet.team2.trim() !== "") entities.add(bet.team2.trim());
+
+                if (bet.parlay && bet.details && bet.details.includes('~~')) {
+                    let cleanDet = bet.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
+                    cleanDet.split('~~').forEach(leg => {
+                        let text = leg.replace(/^\[[x ]\]\s*/i, '').trim();
+                        if (bet.team1.trim().toUpperCase() === 'SPAWNS' && text.includes('|')) {
+                            text = text.split('|')[1].trim();
+                        }
+                        if (text) entities.add(text);
+                    });
+                }
             });
             return Array.from(entities);
         }
@@ -924,6 +1049,52 @@
         }
         
         setupAutocomplete(document.getElementById("team1")); setupAutocomplete(document.getElementById("team2"));
+
+        // Multi-autocomplete specifically built for comma-separated TAG fields
+        function setupMultiAutocomplete(inp, getListFunc) {
+            inp.addEventListener("input", function(e) {
+                let a, b, i, val = this.value;
+                closeAllLists();
+                let terms = val.split(/,\s*/);
+                let currentTerm = terms[terms.length - 1];
+                if (!currentTerm || currentTerm.length < 1) return false;
+                
+                a = document.createElement("DIV"); 
+                a.setAttribute("id", this.id + "autocomplete-list"); 
+                a.setAttribute("class", "autocomplete-items"); 
+                this.parentNode.appendChild(a);
+                
+                let list = getListFunc(); 
+                let count = 0;
+                
+                for (i = 0; i < list.length; i++) {
+                    if (list[i].toUpperCase().includes(currentTerm.toUpperCase())) {
+                        if (count >= 6) break; 
+                        b = document.createElement("DIV"); 
+                        let matchIdx = list[i].toUpperCase().indexOf(currentTerm.toUpperCase());
+                        
+                        b.innerHTML = list[i].substring(0, matchIdx) + 
+                                      "<span style='color:var(--text-label);'>" + 
+                                      list[i].substring(matchIdx, matchIdx + currentTerm.length) + 
+                                      "</span>" + 
+                                      list[i].substring(matchIdx + currentTerm.length) + 
+                                      "<input type='hidden' value='" + list[i].replace(/'/g, "&apos;") + "'>";
+                        
+                        b.addEventListener("click", function(e) { 
+                            terms[terms.length - 1] = this.getElementsByTagName("input")[0].value;
+                            inp.value = terms.join(", ") + ", "; 
+                            closeAllLists(); 
+                        });
+                        a.appendChild(b); count++;
+                    }
+                }
+            });
+            function closeAllLists(elmnt) {
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) { if (elmnt != x[i] && elmnt != inp) { x[i].parentNode.removeChild(x[i]); } }
+            }
+            document.addEventListener("click", function (e) { closeAllLists(e.target); });
+        }
 
         function forceRefresh() { document.getElementById('refreshBtn').textContent = "⏳..."; dataFetched = false; fetchMasterData(false); }
         
@@ -1192,15 +1363,24 @@
             }
 
             let detailsHtml = cleanDetails || 'Moneyline';
+            let isSpawns = (b.team1 || '').trim().toUpperCase() === 'SPAWNS';
+
             if (b.parlay && cleanDetails.includes('~~')) {
                 let legs = cleanDetails.split('~~');
                 detailsHtml = `<div style="display:flex; flex-direction:column; gap:3px; margin-top:4px;">` + 
                     legs.map((leg, lIdx) => {
                         let isChecked = leg.trim().startsWith('[x]');
-                        let text = leg.replace(/\[x\]|\[ \]/g, '').trim();
+                        let text = leg.replace(/^\[[x ]\]\s*/i, '').trim();
+                        
+                        let displayTxt = text;
+                        if (isSpawns && text.includes('|')) {
+                            let parts = text.split('|');
+                            displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${parts[0]}:</span>${parts[1]}`;
+                        }
+
                         let checkBox = isSettled ? (isChecked ? '✅' : '❌') : `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="toggleLeg(event, ${idx}, ${lIdx})" style="width:14px; height:14px; accent-color:var(--text-label); vertical-align:middle; margin:0 4px 0 0;">`;
                         let textSty = isChecked ? 'text-decoration: line-through; opacity:0.6;' : '';
-                        return `<div>${checkBox}<span style="${textSty}">${text}</span></div>`;
+                        return `<div>${checkBox}<span style="${textSty}">${displayTxt}</span></div>`;
                     }).join('') + `</div>`;
             }
 
@@ -1274,7 +1454,6 @@
             let currentSport = '';
             let sportsToFetch = new Set();
 
-            // PRE-CALCULATE STATS FOR THE HEADER TOGGLES
             let sportStats = {};
             pendingItems.forEach(item => {
                 let s = item.bet.sport;
@@ -1422,7 +1601,7 @@
             if(isP && cleanDetails.includes('~~')) {
                 cleanDetails.split('~~').forEach(leg => {
                     let chk = leg.trim().startsWith('[x]');
-                    let txt = leg.replace(/\[x\]|\[ \]/g, '').trim();
+                    let txt = leg.replace(/^\[[x ]\]\s*/i, '').trim();
                     addParlayLeg(txt, chk);
                 });
                 document.getElementById('details').value = "";
@@ -1460,6 +1639,8 @@
             document.getElementById('cancelEditBtn').style.display = "none";
             document.getElementById('deleteBtn').style.display = "none";
             document.getElementById('cloneBtn').style.display = "none";
+            
+            toggleSpawnsMode();
         }
 
         function deleteBet() {
@@ -1708,6 +1889,7 @@
                     dailyPLData = data.dailyData || {}; for (let key in dailyPLData) { dailyPLData[key] = parseFloat(dailyPLData[key]) || 0; }
 
                     renderTagGrid(); 
+                    renderSpawnsTracker();
                     drawDowChart(); 
                     renderLeaderboard(); 
                     renderPendingBets(); 
