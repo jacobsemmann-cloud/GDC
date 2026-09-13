@@ -588,6 +588,7 @@
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                     }
                                     
+                                    // Live Situation Context
                                     let situationText = "";
                                     if (isLive && matchedEvent.competitions[0].situation) {
                                         let sit = matchedEvent.competitions[0].situation;
@@ -646,6 +647,7 @@
                                     
                                     div.appendChild(lineDiv);
 
+                                    // --- FETCH PLAYER STATS ---
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
@@ -1278,7 +1280,11 @@
                 let s = item.bet.sport;
                 if(!sportStats[s]) sportStats[s] = { count: 0, wager: 0 };
                 sportStats[s].count++;
-                sportStats[s].wager += (item.bet.wager || 0);
+                
+                let isFreeBet = (item.bet.details || '').includes('🎁');
+                if (!isFreeBet) {
+                    sportStats[s].wager += (item.bet.wager || 0);
+                }
             });
 
             pendingItems.forEach(item => {
