@@ -678,6 +678,7 @@
                                     
                                     div.appendChild(lineDiv);
 
+                                    // --- FETCH PLAYER STATS ---
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
@@ -686,7 +687,7 @@
                                             let detailsEl = card.querySelector('.bet-card-details:nth-child(3)');
                                             if (detailsEl) {
                                                 let cleanDetails = detailsEl.textContent.toLowerCase();
-                                                targetNames.push(...cleanDetails.split(/~~|,|\n|\+/).map(s => s.trim().replace(/^\[[ x]\]\s*/i, '')));
+                                                targetNames.push(...cleanDetails.split(/~~|,|\n|\+/).map(s => s.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '')));
                                             }
 
                                             let foundStats = [];
@@ -842,7 +843,7 @@
                                        .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
             
             let legs = cleanDetails.split('~~');
-            let legText = legs[lIdx].trim().replace(/^\[[x ]\]\s*/i, '');
+            let legText = legs[lIdx].replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
             legs[lIdx] = (chk.checked ? '[x] ' : '[ ] ') + legText;
             
             let newDetails = legs.join(' ~~ ');
@@ -957,13 +958,13 @@
                         let cleanDet = b.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                         let legs = cleanDet.split('~~');
                         legs.forEach(leg => {
-                            let isWin = leg.trim().startsWith('[x]');
-                            let text = leg.replace(/^\[[x ]\]\s*/i, '').trim();
+                            let isWin = /^\s*\[\s*x\s*\]/i.test(leg);
+                            let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                             if (text.includes('|')) {
                                 let picker = text.split('|')[0].trim();
                                 if (!stats[picker]) stats[picker] = { w: 0, l: 0 };
                                 if (isWin) stats[picker].w++;
-                                else stats[picker].l++; // assuming missed leg if unchecked
+                                else stats[picker].l++; 
                             }
                         });
                     }
@@ -999,7 +1000,7 @@
                 if (bet.parlay && bet.details && bet.details.includes('~~')) {
                     let cleanDet = bet.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                     cleanDet.split('~~').forEach(leg => {
-                        let text = leg.replace(/^\[[x ]\]\s*/i, '').trim();
+                        let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                         if (bet.team1.trim().toUpperCase() === 'SPAWNS' && text.includes('|')) {
                             text = text.split('|')[1].trim();
                         }
@@ -1369,8 +1370,8 @@
                 let legs = cleanDetails.split('~~');
                 detailsHtml = `<div style="display:flex; flex-direction:column; gap:3px; margin-top:4px;">` + 
                     legs.map((leg, lIdx) => {
-                        let isChecked = leg.trim().startsWith('[x]');
-                        let text = leg.replace(/^\[[x ]\]\s*/i, '').trim();
+                        let isChecked = /^\s*\[\s*x\s*\]/i.test(leg);
+                        let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                         
                         let displayTxt = text;
                         if (isSpawns && text.includes('|')) {
@@ -1600,8 +1601,8 @@
             
             if(isP && cleanDetails.includes('~~')) {
                 cleanDetails.split('~~').forEach(leg => {
-                    let chk = leg.trim().startsWith('[x]');
-                    let txt = leg.replace(/^\[[x ]\]\s*/i, '').trim();
+                    let chk = /^\s*\[\s*x\s*\]/i.test(leg);
+                    let txt = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                     addParlayLeg(txt, chk);
                 });
                 document.getElementById('details').value = "";
