@@ -462,7 +462,6 @@
             document.getElementById('gameLinkModal').style.display = 'none';
         }
 
-        // --- UPDATED: Fetch multiple scores, handle Situation, and fix Blank Name Match Bug ---
         function fetchLiveScores(pendingItems) {
             let fetchMap = {}; 
             
@@ -552,7 +551,6 @@
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                     }
                                     
-                                    // Live Situation Context
                                     let situationText = "";
                                     if (isLive && matchedEvent.competitions[0].situation) {
                                         let sit = matchedEvent.competitions[0].situation;
@@ -598,8 +596,8 @@
                                     topRow.style.justifyContent = 'space-between';
                                     topRow.style.alignItems = 'center';
                                     if(isPre || isPost) topRow.style.opacity = '0.8';
-                                    topRow.innerHTML = `<span>${displayStr}</span><span>${gcLink}</span>`;
                                     
+                                    topRow.innerHTML = `<span>${displayStr}</span><span>${gcLink}</span>`;
                                     lineDiv.appendChild(topRow);
                                     
                                     if (situationText) {
@@ -611,12 +609,10 @@
                                     
                                     div.appendChild(lineDiv);
 
-                                    // --- FETCH PLAYER STATS (WITH EMPTY STRING FIX) ---
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
                                             
-                                            // Pull target names exclusively from Team 1, Team 2, and Parlay Legs
                                             let targetNames = [t1, t2].filter(t => t);
                                             let detailsEl = card.querySelector('.bet-card-details:nth-child(3)');
                                             if (detailsEl) {
@@ -638,7 +634,6 @@
                                                                     let aName = (athleteObj.athlete.displayName || '').toLowerCase();
                                                                     let sName = (athleteObj.athlete.shortName || '').toLowerCase();
                                                                     
-                                                                    // Hyper-strict matching: Only match if the actual player name exists inside the target string
                                                                     let isTarget = targetNames.some(target => {
                                                                         if (target.length < 4) return false;
                                                                         let matchA = aName.length > 3 && target.includes(aName);
@@ -895,7 +890,6 @@
             localStorage.setItem('theme', isDark ? 'dark' : 'light'); 
             document.getElementById('themeBtn').textContent = isDark ? 'Light Mode' : 'Dark Mode';
             
-            // Re-render open tabs so book colors update based on theme
             if(dataFetched && document.getElementById('viewDash').classList.contains('active')) fetchMasterData(false); 
             if(dataFetched && document.getElementById('viewCal').classList.contains('active')) drawChart(); 
             if(dataFetched && document.getElementById('viewPending').classList.contains('active')) renderPendingBets();
@@ -1178,6 +1172,20 @@
                 </div>`;
             }
 
+            let gamecastFallback = '';
+            if (eIds.length > 0 && !isSettled && espnSportMap[b.sport]) {
+                let urlSlug = espnSportMap[b.sport].split('/')[1];
+                if(b.sport === 'NCAAF') urlSlug = 'college-football';
+                if(b.sport === 'NCAAB') urlSlug = 'mens-college-basketball';
+                
+                gamecastFallback = eIds.map((id, i) => {
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:4px; border-bottom: ${i < eIds.length - 1 ? '1px dotted var(--input-border)' : 'none'}; opacity:0.8; color:var(--text-main);">
+                        <span>📅 Fetching Score Data...</span> 
+                        <a href="https://www.espn.com/${urlSlug}/game/_/gameId/${id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>
+                    </div>`;
+                }).join('');
+            }
+
             return `
             <div class="bet-card clickable-row" data-bet-idx="${idx}" data-sport="${b.sport}" data-date="${b.date}" data-team1="${(b.team1||'').replace(/"/g, '&quot;')}" data-team2="${(b.team2||'').replace(/"/g, '&quot;')}" data-espn-id="${eIds.join(',')}" style="border-left-color: ${borderCol}; background-color: ${getBookBgColor(b.book)}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
                 <div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;">
@@ -1195,7 +1203,9 @@
                     <span>Wager: ${wagerDisplay} &bull; To Win: <span style="color:var(--win-text); font-weight:bold;">${potWinText}</span></span>
                     ${statusHtml}
                 </div>
-                <div class="live-score-display" data-idx="${idx}" style="display:none; font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--input-border); font-weight: bold;"></div>
+                <div class="live-score-display" data-idx="${idx}" style="${gamecastFallback ? 'display:block;' : 'display:none;'} font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--input-border); font-weight: bold;">
+                    ${gamecastFallback}
+                </div>
             </div>`;
         }
 
@@ -1429,7 +1439,7 @@
             });
         }
 
-        // --- Automatically trigger fetchLiveScores inside modals ---
+        // --- UPDATED: Modal Header for Potential Profit and Today's Record ---
         function openModal(title, bets, isDayView) {
             const modal = document.getElementById('betsModal'); 
             document.getElementById('modalTitle').textContent = title; 
@@ -1438,13 +1448,16 @@
             
             let html = '';
             if (isDayView) {
-                let settledPL = 0;
+                let settledPL = 0, w = 0, l = 0, p = 0;
                 let pendingPotential = 0;
                 let sportSummary = {}; 
                 bets.forEach(b => { 
                     sportSummary[b.sport] = (sportSummary[b.sport] || 0) + b.pl; 
                     if (b.result === 'W' || b.result === 'L' || b.result === 'P') {
                         settledPL += b.pl;
+                        if (b.result === 'W') w++;
+                        else if (b.result === 'L') l++;
+                        else if (b.result === 'P') p++;
                     } else {
                         let wagerAmt = b.wager;
                         let det = b.details || '';
@@ -1463,9 +1476,14 @@
                 });
                 let maxProfit = settledPL + pendingPotential;
                 
-                html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--input-border);">`;
-                html += `<div style="font-size:13px; font-weight:bold; color:var(--text-main);">Max To Win:</div>`;
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">`;
+                html += `<div style="font-size:13px; font-weight:bold; color:var(--text-main);">Potential Profit:</div>`;
                 html += `<div style="font-size:16px; font-weight:bold; color:${getColor(formatPL(maxProfit))}">${formatPL(maxProfit)}</div>`;
+                html += `</div>`;
+                
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--input-border);">`;
+                html += `<div style="font-size:13px; font-weight:bold; color:var(--text-main);">Today: ${w}-${l}-${p}</div>`;
+                html += `<div style="font-size:14px; font-weight:bold; color:${getColor(formatPL(settledPL))}">${formatPL(settledPL)}</div>`;
                 html += `</div>`;
 
                 html += '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid var(--input-border);">';
