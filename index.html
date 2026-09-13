@@ -463,15 +463,29 @@
             let legs = document.querySelectorAll('#parlayLegsContainer > div');
             legs.forEach(div => {
                 let picker = div.querySelector('.leg-picker');
-                if (isSpawns && !picker) {
-                    picker = document.createElement('input');
-                    picker.type = 'text';
-                    picker.className = 'leg-picker';
-                    picker.placeholder = 'Picker';
-                    picker.style.cssText = 'width:80px; min-height:30px; font-size:12px; padding:4px 8px; margin-right:4px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);';
-                    div.insertBefore(picker, div.querySelector('.autocomplete-wrapper'));
-                } else if (!isSpawns && picker) {
-                    picker.remove();
+                let oddsInp = div.querySelector('.leg-odds');
+                let wrapper = div.querySelector('.autocomplete-wrapper');
+
+                if (isSpawns) {
+                    if (!picker) {
+                        picker = document.createElement('input');
+                        picker.type = 'text';
+                        picker.className = 'leg-picker';
+                        picker.placeholder = 'Picker';
+                        picker.style.cssText = 'width:65px; min-height:30px; font-size:12px; padding:4px; margin-right:4px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);';
+                        div.insertBefore(picker, wrapper);
+                    }
+                    if (!oddsInp) {
+                        oddsInp = document.createElement('input');
+                        oddsInp.type = 'number';
+                        oddsInp.className = 'leg-odds';
+                        oddsInp.placeholder = 'Odds';
+                        oddsInp.style.cssText = 'width:55px; min-height:30px; font-size:12px; padding:4px; margin-right:4px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);';
+                        div.insertBefore(oddsInp, wrapper);
+                    }
+                } else {
+                    if (picker) picker.remove();
+                    if (oddsInp) oddsInp.remove();
                 }
             });
         }
@@ -691,8 +705,7 @@
                                                     let cleanName = s.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                                                     let isSpawns = (card.getAttribute('data-team1')||'').trim().toUpperCase() === 'SPAWNS';
                                                     if (isSpawns) {
-                                                        if (cleanName.includes('|')) cleanName = cleanName.split('|').slice(1).join('|').trim();
-                                                        else if (cleanName.includes(':')) cleanName = cleanName.split(':').slice(1).join(':').trim();
+                                                        if (cleanName.includes('|')) cleanName = cleanName.split('|').slice(2).join('|').trim();
                                                     }
                                                     return cleanName;
                                                 }));
@@ -784,15 +797,23 @@
         function addParlayLeg(val = '', isChecked = false) {
             let isSpawns = document.getElementById('team1').value.trim().toUpperCase() === 'SPAWNS';
             let picker = '';
+            let oddsVal = '';
             let legText = val.replace(/"/g, '&quot;');
 
             if (isSpawns) {
-                if (val.includes('|')) {
-                    let parts = val.split('|');
-                    picker = parts[0].trim().replace(/"/g, '&quot;');
-                    legText = parts.slice(1).join('|').trim().replace(/"/g, '&quot;');
-                } else if (val.includes(':')) {
-                    let parts = val.split(':');
+                let text = val;
+                if (text.includes('|')) {
+                    let parts = text.split('|');
+                    if (parts.length >= 3) {
+                        picker = parts[0].trim().replace(/"/g, '&quot;');
+                        oddsVal = parts[1].trim().replace(/"/g, '&quot;');
+                        legText = parts.slice(2).join('|').trim().replace(/"/g, '&quot;');
+                    } else {
+                        picker = parts[0].trim().replace(/"/g, '&quot;');
+                        legText = parts.slice(1).join('|').trim().replace(/"/g, '&quot;');
+                    }
+                } else if (text.includes(':')) {
+                    let parts = text.split(':');
                     picker = parts[0].trim().replace(/"/g, '&quot;');
                     legText = parts.slice(1).join(':').trim().replace(/"/g, '&quot;');
                 }
@@ -801,7 +822,7 @@
             let div = document.createElement('div');
             div.style.display = 'flex'; div.style.gap = '4px'; div.style.alignItems = 'center';
             
-            let pickerHtml = isSpawns ? `<input type="text" class="leg-picker" value="${picker}" placeholder="Picker" style="width:80px; min-height:30px; font-size:12px; padding:4px 8px; margin-right:4px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);">` : '';
+            let pickerHtml = isSpawns ? `<input type="text" class="leg-picker" value="${picker}" placeholder="Picker" style="width:65px; min-height:30px; font-size:12px; padding:4px; margin-right:4px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);"><input type="number" class="leg-odds" value="${oddsVal}" placeholder="Odds" style="width:55px; min-height:30px; font-size:12px; padding:4px; margin-right:4px; border:2px solid var(--input-border); border-radius:6px; background-color:var(--input-bg); color:var(--text-main);">` : '';
 
             div.innerHTML = `
                 <input type="checkbox" ${isChecked ? 'checked' : ''} class="leg-check" style="width:16px; height:16px; accent-color:var(--text-label); margin-right:4px;">
@@ -823,14 +844,15 @@
                 let text = div.querySelector('.leg-text').value.trim();
                 if(text) {
                     let chk = div.querySelector('.leg-check').checked;
-                    let pickerText = '';
+                    let prefix = '';
                     if (isSpawns) {
                         let pickerInp = div.querySelector('.leg-picker');
-                        if(pickerInp && pickerInp.value.trim()) {
-                            pickerText = pickerInp.value.trim() + ': ';
-                        }
+                        let oddsInp = div.querySelector('.leg-odds');
+                        let pVal = pickerInp ? pickerInp.value.trim() : '';
+                        let oVal = oddsInp ? oddsInp.value.trim() : '';
+                        prefix = `${pVal} | ${oVal} | `;
                     }
-                    legs.push(`${chk ? '[x]' : '[ ]'} ${pickerText}${text}`);
+                    legs.push(`${chk ? '[x]' : '[ ]'} ${prefix}${text}`);
                 }
             });
             return legs.join(' ~~ ');
@@ -855,12 +877,9 @@
                                        .replace(/\|TAGS:[^|]+\|/g, '')
                                        .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
             
-            // Clean ALL legs to fix stack issues, toggle the exact one clicked
-            let legs = cleanDetails.split('~~').map((leg, index) => {
-                let isChk = index === lIdx ? chk.checked : /^\s*\[\s*x\s*\]/i.test(leg);
-                let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
-                return (isChk ? '[x] ' : '[ ] ') + text;
-            });
+            let legs = cleanDetails.split('~~');
+            let legText = legs[lIdx].trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+            legs[lIdx] = (chk.checked ? '[x] ' : '[ ] ') + legText;
             
             let newDetails = legs.join(' ~~ ');
             if (fbText) newDetails += fbText;
@@ -868,6 +887,7 @@
             if (tagText) newDetails += ` ${tagText}`;
             
             let oldBet = JSON.parse(JSON.stringify(bet));
+            
             bet.details = newDetails;
             
             let span = chk.nextElementSibling;
@@ -963,6 +983,7 @@
             container.innerHTML = html;
         }
 
+        // SPAWNS: Group Unit Tracker Generator
         function renderSpawnsTracker() {
             let stats = {};
             rawBetsData.forEach(b => {
@@ -971,19 +992,41 @@
                     if (isSettled && b.details && b.details.includes('~~')) {
                         let cleanDet = b.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                         let legs = cleanDet.split('~~');
+                        
                         legs.forEach(leg => {
                             let isWin = /^\s*\[\s*x\s*\]/i.test(leg);
                             let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                            
+                            let picker = '';
+                            let oddsStr = '';
+
                             if (text.includes('|')) {
-                                let picker = text.split('|')[0].trim();
-                                if (!stats[picker]) stats[picker] = { w: 0, l: 0 };
-                                if (isWin) stats[picker].w++;
-                                else stats[picker].l++; 
+                                let parts = text.split('|');
+                                if (parts.length >= 3) {
+                                    picker = parts[0].trim();
+                                    oddsStr = parts[1].trim();
+                                } else {
+                                    picker = parts[0].trim();
+                                }
                             } else if (text.includes(':')) {
-                                let picker = text.split(':')[0].trim();
-                                if (!stats[picker]) stats[picker] = { w: 0, l: 0 };
-                                if (isWin) stats[picker].w++;
-                                else stats[picker].l++;
+                                picker = text.split(':')[0].trim();
+                            }
+
+                            if (picker) {
+                                if (!stats[picker]) stats[picker] = { w: 0, l: 0, units: 0 };
+                                if (isWin) {
+                                    stats[picker].w++;
+                                    let o = parseFloat(oddsStr);
+                                    if (!isNaN(o) && o !== 0) {
+                                        if (o > 0) stats[picker].units += (o / 100);
+                                        else if (o < 0) stats[picker].units += (100 / Math.abs(o));
+                                    } else {
+                                        stats[picker].units += 1; 
+                                    }
+                                } else {
+                                    stats[picker].l++; 
+                                    stats[picker].units -= 1; 
+                                }
                             }
                         });
                     }
@@ -993,8 +1036,8 @@
             let sorted = Object.keys(stats).map(k => {
                 let total = stats[k].w + stats[k].l;
                 let winPct = total > 0 ? (stats[k].w / total * 100).toFixed(1) : 0;
-                return { picker: k, w: stats[k].w, l: stats[k].l, pct: winPct };
-            }).sort((a,b) => b.w - a.w);
+                return { picker: k, w: stats[k].w, l: stats[k].l, pct: winPct, units: stats[k].units };
+            }).sort((a,b) => b.units - a.units);
 
             let container = document.getElementById('spawnsTrackerTable');
             if (sorted.length === 0) {
@@ -1002,9 +1045,11 @@
                 return;
             }
 
-            let html = '<div class="table-wrapper"><table><tr><th>Picker</th><th class="text-right">Leg Record</th><th class="text-right">Win %</th></tr>';
+            let html = '<div class="table-wrapper"><table><tr><th>Picker</th><th class="text-right">Leg Record</th><th class="text-right">Win %</th><th class="text-right">Units</th></tr>';
             sorted.forEach(s => {
-                html += `<tr><td>${s.picker}</td><td class="text-right">${s.w}-${s.l}</td><td class="text-right">${s.pct}%</td></tr>`;
+                let uText = s.units > 0 ? `+${s.units.toFixed(2)}u` : `${s.units.toFixed(2)}u`;
+                let uColor = s.units > 0 ? 'var(--win-text)' : (s.units < 0 ? 'var(--loss-text)' : 'var(--text-main)');
+                html += `<tr><td>${s.picker}</td><td class="text-right">${s.w}-${s.l}</td><td class="text-right">${s.pct}%</td><td class="text-right" style="color:${uColor}; font-weight:bold;">${uText}</td></tr>`;
             });
             html += '</table></div>';
             container.innerHTML = html;
@@ -1021,8 +1066,13 @@
                     cleanDet.split('~~').forEach(leg => {
                         let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                         if (bet.team1.trim().toUpperCase() === 'SPAWNS') {
-                            if (text.includes('|')) text = text.split('|').slice(1).join('|').trim();
-                            else if (text.includes(':')) text = text.split(':').slice(1).join(':').trim();
+                            if (text.includes('|')) {
+                                let parts = text.split('|');
+                                if (parts.length >= 3) text = parts.slice(2).join('|').trim();
+                                else text = parts.slice(1).join('|').trim();
+                            } else if (text.includes(':')) {
+                                text = text.split(':').slice(1).join(':').trim();
+                            }
                         }
                         if (text) entities.add(text);
                     });
@@ -1396,10 +1446,20 @@
                         if (isSpawns) {
                             if (text.includes('|')) {
                                 let parts = text.split('|');
-                                displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${parts[0]}:</span>${parts.slice(1).join('|').trim()}`;
+                                if (parts.length >= 3) {
+                                    let p = parts[0].trim();
+                                    let o = parts[1].trim();
+                                    let l = parts.slice(2).join('|').trim();
+                                    let oddsBadge = o ? `<span style="opacity:0.7; font-size:10px; margin-right:4px;">(${o > 0 ? '+'+o : o})</span>` : '';
+                                    displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${p}:</span>${oddsBadge}${l}`;
+                                } else {
+                                    let p = parts[0].trim();
+                                    let l = parts.slice(1).join('|').trim();
+                                    displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${p}:</span>${l}`;
+                                }
                             } else if (text.includes(':')) {
                                 let parts = text.split(':');
-                                displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${parts[0]}:</span>${parts.slice(1).join(':').trim()}`;
+                                displayTxt = `<span style="color:var(--text-label); font-weight:800; margin-right:4px;">${parts[0].trim()}:</span>${parts.slice(1).join(':').trim()}`;
                             }
                         }
 
@@ -1642,6 +1702,7 @@
             
             switchTab('log'); 
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            toggleSpawnsMode();
         }
 
         function cancelEdit() {
