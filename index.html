@@ -417,12 +417,16 @@
         function togglePendingGroup(headerEl) {
             let container = headerEl.nextElementSibling;
             let icon = headerEl.querySelector('.toggle-icon');
+            let statsEl = headerEl.querySelector('.group-stats');
+            
             if (container.style.display === 'none') {
                 container.style.display = 'flex';
                 icon.textContent = '▼';
+                if(statsEl) statsEl.style.display = 'none';
             } else {
                 container.style.display = 'none';
                 icon.textContent = '▶';
+                if(statsEl) statsEl.style.display = 'inline';
             }
         }
 
@@ -431,9 +435,11 @@
             let isMinimizing = btn.textContent.includes('MINIMIZE');
             let groups = document.querySelectorAll('.pending-cards-container');
             let icons = document.querySelectorAll('.pending-sport-group .toggle-icon');
+            let stats = document.querySelectorAll('.pending-sport-group .group-stats');
             
             groups.forEach(g => g.style.display = isMinimizing ? 'none' : 'flex');
             icons.forEach(i => i.textContent = isMinimizing ? '▶' : '▼');
+            stats.forEach(s => s.style.display = isMinimizing ? 'inline' : 'none');
             
             btn.textContent = isMinimizing ? 'EXPAND ALL' : 'MINIMIZE ALL';
         }
@@ -582,7 +588,6 @@
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                     }
                                     
-                                    // Live Situation Context
                                     let situationText = "";
                                     if (isLive && matchedEvent.competitions[0].situation) {
                                         let sit = matchedEvent.competitions[0].situation;
@@ -641,7 +646,6 @@
                                     
                                     div.appendChild(lineDiv);
 
-                                    // --- FETCH PLAYER STATS ---
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
@@ -727,7 +731,6 @@
                                 });
                             });
                             
-                            // Re-order the card visually within the sport container based on the earliest game time
                             if (earliestTime && card.parentElement && card.parentElement.classList.contains('pending-cards-container')) {
                                 card.style.order = Math.floor(earliestTime / 1000);
                             }
@@ -1269,14 +1272,26 @@
             let currentSport = '';
             let sportsToFetch = new Set();
 
+            // PRE-CALCULATE STATS FOR THE HEADER TOGGLES
+            let sportStats = {};
+            pendingItems.forEach(item => {
+                let s = item.bet.sport;
+                if(!sportStats[s]) sportStats[s] = { count: 0, wager: 0 };
+                sportStats[s].count++;
+                sportStats[s].wager += (item.bet.wager || 0);
+            });
+
             pendingItems.forEach(item => {
                 if (item.bet.sport !== currentSport) {
                     if (currentSport !== '') {
                         html += `</div></div>`; 
                     }
                     currentSport = item.bet.sport;
+                    let stats = sportStats[currentSport];
                     html += `<div class="pending-sport-group">`;
-                    html += `<h4 onclick="togglePendingGroup(this)" style="cursor:pointer; color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase; display:flex; justify-content:space-between; align-items:center;"><span>${currentSport}</span><span class="toggle-icon" style="font-size:10px;">▼</span></h4>`;
+                    html += `<h4 onclick="togglePendingGroup(this)" style="cursor:pointer; color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase; display:flex; justify-content:space-between; align-items:center;">`;
+                    html += `<div style="display:flex; align-items:center;"><span>${currentSport}</span><span class="group-stats" style="display:none; font-size:11px; font-weight:bold; margin-left:8px; opacity:0.8; text-transform:none; color:var(--text-main);">(${stats.count} Bets | $${stats.wager.toFixed(2)} Risked)</span></div>`;
+                    html += `<span class="toggle-icon" style="font-size:10px;">▼</span></h4>`;
                     html += `<div class="pending-cards-container" style="display:flex; flex-direction:column;">`;
                 }
                 sportsToFetch.add(item.bet.sport);
