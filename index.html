@@ -706,6 +706,7 @@
                                                     let isSpawns = (card.getAttribute('data-team1')||'').trim().toUpperCase() === 'SPAWNS';
                                                     if (isSpawns) {
                                                         if (cleanName.includes('|')) cleanName = cleanName.split('|').slice(2).join('|').trim();
+                                                        else if (cleanName.includes(':')) cleanName = cleanName.split(':').slice(1).join(':').trim();
                                                     }
                                                     return cleanName;
                                                 }));
@@ -785,7 +786,7 @@
                                 });
                             });
                             
-                            if (earliestTime && card.parentElement && card.parentElement.classList.contains('pending-cards-container')) {
+                            if (earliestTime && card.parentElement && (card.parentElement.classList.contains('pending-cards-container') || card.parentElement.classList.contains('pending-sub-sport-container'))) {
                                 card.style.order = Math.floor(earliestTime / 1000);
                             }
                         }
@@ -983,7 +984,6 @@
             container.innerHTML = html;
         }
 
-        // SPAWNS: Group Unit Tracker Generator
         function renderSpawnsTracker() {
             let stats = {};
             rawBetsData.forEach(b => {
@@ -1529,42 +1529,66 @@
             }
             
             pendingItems.sort((a, b) => {
+                if (a.bet.date < b.bet.date) return -1;
+                if (a.bet.date > b.bet.date) return 1;
                 if (a.bet.sport < b.bet.sport) return -1;
                 if (a.bet.sport > b.bet.sport) return 1;
-                let dA = new Date(a.bet.date); let dB = new Date(b.bet.date);
-                return dA - dB;
+                return 0;
             });
             
             let html = '';
+            let currentDate = '';
             let currentSport = '';
             let sportsToFetch = new Set();
 
-            let sportStats = {};
+            let dateStats = {};
             pendingItems.forEach(item => {
-                let s = item.bet.sport;
-                if(!sportStats[s]) sportStats[s] = { count: 0, wager: 0 };
-                sportStats[s].count++;
+                let d = item.bet.date;
+                if(!dateStats[d]) dateStats[d] = { count: 0, wager: 0 };
+                dateStats[d].count++;
                 
                 let isFreeBet = (item.bet.details || '').includes('🎁');
                 if (!isFreeBet) {
-                    sportStats[s].wager += (item.bet.wager || 0);
+                    dateStats[d].wager += (item.bet.wager || 0);
                 }
             });
 
             pendingItems.forEach(item => {
-                if (item.bet.sport !== currentSport) {
-                    if (currentSport !== '') {
-                        html += `</div></div>`; 
+                let d = item.bet.date;
+                let s = item.bet.sport;
+
+                if (d !== currentDate) {
+                    if (currentDate !== '') {
+                        html += `</div></div></div>`; 
                     }
-                    currentSport = item.bet.sport;
-                    let stats = sportStats[currentSport];
+                    currentDate = d;
+                    currentSport = ''; 
+                    
+                    let stats = dateStats[currentDate];
+                    let displayDate = currentDate;
+                    if(displayDate) {
+                        let parts = displayDate.split('-');
+                        displayDate = parts.length === 3 ? `${parts[1]}/${parts[2]}/${parts[0]}` : displayDate;
+                    } else {
+                        displayDate = "Unknown Date";
+                    }
+
                     html += `<div class="pending-sport-group">`;
                     html += `<h4 onclick="togglePendingGroup(this)" style="cursor:pointer; color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase; display:flex; justify-content:space-between; align-items:center;">`;
-                    html += `<div style="display:flex; align-items:center;"><span>${currentSport}</span><span class="group-stats" style="display:none; font-size:11px; font-weight:bold; margin-left:8px; opacity:0.8; text-transform:none; color:var(--text-main);">(${stats.count} Bets | $${stats.wager.toFixed(2)} Risked)</span></div>`;
+                    html += `<div style="display:flex; align-items:center;"><span>📅 ${displayDate}</span><span class="group-stats" style="display:none; font-size:11px; font-weight:bold; margin-left:8px; opacity:0.8; text-transform:none; color:var(--text-main);">(${stats.count} Bets | $${stats.wager.toFixed(2)} Risked)</span></div>`;
                     html += `<span class="toggle-icon" style="font-size:10px;">▼</span></h4>`;
                     html += `<div class="pending-cards-container" style="display:flex; flex-direction:column;">`;
                 }
-                sportsToFetch.add(item.bet.sport);
+                
+                if (s !== currentSport) {
+                    if (currentSport !== '') {
+                        html += `</div>`; 
+                    }
+                    currentSport = s;
+                    html += `<div class="pending-sub-sport-container" style="display:flex; flex-direction:column; margin-bottom: 6px;">`;
+                    html += `<h5 style="color: var(--text-main); font-size: 12px; margin-top: 4px; margin-bottom: 6px; text-transform: uppercase; opacity: 0.8; border-bottom: 1px dotted var(--input-border); padding-bottom:2px;">${currentSport}</h5>`;
+                }
+                sportsToFetch.add(s);
                 
                 let dObj = new Date(item.bet.date + "T23:59:59");
                 let baseTime = !isNaN(dObj.getTime()) ? Math.floor(dObj.getTime() / 1000) : 9999999999;
@@ -1574,8 +1598,8 @@
                 
                 html += cardHtml;
             });
-            if (currentSport !== '') {
-                html += `</div></div>`; 
+            if (currentDate !== '') {
+                html += `</div></div></div>`; 
             }
             container.innerHTML = html;
 
