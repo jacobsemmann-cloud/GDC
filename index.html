@@ -364,12 +364,15 @@
 
     <!-- GAME LINKER MODAL -->
     <div id="gameLinkModal" class="modal-overlay" style="z-index: 2000;">
-        <div class="modal-content">
+        <div class="modal-content" style="display: flex; flex-direction: column; max-height: 80vh;">
             <div class="modal-header">
                 <h3 id="gameLinkTitle">Select Game</h3>
                 <button class="modal-close" onclick="document.getElementById('gameLinkModal').style.display='none'">×</button>
             </div>
-            <div id="gameLinkList"></div>
+            <div id="gameLinkList" style="overflow-y: auto; flex: 1;"></div>
+            <div id="gameLinkFooter" style="display: none; padding-top: 10px; border-top: 1px solid var(--input-border); margin-top: 10px;">
+                <button type="button" class="btn-primary" id="btnSaveLinkedGames" onclick="saveSelectedGames()" style="margin-top: 0;">DONE (0 SELECTED)</button>
+            </div>
         </div>
     </div>
 
@@ -389,6 +392,7 @@
         let plChart = null; 
         let dowChart = null; 
         let currentChartRange = 'MONTH';
+        let tempLinkedGameIds = new Set();
 
         // ESPN API Mapping
         const espnSportMap = {
@@ -493,7 +497,10 @@
         function openGameLinker() {
             let sport = document.getElementById('sport').value;
             let dateStr = document.getElementById('date').value.replace(/-/g, '');
-            
+            let isParlay = document.getElementById('parlay').checked;
+            let currentIds = document.getElementById('espnId').value ? document.getElementById('espnId').value.split(',').filter(Boolean) : [];
+            tempLinkedGameIds = new Set(currentIds);
+
             if (!espnSportMap[sport]) { 
                 alert("ESPN live linking is not supported for " + sport + " yet."); 
                 return; 
@@ -501,8 +508,17 @@
             
             let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[sport]}/scoreboard?dates=${dateStr}`;
             
-            document.getElementById('gameLinkTitle').textContent = `Select ${sport} Game`;
+            document.getElementById('gameLinkTitle').textContent = isParlay ? `Select ${sport} Games` : `Select ${sport} Game`;
             document.getElementById('gameLinkList').innerHTML = '<div style="text-align:center; padding:20px; font-weight:bold; color:var(--text-label);">Fetching Games...</div>';
+            
+            let footer = document.getElementById('gameLinkFooter');
+            if (isParlay) {
+                footer.style.display = 'block';
+                document.getElementById('btnSaveLinkedGames').textContent = `DONE (${tempLinkedGameIds.size} SELECTED)`;
+            } else {
+                footer.style.display = 'none';
+            }
+
             document.getElementById('gameLinkModal').style.display = 'flex';
             
             fetch(url).then(res => res.json()).then(data => {
@@ -513,7 +529,24 @@
                 let html = '';
                 data.events.forEach(ev => {
                     let time = new Date(ev.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    html += `<div class="clickable-row" style="padding:12px; border-bottom:1px solid var(--input-border); font-size:14px; font-weight:bold; display:flex; justify-content:space-between;" onclick="selectEspnGame('${ev.id}')"><span>${ev.name}</span><span style="opacity:0.6; font-weight:normal; font-size:12px;">${time}</span></div>`;
+                    let isSelected = tempLinkedGameIds.has(String(ev.id));
+                    
+                    if (isParlay) {
+                        html += `
+                        <div class="clickable-row" onclick="toggleGameSelection('${ev.id}', this)" style="padding:12px; border-bottom:1px solid var(--input-border); font-size:14px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; ${isSelected ? 'background-color: var(--win-color);' : ''}">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" ${isSelected ? 'checked' : ''} style="width:16px; height:16px; pointer-events:none; accent-color:var(--text-label);">
+                                <span>${ev.name}</span>
+                            </div>
+                            <span style="opacity:0.6; font-weight:normal; font-size:12px;">${time}</span>
+                        </div>`;
+                    } else {
+                        html += `
+                        <div class="clickable-row" onclick="selectSingleEspnGame('${ev.id}')" style="padding:12px; border-bottom:1px solid var(--input-border); font-size:14px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+                            <span>${ev.name}</span>
+                            <span style="opacity:0.6; font-weight:normal; font-size:12px;">${time}</span>
+                        </div>`;
+                    }
                 });
                 document.getElementById('gameLinkList').innerHTML = html;
             }).catch(e => {
@@ -521,22 +554,49 @@
             });
         }
 
-        function selectEspnGame(id) {
-            let isParlay = document.getElementById('parlay').checked;
-            let espnInput = document.getElementById('espnId');
-            
-            if (isParlay) {
-                let currentIds = espnInput.value ? espnInput.value.split(',') : [];
-                if (!currentIds.includes(String(id))) {
-                    currentIds.push(id);
-                    espnInput.value = currentIds.join(',');
-                }
-                let btn = document.getElementById('btnLinkGameParlay');
-                if(btn) { btn.textContent = `✅ Linked (${currentIds.length})`; btn.style.backgroundColor = "#32CD32"; }
+        function toggleGameSelection(id, el) {
+            let strId = String(id);
+            if (tempLinkedGameIds.has(strId)) {
+                tempLinkedGameIds.delete(strId);
+                el.style.backgroundColor = '';
+                let chk = el.querySelector('input[type="checkbox"]');
+                if (chk) chk.checked = false;
             } else {
-                espnInput.value = id;
-                let btn = document.getElementById('btnLinkGame');
-                if(btn) { btn.textContent = "✅ Linked"; btn.style.backgroundColor = "#32CD32"; }
+                tempLinkedGameIds.add(strId);
+                el.style.backgroundColor = 'var(--win-color)';
+                let chk = el.querySelector('input[type="checkbox"]');
+                if (chk) chk.checked = true;
+            }
+            let saveBtn = document.getElementById('btnSaveLinkedGames');
+            if (saveBtn) {
+                saveBtn.textContent = `DONE (${tempLinkedGameIds.size} SELECTED)`;
+            }
+        }
+
+        function saveSelectedGames() {
+            let ids = Array.from(tempLinkedGameIds);
+            let espnInput = document.getElementById('espnId');
+            espnInput.value = ids.join(',');
+            let btn = document.getElementById('btnLinkGameParlay');
+            if (btn) {
+                if (ids.length > 0) {
+                    btn.textContent = `✅ Linked (${ids.length})`;
+                    btn.style.backgroundColor = "#32CD32";
+                } else {
+                    btn.textContent = "🔗 Link Game";
+                    btn.style.backgroundColor = "#007bff";
+                }
+            }
+            document.getElementById('gameLinkModal').style.display = 'none';
+        }
+
+        function selectSingleEspnGame(id) {
+            let espnInput = document.getElementById('espnId');
+            espnInput.value = id;
+            let btn = document.getElementById('btnLinkGame');
+            if (btn) {
+                btn.textContent = "✅ Linked";
+                btn.style.backgroundColor = "#32CD32";
             }
             document.getElementById('gameLinkModal').style.display = 'none';
         }
@@ -984,6 +1044,7 @@
             container.innerHTML = html;
         }
 
+        // SPAWNS: Group Unit Tracker Generator
         function renderSpawnsTracker() {
             let stats = {};
             rawBetsData.forEach(b => {
