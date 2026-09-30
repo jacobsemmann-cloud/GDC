@@ -1072,6 +1072,7 @@
             container.innerHTML = html;
         }
 
+        // SPAWNS: Group Unit Tracker Generator
         function renderSpawnsTracker() {
             let stats = {};
             rawBetsData.forEach(b => {
@@ -1145,33 +1146,52 @@
 
         function getUniqueEntities() {
             let entities = new Set();
-            rawBetsData.forEach(bet => {
-                if (bet.team1 && bet.team1.trim() !== "") entities.add(bet.team1.trim());
-                if (bet.team2 && bet.team2.trim() !== "") entities.add(bet.team2.trim());
+            
+            // Words/patterns that belong to bet types, not player/team names
+            const junkPattern = /^(o|u|\+|-|\d|\[|\]|\$)/i;
+            const statWords = ['pts', 'points', 'reb', 'rebound', 'ast', 'assist', 'td', 'touchdown', 'yds', 'yards', 'sog', 'rec', 'receptions', 'over', 'under'];
 
+            function isCleanName(name) {
+                if (!name || name.length < 3) return false;
+                let trimmed = name.trim();
+                if (junkPattern.test(trimmed)) return false;
+                if (trimmed.includes('[') || trimmed.includes(']') || trimmed.includes(':') || trimmed.includes('|')) return false;
+                
+                // If it ends in or contains common prop indicators, skip it
+                let lower = trimmed.toLowerCase();
+                for (let word of statWords) {
+                    if (lower.split(/\s+/).includes(word)) return false;
+                }
+                return true;
+            }
+
+            rawBetsData.forEach(bet => {
+                // 1. Grab clean Player / Team 1 & 2
+                if (bet.team1 && isCleanName(bet.team1)) entities.add(bet.team1.trim());
+                if (bet.team2 && isCleanName(bet.team2)) entities.add(bet.team2.trim());
+
+                // 2. Grab from parlay legs (only if clean)
                 if (bet.parlay && bet.details && bet.details.includes('~~')) {
                     let cleanDet = bet.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                     cleanDet.split('~~').forEach(leg => {
                         let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
-                        if (bet.team1.trim().toUpperCase() === 'SPAWNS') {
-                            if (text.includes('|')) {
-                                let parts = text.split('|');
-                                if (parts.length >= 3) text = parts.slice(2).join('|').trim();
-                                else text = parts.slice(1).join('|').trim();
-                            } else if (text.includes(':') && !text.includes('::')) {
-                                text = text.split(':').slice(1).join(':').trim();
-                            }
-                        }
                         
+                        // Extract player if Spawns or Split logic was used
                         if (text.includes('::')) {
                             text = text.split('::')[0].trim();
+                        } else if (text.includes('|')) {
+                            let parts = text.split('|');
+                            text = parts[parts.length - 1].trim();
+                        } else if (text.includes(':')) {
+                            text = text.split(':')[1]?.trim() || '';
                         }
 
-                        if (text) entities.add(text);
+                        if (isCleanName(text)) entities.add(text);
                     });
                 }
             });
-            return Array.from(entities);
+
+            return Array.from(entities).sort();
         }
 
         function setupAutocomplete(inp) {
