@@ -1172,24 +1172,22 @@
         function getUniqueEntities() {
             let entities = new Set();
             
-            // All common prop abbreviations and junk words
             const statWords = ['pts', 'points', 'reb', 'rebs', 'rebound', 'rebounds', 'ast', 'asts', 'assist', 'assists', 'td', 'tds', 'touchdown', 'touchdowns', 'yds', 'yards', 'sog', 'rec', 'receptions', 'over', 'under', 'ry', 'py', 'sy', 'o', 'u', 'threes', '3pm', 'sgp', 'parlay'];
 
             function isCleanName(name) {
                 if (!name || name.length < 3) return false;
                 let trimmed = name.trim().toLowerCase();
                 
-                // 1. Instant reject if it contains a decimal number (e.g., 1.5, 44.5)
-                // or if it has an odds/line indicator format (e.g., +150, -11.5)
-                if (/\d+\.\d+/.test(trimmed) || /\+\d+|-\d+/.test(trimmed)) return false;
+                // 1. Reject if it contains decimal lines or explicit odds numbers (+150, -110)
+                if (/\d+\.\d+/.test(trimmed) || /\+\d+/.test(trimmed) || /-\d+/.test(trimmed)) return false;
 
-                // 2. Reject if it has lingering brackets, pipes, or colons
-                if (/[\[\]:|]/.test(trimmed)) return false;
+                // 2. Reject if it has lingering brackets, colons, or pipes
+                if (trimmed.includes('[') || trimmed.includes(']') || trimmed.includes(':') || trimmed.includes('|')) return false;
                 
                 // 3. Reject if it contains any known stat words as standalone words
                 let words = trimmed.split(/\s+/);
-                for (let word of words) {
-                    if (statWords.includes(word)) return false;
+                for (let i = 0; i < words.length; i++) {
+                    if (statWords.includes(words[i])) return false;
                 }
                 
                 return true;
@@ -1217,7 +1215,7 @@
                         } 
                         // If it's old spawns logic with colon (Picker: Leg)
                         else if (text.includes(':')) {
-                            text = text.split(':')[1]?.trim() || '';
+                            text = text.split(':')[1] ? text.split(':')[1].trim() : '';
                         }
 
                         if (isCleanName(text)) entities.add(text.trim());
@@ -2132,6 +2130,80 @@
             document.getElementById('streakWeek').style.color = streaks.week.type === 'W' ? 'var(--win-text)' : 'var(--loss-text)';
             document.getElementById('streakMonth').textContent = streaks.month.count > 0 ? `${streaks.month.count}${streaks.month.type}` : '--';
             document.getElementById('streakMonth').style.color = streaks.month.type === 'W' ? 'var(--win-text)' : 'var(--loss-text)';
+        }
+
+        function fetchMasterData(isSilent = false) {
+            if (!isSilent) { document.getElementById('calLoader').style.display = 'block'; document.getElementById('dashLoader').style.display = 'block'; document.getElementById('calContainer').style.display = 'none'; document.getElementById('dashContainer').style.display = 'none'; }
+            fetch(WEB_APP_URL).then(async res => { 
+                const text = await res.text(); 
+                try { return JSON.parse(text); } 
+                catch (e) { 
+                    let snippet = text.replace(/<[^>]*>?/gm, '').trim().substring(0, 120);
+                    throw new Error("Google Script Error: " + (snippet || "Invalid response format. Make sure deployment is set exactly to 'Anyone'")); 
+                } 
+            })
+            .then(data => {
+                document.getElementById('refreshBtn').textContent = "⟳ Refresh";
+                if (data.status === "success") {
+                    document.getElementById('valPL').textContent = data.pl; document.getElementById('valPL').style.color = getColor(data.pl); document.getElementById('valWagered').textContent = data.wagered; document.getElementById('valROI').textContent = data.roi; document.getElementById('valRecord').textContent = data.record;
+                    document.getElementById('valStrPL').textContent = data.straightPL; document.getElementById('valStrPL').style.color = getColor(data.straightPL); document.getElementById('valStrRec').textContent = data.straightRec; document.getElementById('valParPL').textContent = data.parlayPL; document.getElementById('valParPL').style.color = getColor(data.parlayPL); document.getElementById('valParRec').textContent = data.parlayRec;
+                    
+                    let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; }); document.getElementById('tableBooks').innerHTML = bHtml + '</table>';
+                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; }); document.getElementById('tableSports').innerHTML = sHtml + '</table>';
+                    
+                    document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
+
+                    rawBetsData = data.rawBets || []; rawBetsData.forEach(b => { b.pl = parseFloat(b.pl) || 0; b.wager = parseFloat(b.wager) || 0; });
+                    dailyPLData = data.dailyData || {}; for (let key in dailyPLData) { dailyPLData[key] = parseFloat(dailyPLData[key]) || 0; }
+
+                    renderTagGrid(); 
+                    renderSpawnsTracker();
+                    drawDowChart(); 
+                    renderLeaderboard(); 
+                    renderPendingBets(); 
+                    renderSettledBets(); 
+                    dataFetched = true;
+                    if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
+                }
+            }).catch(e => { document.getElementById('refreshBtn').textContent = "⟳ Refresh"; if(!isSilent) alert("CRASH: " + e.message); document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; });
+        }
+
+        function changeMonth(dir) { currentMonth += dir; if(currentMonth > 11) { currentMonth = 0; currentYear++; } if(currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentMonth, currentYear); }
+
+        function renderCalendar(month, year) {
+            const grid = document.getElementById('calendarGrid'); const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`; grid.innerHTML = '';
+            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
+            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { grid.innerHTML += `<div class="day-name">${d}</div>`; });
+            for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="day-cell empty"></div>`; }
+            for (let i = 1; i <= daysInMonth; i++) { 
+                const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; 
+                let pl = dailyPLData[dStr] || 0; 
+                
+                let pendingAmt = 0;
+                let hasSettled = false;
+                rawBetsData.forEach(b => {
+                    if (b.date === dStr) {
+                        if (!b.result || b.result === 'Pending') {
+                            let isFreeBet = b.details && b.details.includes('🎁');
+                            if (!isFreeBet) pendingAmt += b.wager;
+                        }
+                        else hasSettled = true;
+                    }
+                });
+
+                let plText = '';
+                if (hasSettled || pl !== 0) {
+                    plText = pl === 0 ? '$0' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`);
+                } else if (pendingAmt === 0) {
+                    plText = '-';
+                }
+
+                let pendText = pendingAmt > 0 ? `<div style="font-size:9.5px; color:#ff9900; text-align:center; font-weight:bold; margin-top:2px;">⏳ $${Math.round(pendingAmt)}</div>` : '';
+                let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : ''); 
+                
+                grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div><div class="pl-amt">${plText}</div>${pendText}</div></div>`; 
+            }
+            updateCalendarSummaries(month, year); renderHallOfFame(); setChartRange('MONTH');
         }
 
         function submitBet() {
