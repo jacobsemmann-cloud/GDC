@@ -1097,7 +1097,7 @@
                                 } else {
                                     picker = parts[0].trim();
                                 }
-                            } else if (text.includes(':') && !text.includes('::')) {
+                            } else if (text.includes(':')) {
                                 picker = text.split(':')[0].trim();
                             }
 
@@ -1147,46 +1147,55 @@
         function getUniqueEntities() {
             let entities = new Set();
             
-            // Words/patterns that belong to bet types, not player/team names
-            const junkPattern = /^(o|u|\+|-|\d|\[|\]|\$)/i;
-            const statWords = ['pts', 'points', 'reb', 'rebound', 'ast', 'assist', 'td', 'touchdown', 'yds', 'yards', 'sog', 'rec', 'receptions', 'over', 'under'];
+            // All common prop abbreviations and junk words
+            const statWords = ['pts', 'points', 'reb', 'rebs', 'rebound', 'rebounds', 'ast', 'asts', 'assist', 'assists', 'td', 'tds', 'touchdown', 'touchdowns', 'yds', 'yards', 'sog', 'rec', 'receptions', 'over', 'under', 'ry', 'py', 'sy', 'o', 'u', 'threes', '3pm', 'sgp', 'parlay'];
 
             function isCleanName(name) {
                 if (!name || name.length < 3) return false;
-                let trimmed = name.trim();
-                if (junkPattern.test(trimmed)) return false;
-                if (trimmed.includes('[') || trimmed.includes(']') || trimmed.includes(':') || trimmed.includes('|')) return false;
+                let trimmed = name.trim().toLowerCase();
                 
-                // If it ends in or contains common prop indicators, skip it
-                let lower = trimmed.toLowerCase();
-                for (let word of statWords) {
-                    if (lower.split(/\s+/).includes(word)) return false;
+                // 1. Instant reject if it contains a decimal number (e.g., 1.5, 44.5)
+                // or if it has an odds/line indicator format (e.g., +150, -11.5)
+                if (/\d+\.\d+/.test(trimmed) || /\+\d+|-\d+/.test(trimmed)) return false;
+
+                // 2. Reject if it has lingering brackets, pipes, or colons
+                if (/[\[\]:|]/.test(trimmed)) return false;
+                
+                // 3. Reject if it contains any known stat words as standalone words
+                let words = trimmed.split(/\s+/);
+                for (let word of words) {
+                    if (statWords.includes(word)) return false;
                 }
+                
                 return true;
             }
 
             rawBetsData.forEach(bet => {
-                // 1. Grab clean Player / Team 1 & 2
+                // 1. Check Team 1 and Team 2
                 if (bet.team1 && isCleanName(bet.team1)) entities.add(bet.team1.trim());
                 if (bet.team2 && isCleanName(bet.team2)) entities.add(bet.team2.trim());
 
-                // 2. Grab from parlay legs (only if clean)
+                // 2. Check Parlay Legs
                 if (bet.parlay && bet.details && bet.details.includes('~~')) {
                     let cleanDet = bet.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                     cleanDet.split('~~').forEach(leg => {
-                        let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                        let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim(); 
                         
-                        // Extract player if Spawns or Split logic was used
+                        // If it uses the new player/play split (Player :: Play)
                         if (text.includes('::')) {
                             text = text.split('::')[0].trim();
-                        } else if (text.includes('|')) {
+                        } 
+                        // If it's old spawns logic (Picker | Odds | Leg)
+                        else if (text.includes('|')) {
                             let parts = text.split('|');
-                            text = parts[parts.length - 1].trim();
-                        } else if (text.includes(':')) {
+                            text = parts[parts.length - 1].trim(); 
+                        } 
+                        // If it's old spawns logic with colon (Picker: Leg)
+                        else if (text.includes(':')) {
                             text = text.split(':')[1]?.trim() || '';
                         }
 
-                        if (isCleanName(text)) entities.add(text);
+                        if (isCleanName(text)) entities.add(text.trim());
                     });
                 }
             });
