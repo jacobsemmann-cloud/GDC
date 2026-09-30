@@ -318,9 +318,12 @@
                     <div style="position:relative; height:180px; width:100%;"><canvas id="dowChart"></canvas></div>
                 </div>
 
-                <!-- COMPACT TAG GRID -->
+                <!-- COMPACT TAG GRID WITH ARCHIVE OPTION -->
                 <div class="dash-card">
-                    <h3 class="dash-title">Tag Performance</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--input-border); padding-bottom: 5px;">
+                        <h3 class="dash-title" style="margin: 0; padding: 0; border: none;">Tag Performance</h3>
+                        <button id="tagArchiveBtn" onclick="toggleTagArchiveView()" style="background:transparent; border:1px solid var(--text-label); color:var(--text-label); border-radius:4px; font-size:10px; padding:4px 8px; cursor:pointer; font-weight:bold;">ARCHIVES</button>
+                    </div>
                     <div id="tagGridContainer" class="tag-grid"></div>
                 </div>
                 
@@ -393,6 +396,10 @@
         let dowChart = null; 
         let currentChartRange = 'MONTH';
         let tempLinkedGameIds = new Set();
+        
+        // Tag Archive State
+        let archivedTags = JSON.parse(localStorage.getItem('archivedTags') || '[]');
+        let showingArchivedTags = false;
 
         // ESPN API Mapping
         const espnSportMap = {
@@ -1013,18 +1020,27 @@
             .catch(e => { btn.textContent = ogText; btn.disabled = false; alert("Error: " + e.message); });
         }
 
-        function getUniqueTags() {
-            let tags = new Set();
-            rawBetsData.forEach(b => {
-                let match = b.details ? b.details.match(/\|TAGS:([^|]+)\|/) : null;
-                if(match) {
-                    match[1].split(',').forEach(t => {
-                        let cln = t.trim().toUpperCase();
-                        if(cln) tags.add(cln);
-                    });
-                }
-            });
-            return Array.from(tags);
+        // ARCHIVE SYSTEM FUNCTIONS
+        function toggleTagArchiveView() {
+            showingArchivedTags = !showingArchivedTags;
+            document.getElementById('tagArchiveBtn').textContent = showingArchivedTags ? "ACTIVE TAGS" : "ARCHIVES";
+            renderTagGrid();
+        }
+
+        function archiveTag(tag, e) {
+            e.stopPropagation();
+            if (!archivedTags.includes(tag)) {
+                archivedTags.push(tag);
+                localStorage.setItem('archivedTags', JSON.stringify(archivedTags));
+            }
+            renderTagGrid();
+        }
+
+        function unarchiveTag(tag, e) {
+            e.stopPropagation();
+            archivedTags = archivedTags.filter(t => t !== tag);
+            localStorage.setItem('archivedTags', JSON.stringify(archivedTags));
+            renderTagGrid();
         }
 
         function renderTagGrid() {
@@ -1052,19 +1068,28 @@
 
             let container = document.getElementById('tagGridContainer');
             let html = '';
-            let sortedTags = Object.keys(tagStats).sort((a,b) => tagStats[b].pl - tagStats[a].pl);
+            
+            let activeKeys = Object.keys(tagStats).filter(t => showingArchivedTags ? archivedTags.includes(t) : !archivedTags.includes(t));
+            let sortedTags = activeKeys.sort((a,b) => tagStats[b].pl - tagStats[a].pl);
 
             if (sortedTags.length === 0) {
-                container.innerHTML = '<div style="grid-column: span 2; text-align:center; opacity:0.7; font-size:12px;">No tags logged yet.</div>';
+                container.innerHTML = `<div style="grid-column: span 2; text-align:center; opacity:0.7; font-size:12px;">No ${showingArchivedTags ? 'archived' : 'active'} tags.</div>`;
                 return;
             }
 
             sortedTags.forEach(t => {
                 let s = tagStats[t];
                 let plText = formatPL(s.pl);
+                let btnHtml = showingArchivedTags 
+                    ? `<button onclick="unarchiveTag('${t.replace(/'/g, "\\'")}', event)" style="background:transparent; border:none; cursor:pointer; font-size:12px; padding:0; opacity:0.7;" title="Restore">📤</button>` 
+                    : `<button onclick="archiveTag('${t.replace(/'/g, "\\'")}', event)" style="background:transparent; border:none; cursor:pointer; font-size:12px; padding:0; opacity:0.7;" title="Archive">📦</button>`;
+
                 html += `
                 <div class="tag-card" onclick="showTagBets('${t}')" style="border-left: 3px solid ${s.pl >= 0 ? 'var(--win-text)' : 'var(--loss-text)'}">
-                    <div style="font-weight:bold; color:var(--text-label); margin-bottom:4px;">#${t}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-weight:bold; color:var(--text-label);">#${t}</span>
+                        ${btnHtml}
+                    </div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Record:</span><span>${s.w}-${s.l}-${s.p}</span></div>
                     <div style="display:flex; justify-content:space-between;"><span>P/L:</span><span style="color:${getColor(plText)}; font-weight:bold;">${plText}</span></div>
                 </div>`;
@@ -1097,7 +1122,7 @@
                                 } else {
                                     picker = parts[0].trim();
                                 }
-                            } else if (text.includes(':')) {
+                            } else if (text.includes(':') && !text.includes('::')) {
                                 picker = text.split(':')[0].trim();
                             }
 
@@ -2107,80 +2132,6 @@
             document.getElementById('streakWeek').style.color = streaks.week.type === 'W' ? 'var(--win-text)' : 'var(--loss-text)';
             document.getElementById('streakMonth').textContent = streaks.month.count > 0 ? `${streaks.month.count}${streaks.month.type}` : '--';
             document.getElementById('streakMonth').style.color = streaks.month.type === 'W' ? 'var(--win-text)' : 'var(--loss-text)';
-        }
-
-        function fetchMasterData(isSilent = false) {
-            if (!isSilent) { document.getElementById('calLoader').style.display = 'block'; document.getElementById('dashLoader').style.display = 'block'; document.getElementById('calContainer').style.display = 'none'; document.getElementById('dashContainer').style.display = 'none'; }
-            fetch(WEB_APP_URL).then(async res => { 
-                const text = await res.text(); 
-                try { return JSON.parse(text); } 
-                catch (e) { 
-                    let snippet = text.replace(/<[^>]*>?/gm, '').trim().substring(0, 120);
-                    throw new Error("Google Script Error: " + (snippet || "Invalid response format. Make sure deployment is set exactly to 'Anyone'")); 
-                } 
-            })
-            .then(data => {
-                document.getElementById('refreshBtn').textContent = "⟳ Refresh";
-                if (data.status === "success") {
-                    document.getElementById('valPL').textContent = data.pl; document.getElementById('valPL').style.color = getColor(data.pl); document.getElementById('valWagered').textContent = data.wagered; document.getElementById('valROI').textContent = data.roi; document.getElementById('valRecord').textContent = data.record;
-                    document.getElementById('valStrPL').textContent = data.straightPL; document.getElementById('valStrPL').style.color = getColor(data.straightPL); document.getElementById('valStrRec').textContent = data.straightRec; document.getElementById('valParPL').textContent = data.parlayPL; document.getElementById('valParPL').style.color = getColor(data.parlayPL); document.getElementById('valParRec').textContent = data.parlayRec;
-                    
-                    let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; }); document.getElementById('tableBooks').innerHTML = bHtml + '</table>';
-                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; }); document.getElementById('tableSports').innerHTML = sHtml + '</table>';
-                    
-                    document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
-
-                    rawBetsData = data.rawBets || []; rawBetsData.forEach(b => { b.pl = parseFloat(b.pl) || 0; b.wager = parseFloat(b.wager) || 0; });
-                    dailyPLData = data.dailyData || {}; for (let key in dailyPLData) { dailyPLData[key] = parseFloat(dailyPLData[key]) || 0; }
-
-                    renderTagGrid(); 
-                    renderSpawnsTracker();
-                    drawDowChart(); 
-                    renderLeaderboard(); 
-                    renderPendingBets(); 
-                    renderSettledBets(); 
-                    dataFetched = true;
-                    if (!isSilent) { document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; if(document.getElementById('viewCal').classList.contains('active')) renderCalendar(currentMonth, currentYear); }
-                }
-            }).catch(e => { document.getElementById('refreshBtn').textContent = "⟳ Refresh"; if(!isSilent) alert("CRASH: " + e.message); document.getElementById('calLoader').style.display = 'none'; document.getElementById('dashLoader').style.display = 'none'; document.getElementById('calContainer').style.display = 'block'; document.getElementById('dashContainer').style.display = 'block'; });
-        }
-
-        function changeMonth(dir) { currentMonth += dir; if(currentMonth > 11) { currentMonth = 0; currentYear++; } if(currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentMonth, currentYear); }
-
-        function renderCalendar(month, year) {
-            const grid = document.getElementById('calendarGrid'); const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`; grid.innerHTML = '';
-            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
-            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { grid.innerHTML += `<div class="day-name">${d}</div>`; });
-            for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="day-cell empty"></div>`; }
-            for (let i = 1; i <= daysInMonth; i++) { 
-                const dStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`; 
-                let pl = dailyPLData[dStr] || 0; 
-                
-                let pendingAmt = 0;
-                let hasSettled = false;
-                rawBetsData.forEach(b => {
-                    if (b.date === dStr) {
-                        if (!b.result || b.result === 'Pending') {
-                            let isFreeBet = b.details && b.details.includes('🎁');
-                            if (!isFreeBet) pendingAmt += b.wager;
-                        }
-                        else hasSettled = true;
-                    }
-                });
-
-                let plText = '';
-                if (hasSettled || pl !== 0) {
-                    plText = pl === 0 ? '$0' : (pl > 0 ? `+$${Math.round(pl)}` : `-$${Math.round(Math.abs(pl))}`);
-                } else if (pendingAmt === 0) {
-                    plText = '-';
-                }
-
-                let pendText = pendingAmt > 0 ? `<div style="font-size:9.5px; color:#ff9900; text-align:center; font-weight:bold; margin-top:2px;">⏳ $${Math.round(pendingAmt)}</div>` : '';
-                let cls = pl > 0 ? 'profit' : (pl < 0 ? 'loss' : ''); 
-                
-                grid.innerHTML += `<div class="day-cell ${cls}" onclick="showDayBets('${dStr}')"><div class="date-num">${i}</div><div><div class="pl-amt">${plText}</div>${pendText}</div></div>`; 
-            }
-            updateCalendarSummaries(month, year); renderHallOfFame(); setChartRange('MONTH');
         }
 
         function submitBet() {
