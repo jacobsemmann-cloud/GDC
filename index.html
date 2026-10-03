@@ -1015,8 +1015,7 @@
             let bet = JSON.parse(JSON.stringify(rawBetsData[idx]));
             let payload = {...bet, result: res};
             
-            // Fix: Ensure Free Bet wagers process as $0.00 when marking as a Loss via quick settle
-            if (res === 'L' && (payload.details || '').includes('🎁')) {
+            if ((res === 'L' || res === 'P') && (payload.details || '').includes('🎁')) {
                 payload.wager = 0;
             }
             
@@ -1180,7 +1179,7 @@
                 let match = b.details ? b.details.match(/\|TAGS:([^|]+)\|/) : null;
                 if(match) {
                     match[1].split(',').forEach(t => {
-                        let cln = t.trim().toUpperCase().replace(/^#/, ''); // Strip stray hashes
+                        let cln = t.trim().toUpperCase().replace(/^#/, '');
                         if(cln) tags.add(cln);
                     });
                 }
@@ -1191,20 +1190,15 @@
         function getUniqueEntities() {
             let entities = new Set();
             
-            // All common prop abbreviations and junk words
             const statWords = ['pts', 'points', 'reb', 'rebs', 'rebound', 'rebounds', 'ast', 'asts', 'assist', 'assists', 'td', 'tds', 'touchdown', 'touchdowns', 'yds', 'yards', 'sog', 'rec', 'receptions', 'over', 'under', 'ry', 'py', 'sy', 'o', 'u', 'threes', '3pm', 'sgp', 'parlay'];
 
             function isCleanName(name) {
                 if (!name || name.length < 3) return false;
                 let trimmed = name.trim().toLowerCase();
                 
-                // 1. Reject if it contains decimal lines or explicit odds numbers (+150, -110)
                 if (/\d+\.\d+/.test(trimmed) || /\+\d+/.test(trimmed) || /-\d+/.test(trimmed)) return false;
-
-                // 2. Reject if it has lingering brackets, colons, or pipes
                 if (trimmed.includes('[') || trimmed.includes(']') || trimmed.includes(':') || trimmed.includes('|')) return false;
                 
-                // 3. Reject if it contains any known stat words as standalone words
                 let words = trimmed.split(/\s+/);
                 for (let i = 0; i < words.length; i++) {
                     if (statWords.includes(words[i])) return false;
@@ -1214,27 +1208,20 @@
             }
 
             rawBetsData.forEach(bet => {
-                // 1. Check Team 1 and Team 2
                 if (bet.team1 && isCleanName(bet.team1)) entities.add(bet.team1.trim());
                 if (bet.team2 && isCleanName(bet.team2)) entities.add(bet.team2.trim());
 
-                // 2. Check Parlay Legs
                 if (bet.parlay && bet.details && bet.details.includes('~~')) {
                     let cleanDet = bet.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                     cleanDet.split('~~').forEach(leg => {
                         let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim(); 
                         
-                        // If it uses the new player/play split (Player :: Play)
                         if (text.includes('::')) {
                             text = text.split('::')[0].trim();
-                        } 
-                        // If it's old spawns logic (Picker | Odds | Leg)
-                        else if (text.includes('|')) {
+                        } else if (text.includes('|')) {
                             let parts = text.split('|');
                             text = parts[parts.length - 1].trim(); 
-                        } 
-                        // If it's old spawns logic with colon (Picker: Leg)
-                        else if (text.includes(':')) {
+                        } else if (text.includes(':')) {
                             text = text.split(':')[1] ? text.split(':')[1].trim() : '';
                         }
 
@@ -1295,7 +1282,6 @@
                 let terms = val.split(/,\s*/);
                 let currentTerm = terms[terms.length - 1];
                 
-                // Ignore the # while searching so "#MNF" easily matches "MNF"
                 let searchWord = currentTerm.replace(/^#/, '').trim();
                 if (!searchWord || searchWord.length < 1) return false;
                 
@@ -1313,7 +1299,6 @@
                         b = document.createElement("DIV"); 
                         let matchIdx = list[i].toUpperCase().indexOf(searchWord.toUpperCase());
                         
-                        // Render with a clean # symbol in the dropdown UI
                         b.innerHTML = "#" + list[i].substring(0, matchIdx) + 
                                       "<span style='color:var(--text-label);'>" + 
                                       list[i].substring(matchIdx, matchIdx + searchWord.length) + 
@@ -1562,7 +1547,7 @@
                 if (!rawDetails.includes('🎁')) {
                     rawDetails = rawDetails ? rawDetails + ` (🎁 $${originalWager} Free Bet)` : `🎁 $${originalWager} Free Bet`;
                 }
-                if (resVal === 'L' || resVal === 'P') finalWager = 0; // Fix applied here too
+                if (resVal === 'L' || resVal === 'P') finalWager = 0;
             }
 
             if (eId) {
