@@ -365,6 +365,26 @@
         </div>
     </div>
 
+    <!-- SPORT DRILL DOWN MODAL -->
+    <div id="sportModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="sportModalTitle">Sport Overview</h3>
+                <button class="modal-close" onclick="document.getElementById('sportModal').style.display='none'">×</button>
+            </div>
+            <select id="sportTimelineFilter" class="lb-select" onchange="renderSportDrillDown()" style="width:100%; margin-bottom: 12px; font-size:14px; padding:6px; min-height: 36px;">
+                <option value="ALL">All Time</option>
+                <option value="YTD">Year to Date</option>
+                <option value="MONTH">This Month</option>
+                <option value="WEEK">This Week</option>
+                <option value="TODAY">Today</option>
+            </select>
+            <div id="sportModalStats" class="dash-card" style="margin-bottom: 12px; padding: 10px;"></div>
+            <h4 style="color:var(--text-label); font-size:13px; margin-bottom:8px; text-transform:uppercase; border-bottom:1px solid var(--input-border); padding-bottom:4px;">Historical Bets</h4>
+            <div id="sportModalBetsList"></div>
+        </div>
+    </div>
+
     <!-- GAME LINKER MODAL -->
     <div id="gameLinkModal" class="modal-overlay" style="z-index: 2000;">
         <div class="modal-content" style="display: flex; flex-direction: column; max-height: 80vh;">
@@ -396,6 +416,7 @@
         let dowChart = null; 
         let currentChartRange = 'MONTH';
         let tempLinkedGameIds = new Set();
+        let currentSportModalTarget = '';
         
         // Tag Archive State
         let archivedTags = JSON.parse(localStorage.getItem('archivedTags') || '[]');
@@ -2035,6 +2056,74 @@
                 fetchLiveScores(pendingToFetch);
             }
         }
+        
+        function openSportModal(sport) {
+            currentSportModalTarget = sport;
+            document.getElementById('sportModalTitle').textContent = sport + ' Overview';
+            document.getElementById('sportTimelineFilter').value = 'ALL';
+            document.getElementById('sportModal').style.display = 'flex';
+            renderSportDrillDown();
+        }
+
+        function renderSportDrillDown() {
+            let filter = document.getElementById('sportTimelineFilter').value;
+            let sport = currentSportModalTarget;
+            
+            let todayObj = new Date();
+            let todayStr = formatDateObj(todayObj);
+            let currentY = todayStr.substring(0,4);
+            let currentM = todayStr.substring(0,7);
+            
+            let sun = new Date(todayObj);
+            sun.setDate(todayObj.getDate() - todayObj.getDay());
+            let weekStartStr = formatDateObj(sun);
+
+            let bets = rawBetsData.filter(b => b.sport === sport);
+            
+            if (filter === 'TODAY') bets = bets.filter(b => b.date === todayStr);
+            else if (filter === 'WEEK') bets = bets.filter(b => b.date >= weekStartStr && b.date <= todayStr);
+            else if (filter === 'MONTH') bets = bets.filter(b => b.date && b.date.startsWith(currentM));
+            else if (filter === 'YTD') bets = bets.filter(b => b.date && b.date.startsWith(currentY));
+            
+            let pl = 0, wagered = 0, w = 0, l = 0, p = 0;
+            
+            bets.forEach(b => {
+                if (b.result === 'W' || b.result === 'L' || b.result === 'P') {
+                    pl += b.pl;
+                    wagered += b.wager;
+                    if (b.result === 'W') w++;
+                    else if (b.result === 'L') l++;
+                    else p++;
+                }
+            });
+            
+            let roi = wagered > 0 ? ((pl / wagered) * 100).toFixed(2) + '%' : '0.00%';
+            
+            let statsHtml = `
+                <div class="stat-row"><span class="stat-label">Net P/L:</span><span class="stat-value" style="color:${getColor(formatPL(pl))}">${formatPL(pl)}</span></div>
+                <div class="stat-row"><span class="stat-label">Wagered:</span><span class="stat-value">$${wagered.toFixed(2)}</span></div>
+                <div class="stat-row"><span class="stat-label">Record:</span><span class="stat-value">${w}W - ${l}L - ${p}P</span></div>
+                <div class="stat-row"><span class="stat-label">ROI:</span><span class="stat-value" style="color:${getColor(formatPL(pl))}">${roi}</span></div>
+            `;
+            document.getElementById('sportModalStats').innerHTML = statsHtml;
+            
+            let betsHtml = '';
+            if (bets.length === 0) {
+                betsHtml = '<p style="text-align:center; opacity:0.7; font-size:13px;">No bets found for this timeframe.</p>';
+            } else {
+                bets.sort((a,b) => (b.date < a.date) ? 1 : ((a.date < b.date) ? -1 : 0));
+                bets.forEach(b => {
+                    let rawIdx = rawBetsData.indexOf(b);
+                    let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
+                    let cardHtml = generateBetCardHTML(b, rawIdx, isSettled);
+                    if (rawIdx !== -1) {
+                         cardHtml = cardHtml.replace(`onclick="editBet(${rawIdx})"`, `onclick="document.getElementById('sportModal').style.display='none'; editBet(${rawIdx})"`);
+                    }
+                    betsHtml += cardHtml;
+                });
+            }
+            document.getElementById('sportModalBetsList').innerHTML = betsHtml;
+        }
 
         function showDayBets(dateStr) { const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d); openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true); }
         
@@ -2061,7 +2150,11 @@
         }
 
         function closeModal() { document.getElementById('betsModal').style.display = 'none'; }
-        window.onclick = function(e) { if (e.target == document.getElementById('betsModal')) closeModal(); }
+        window.onclick = function(e) { 
+            if (e.target == document.getElementById('betsModal')) closeModal(); 
+            if (e.target == document.getElementById('gameLinkModal')) document.getElementById('gameLinkModal').style.display='none';
+            if (e.target == document.getElementById('sportModal')) document.getElementById('sportModal').style.display='none';
+        }
 
         function buildPivotTable(dataArray) {
             if (!dataArray || dataArray.length < 2) return '<p style="font-size:13px;">Awaiting Data...</p>';
@@ -2141,7 +2234,12 @@
                     document.getElementById('valStrPL').textContent = data.straightPL; document.getElementById('valStrPL').style.color = getColor(data.straightPL); document.getElementById('valStrRec').textContent = data.straightRec; document.getElementById('valParPL').textContent = data.parlayPL; document.getElementById('valParPL').style.color = getColor(data.parlayPL); document.getElementById('valParRec').textContent = data.parlayRec;
                     
                     let bHtml = '<table><tr><th>Book</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.books.forEach(b => { bHtml += `<tr><td>${b[0]}</td><td class="text-right" style="color:${getColor(b[1])}; font-weight:bold;">${b[1]}</td><td class="text-right">${b[2]}</td></tr>`; }); document.getElementById('tableBooks').innerHTML = bHtml + '</table>';
-                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; data.sports.forEach(s => { sHtml += `<tr><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; }); document.getElementById('tableSports').innerHTML = sHtml + '</table>';
+                    
+                    let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; 
+                    data.sports.forEach(s => { 
+                        sHtml += `<tr class="clickable-row" onclick="openSportModal('${s[0]}')"><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; 
+                    }); 
+                    document.getElementById('tableSports').innerHTML = sHtml + '</table>';
                     
                     document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
 
