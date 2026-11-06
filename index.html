@@ -226,6 +226,7 @@
                     <div class="cal-summary-box"><div class="cal-summary-label">Month P/L</div><div class="cal-summary-val" id="calMonthPL">--</div></div>
                     <div class="cal-summary-box"><div class="cal-summary-label">YTD</div><div class="cal-summary-val" id="calYtdPL">--</div></div>
                 </div>
+                <!-- NEW STREAK TRACKING UI -->
                 <div class="cal-summary-cards" style="margin-top:-5px;">
                     <div class="cal-summary-box"><div class="cal-summary-label">Day Streak</div><div class="cal-summary-val" id="streakDay">--</div></div>
                     <div class="cal-summary-box"><div class="cal-summary-label">Week Streak</div><div class="cal-summary-val" id="streakWeek">--</div></div>
@@ -2236,7 +2237,7 @@
                     
                     let sHtml = '<table><tr><th>Sport</th><th class="text-right">Wagered</th><th class="text-right">P/L</th><th class="text-right">ROI</th></tr>'; 
                     data.sports.forEach(s => { 
-                        sHtml += `<tr class="clickable-row" onclick="openSportModal('${s[0]}')"><td>${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; 
+                        sHtml += `<tr><td class="clickable-row" onclick="openSportModal('${s[0]}')" style="text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; cursor: pointer;">${s[0]}</td><td class="text-right">${s[1]}</td><td class="text-right" style="color:${getColor(s[2])}; font-weight:bold;">${s[2]}</td><td class="text-right">${s[3]}</td></tr>`; 
                     }); 
                     document.getElementById('tableSports').innerHTML = sHtml + '</table>';
                     
