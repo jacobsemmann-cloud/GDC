@@ -1172,8 +1172,6 @@
         function getUniqueEntities() {
             let entities = new Set();
             
-            const statWords = ['pts', 'points', 'reb', 'rebs', 'rebound', 'rebounds', 'ast', 'asts', 'assist', 'assists', 'td', 'tds', 'touchdown', 'touchdowns', 'yds', 'yards', 'sog', 'rec', 'receptions', 'over', 'under', 'ry', 'py', 'sy', 'o', 'u', 'threes', '3pm', 'sgp', 'parlay'];
-
             function isCleanName(name) {
                 if (!name || name.length < 3) return false;
                 let trimmed = name.trim().toLowerCase();
@@ -1181,14 +1179,8 @@
                 // 1. Reject if it contains decimal lines or explicit odds numbers (+150, -110)
                 if (/\d+\.\d+/.test(trimmed) || /\+\d+/.test(trimmed) || /-\d+/.test(trimmed)) return false;
 
-                // 2. Reject if it has lingering brackets, colons, or pipes
-                if (trimmed.includes('[') || trimmed.includes(']') || trimmed.includes(':') || trimmed.includes('|')) return false;
-                
-                // 3. Reject if it contains any known stat words as standalone words
-                let words = trimmed.split(/\s+/);
-                for (let i = 0; i < words.length; i++) {
-                    if (statWords.includes(words[i])) return false;
-                }
+                // 2. Reject if it has lingering brackets, colons, pipes, or slashes
+                if (trimmed.includes('[') || trimmed.includes(']') || trimmed.includes(':') || trimmed.includes('|') || trimmed.includes('/')) return false;
                 
                 return true;
             }
