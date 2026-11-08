@@ -534,7 +534,7 @@
                 return; 
             }
             
-            let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[sport]}/scoreboard?dates=${dateStr}`;
+            let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[sport]}/scoreboard?dates=${dateStr}&limit=500`;
             
             document.getElementById('gameLinkTitle').textContent = isParlay ? `Select ${sport} Games` : `Select ${sport} Game`;
             document.getElementById('gameLinkList').innerHTML = '<div style="text-align:center; padding:20px; font-weight:bold; color:var(--text-label);">Fetching Games...</div>';
@@ -641,7 +641,7 @@
             });
 
             Object.values(fetchMap).forEach(req => {
-                let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/scoreboard?dates=${req.dateStr}`;
+                let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/scoreboard?dates=${req.dateStr}&limit=500`;
                 fetch(url).then(r => r.json()).then(data => {
                     if (!data.events) return;
                     
