@@ -535,6 +535,8 @@
             }
             
             let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[sport]}/scoreboard?dates=${dateStr}&limit=500`;
+if (sport === 'NCAAB') url += '&groups=50';
+if (sport === 'NCAAF') url += '&groups=80';
             
             document.getElementById('gameLinkTitle').textContent = isParlay ? `Select ${sport} Games` : `Select ${sport} Game`;
             document.getElementById('gameLinkList').innerHTML = '<div style="text-align:center; padding:20px; font-weight:bold; color:var(--text-label);">Fetching Games...</div>';
@@ -642,6 +644,8 @@
 
             Object.values(fetchMap).forEach(req => {
                 let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/scoreboard?dates=${req.dateStr}&limit=500`;
+if (req.sport === 'NCAAB') url += '&groups=50';
+if (req.sport === 'NCAAF') url += '&groups=80';
                 fetch(url).then(r => r.json()).then(data => {
                     if (!data.events) return;
                     
