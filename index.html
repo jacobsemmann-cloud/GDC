@@ -1193,7 +1193,31 @@ if (req.sport === 'NCAAF') url += '&groups=80';
             html += '</table></div>';
             container.innerHTML = html;
         }
-
+	function getUniqueTags() {
+            let tags = new Set();
+            rawBetsData.forEach(b => {
+                if (!b.details) return;
+                
+                // 1. Look for the new structured format (|TAGS:MNF|)
+                let match = b.details.match(/\|TAGS:([^|]+)\|/);
+                if(match) {
+                    match[1].split(',').forEach(t => {
+                        let cln = t.trim().toUpperCase().replace(/^#/, '');
+                        if(cln) tags.add(cln);
+                    });
+                }
+                
+                // 2. Look for legacy tags manually typed with a hashtag (#MNF)
+                let oldMatches = b.details.match(/#[A-Za-z0-9_]+/g);
+                if (oldMatches) {
+                    oldMatches.forEach(t => {
+                        let cln = t.trim().toUpperCase().replace(/^#/, '');
+                        if (cln) tags.add(cln);
+                    });
+                }
+            });
+            return Array.from(tags).sort();
+        }
         function getUniqueEntities() {
             let entities = new Set();
             
