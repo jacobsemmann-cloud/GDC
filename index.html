@@ -643,9 +643,11 @@ if (sport === 'NCAAF') url += '&groups=80';
             });
 
             Object.values(fetchMap).forEach(req => {
-                let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/scoreboard?dates=${req.dateStr}&limit=500`;
-if (req.sport === 'NCAAB') url += '&groups=50';
-if (req.sport === 'NCAAF') url += '&groups=80';
+                let urlSlug = espnSportMap[req.sport];
+                let url = `https://site.api.espn.com/apis/site/v2/sports/${urlSlug}/scoreboard?dates=${req.dateStr}&limit=500`;
+                if (req.sport === 'NCAAB') url += '&groups=50';
+                if (req.sport === 'NCAAF') url += '&groups=80';
+
                 fetch(url).then(r => r.json()).then(data => {
                     if (!data.events) return;
                     
@@ -692,9 +694,9 @@ if (req.sport === 'NCAAF') url += '&groups=80';
                                 div.style.display = 'block';
                                 div.innerHTML = ''; 
                                 
-                                let urlSlug = espnSportMap[req.sport].split('/')[1];
-                                if(req.sport === 'NCAAF') urlSlug = 'college-football';
-                                if(req.sport === 'NCAAB') urlSlug = 'mens-college-basketball';
+                                let displayUrlSlug = espnSportMap[req.sport].split('/')[1];
+                                if(req.sport === 'NCAAF') displayUrlSlug = 'college-football';
+                                if(req.sport === 'NCAAB') displayUrlSlug = 'mens-college-basketball';
 
                                 matchedEvents.forEach((matchedEvent, evIdx) => {
                                     let evTime = new Date(matchedEvent.date).getTime();
@@ -756,7 +758,7 @@ if (req.sport === 'NCAAF') url += '&groups=80';
                                         }
                                     }
                                     
-                                    let gcLink = `<a href="https://www.espn.com/${urlSlug}/game/_/gameId/${matchedEvent.id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>`;
+                                    let gcLink = `<a href="https://www.espn.com/${displayUrlSlug}/game/_/gameId/${matchedEvent.id}" target="_blank" onclick="event.stopPropagation()" style="color:#007bff; text-decoration:none; font-weight:bold; margin-left:10px;">📈 Gamecast</a>`;
                                     
                                     let lineDiv = document.createElement('div');
                                     lineDiv.style.marginBottom = '6px';
@@ -784,15 +786,16 @@ if (req.sport === 'NCAAF') url += '&groups=80';
                                     
                                     div.appendChild(lineDiv);
 
-                                    // --- FETCH PLAYER STATS ---
+                                    // --- FETCH PLAYER STATS & HYBRID WHEEL ---
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
                                             
                                             let targetNames = [t1, t2].filter(t => t);
                                             let detailsEl = card.querySelector('.bet-card-details:nth-child(3)');
+                                            let cleanDetails = detailsEl ? detailsEl.textContent.toLowerCase() : '';
+                                            
                                             if (detailsEl) {
-                                                let cleanDetails = detailsEl.textContent.toLowerCase();
                                                 targetNames.push(...cleanDetails.split(/~~|,|\n|\+/).map(s => {
                                                     let cleanName = s.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
                                                     let isSpawns = (card.getAttribute('data-team1')||'').trim().toUpperCase() === 'SPAWNS';
@@ -806,70 +809,144 @@ if (req.sport === 'NCAAF') url += '&groups=80';
                                                             cleanName = cleanName.split(':').slice(1).join(':').trim();
                                                         }
                                                     }
-                                                    
-                                                    // Pull out ONLY the player name from our new split delimiter
                                                     if (cleanName.includes('::')) {
                                                         cleanName = cleanName.split('::')[0].trim();
                                                     }
-
                                                     return cleanName;
                                                 }));
                                             }
 
-                                            let foundStats = [];
-                                            let seenAthletes = new Set();
+                                            // Win Prob Wheel Logic (Fallback for Moneylines)
+                                            let winProbHtml = '';
+                                            if (summaryData.winprobability && summaryData.winprobability.length > 0) {
+                                                let latestProb = summaryData.winprobability[summaryData.winprobability.length - 1];
+                                                let homeProb = latestProb.homeWinPercentage * 100;
+                                                let awayProb = 100 - homeProb;
+                                                
+                                                let betOnHome = (home && (home.team.abbreviation.toLowerCase() === t1 || home.team.displayName.toLowerCase().includes(t1)));
+                                                let betOnAway = (away && (away.team.abbreviation.toLowerCase() === t1 || away.team.displayName.toLowerCase().includes(t1)));
+                                                
+                                                if (betOnHome || betOnAway) {
+                                                    let prob = betOnHome ? homeProb : awayProb;
+                                                    let ringColor = prob >= 50 ? 'var(--win-text)' : 'var(--loss-text)';
+                                                    winProbHtml = `
+                                                    <div style="display:flex; align-items:center; gap:6px; margin-top:6px; margin-bottom:2px;">
+                                                        <div style="width:16px; height:16px; border-radius:50%; background:conic-gradient(${ringColor} ${prob}%, var(--input-bg) 0); border: 1px solid var(--input-border); display:flex; justify-content:center; align-items:center;">
+                                                            <div style="width:10px; height:10px; background:var(--panel-bg); border-radius:50%;"></div>
+                                                        </div>
+                                                        <span style="font-size:10px; font-weight:bold; color:var(--text-main); opacity:0.9;">Live Win Prob: ${prob.toFixed(1)}%</span>
+                                                    </div>`;
+                                                }
+                                            }
+
+                                            // Pace Wheel Logic (Props)
+                                            let paceHtml = '';
+                                            let targetNum = null;
+                                            let lineMatch = cleanDetails.match(/(?:o|u|over|under)?\s*(\d+(\.\d+)?)/i);
+                                            if (lineMatch) targetNum = parseFloat(lineMatch[1]);
+
+                                            // Smart Parser: Determine Categories
+                                            let targetCategories = [];
+                                            if (req.sport === 'NFL' || req.sport === 'NCAAF') {
+                                                if (/pass|py|cmp|att|int/i.test(cleanDetails)) targetCategories.push('passing');
+                                                if (/rush|ry|car/i.test(cleanDetails)) targetCategories.push('rushing');
+                                                if (/rec|reception|tgt/i.test(cleanDetails)) targetCategories.push('receiving');
+                                                if (/sack|tkl|tackle|def/i.test(cleanDetails)) targetCategories.push('defensive');
+                                                if (/kicking|fg|pat/i.test(cleanDetails)) targetCategories.push('kicking');
+                                                
+                                                if (targetCategories.length === 0) targetCategories = ['passing', 'rushing', 'receiving'];
+                                            }
+
+                                            let foundStatsObj = {}; 
                                             
                                             if (summaryData.boxscore && summaryData.boxscore.players) {
                                                 summaryData.boxscore.players.forEach(teamBox => {
                                                     if(teamBox.statistics) {
                                                         teamBox.statistics.forEach(statCategory => {
+                                                            let catName = statCategory.name;
+                                                            if (targetCategories.length > 0 && !targetCategories.includes(catName)) return;
+
                                                             if (statCategory.athletes) {
                                                                 statCategory.athletes.forEach(athleteObj => {
-                                                                    if (seenAthletes.has(athleteObj.athlete.id)) return;
-                                                                    
                                                                     let aName = (athleteObj.athlete.displayName || '').toLowerCase();
                                                                     let sName = (athleteObj.athlete.shortName || '').toLowerCase();
                                                                     
                                                                     let isTarget = targetNames.some(target => {
                                                                         if (target.length < 4) return false;
-                                                                        let matchA = aName.length > 3 && target.includes(aName);
-                                                                        let matchS = sName.length > 3 && target.includes(sName);
-                                                                        let matchExact = aName === target || sName === target;
-                                                                        return matchA || matchS || matchExact;
+                                                                        return (aName.length > 3 && target.includes(aName)) || 
+                                                                               (sName.length > 3 && target.includes(sName)) || 
+                                                                               (aName === target || sName === target);
                                                                     });
 
                                                                     if (isTarget && athleteObj.stats) {
-                                                                        seenAthletes.add(athleteObj.athlete.id);
-                                                                        let labels = statCategory.labels || [];
-                                                                        let stats = athleteObj.stats;
-                                                                        let displayStats = [];
-                                                                        
-                                                                        let keyIndices = [];
-                                                                        if (req.sport === 'NBA' || req.sport === 'NCAAB') {
-                                                                            let keys = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TO', '3PM'];
-                                                                            labels.forEach((l, i) => { if(keys.includes(l)) keyIndices.push(i); });
-                                                                        } else if (req.sport === 'NFL' || req.sport === 'NCAAF') {
-                                                                            let keys = ['YDS', 'TD', 'CAR', 'REC', 'INT'];
-                                                                            labels.forEach((l, i) => { if(keys.includes(l)) keyIndices.push(i); });
-                                                                        } else if (req.sport === 'MLB') {
-                                                                            let keys = ['H', 'HR', 'RBI', 'BB', 'IP', 'ER', 'K', 'SO'];
-                                                                            labels.forEach((l, i) => { if(keys.includes(l)) keyIndices.push(i); });
-                                                                        } else if (req.sport === 'NHL') {
-                                                                            let keys = ['G', 'A', 'PTS', 'SOG', 'BLK'];
-                                                                            labels.forEach((l, i) => { if(keys.includes(l)) keyIndices.push(i); });
-                                                                        }
-                                                                        if (keyIndices.length === 0) {
-                                                                             for(let k=0; k<Math.min(4, labels.length); k++) keyIndices.push(k);
+                                                                        if (!foundStatsObj[athleteObj.athlete.id]) {
+                                                                            foundStatsObj[athleteObj.athlete.id] = { name: athleteObj.athlete.displayName, statsList: [] };
                                                                         }
 
+                                                                        let labels = statCategory.labels || [];
+                                                                        let stats = athleteObj.stats;
+                                                                        
+                                                                        let keysToExtract = [];
+                                                                        if (catName === 'passing') keysToExtract = ['C/ATT', 'YDS', 'TD', 'INT'];
+                                                                        else if (catName === 'rushing') keysToExtract = ['CAR', 'YDS', 'TD'];
+                                                                        else if (catName === 'receiving') keysToExtract = ['REC', 'YDS', 'TD', 'TGTS'];
+                                                                        else if (req.sport === 'NBA' || req.sport === 'NCAAB') keysToExtract = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TO', '3PM'];
+                                                                        else if (req.sport === 'MLB') keysToExtract = ['H', 'HR', 'RBI', 'BB', 'IP', 'ER', 'K', 'SO'];
+                                                                        else if (req.sport === 'NHL') keysToExtract = ['G', 'A', 'PTS', 'SOG', 'BLK'];
+                                                                        
+                                                                        let keyIndices = [];
+                                                                        if (keysToExtract.length > 0) {
+                                                                            labels.forEach((l, i) => { if(keysToExtract.includes(l.toUpperCase())) keyIndices.push(i); });
+                                                                        } else {
+                                                                            for(let k=0; k<Math.min(4, labels.length); k++) keyIndices.push(k);
+                                                                        }
+
+                                                                        let displayStats = [];
                                                                         keyIndices.forEach(ki => {
-                                                                            if (stats[ki] && stats[ki] !== '0' && stats[ki] !== '0.0' && stats[ki] !== '-') {
-                                                                                displayStats.push(`${stats[ki]} ${labels[ki]}`);
+                                                                            let valStr = stats[ki];
+                                                                            let valNum = parseFloat(valStr);
+                                                                            
+                                                                            if (valStr && valStr !== '0' && valStr !== '0.0' && valStr !== '-') {
+                                                                                let labelName = labels[ki].toUpperCase();
+                                                                                let displayLabel = labelName;
+                                                                                
+                                                                                if (displayLabel === 'YDS') {
+                                                                                    if (catName === 'passing') displayLabel = 'Pass YDS';
+                                                                                    if (catName === 'rushing') displayLabel = 'Rush YDS';
+                                                                                    if (catName === 'receiving') displayLabel = 'Rec YDS';
+                                                                                }
+                                                                                displayStats.push(`${valStr} ${displayLabel}`);
+                                                                                
+                                                                                // Calculate Pace if target exists and matches
+                                                                                if (targetNum && !paceHtml && !isNaN(valNum)) {
+                                                                                    let isMatch = false;
+                                                                                    if ((cleanDetails.includes('yds') || cleanDetails.includes('yards')) && labelName.includes('YDS')) isMatch = true;
+                                                                                    else if ((cleanDetails.includes('rec') || cleanDetails.includes('reception')) && labelName === 'REC') isMatch = true;
+                                                                                    else if ((cleanDetails.includes('pts') || cleanDetails.includes('points')) && labelName === 'PTS') isMatch = true;
+                                                                                    else if ((cleanDetails.includes('reb') || cleanDetails.includes('rebound')) && labelName === 'REB') isMatch = true;
+                                                                                    else if ((cleanDetails.includes('ast') || cleanDetails.includes('assist')) && labelName === 'AST') isMatch = true;
+                                                                                    else if ((cleanDetails.includes('3pm') || cleanDetails.includes('threes')) && labelName === '3PM') isMatch = true;
+                                                                                    else if ((cleanDetails.includes('td') || cleanDetails.includes('touchdown')) && labelName === 'TD') isMatch = true;
+                                                                                    else if ((cleanDetails.includes('h') || cleanDetails.includes('hit')) && labelName === 'H') isMatch = true;
+                                                                                    else if ((cleanDetails.includes('k') || cleanDetails.includes('so') || cleanDetails.includes('strikeout')) && (labelName === 'K' || labelName === 'SO')) isMatch = true;
+                                                                                    
+                                                                                    if (isMatch) {
+                                                                                        let pct = Math.min((valNum / targetNum) * 100, 100);
+                                                                                        let ringColor = pct >= 100 ? 'var(--win-text)' : (pct >= 50 ? '#ffc107' : 'var(--loss-text)');
+                                                                                        paceHtml = `
+                                                                                        <div style="display:flex; align-items:center; gap:6px; margin-top:6px; margin-bottom:2px;">
+                                                                                            <div style="width:16px; height:16px; border-radius:50%; background:conic-gradient(${ringColor} ${pct}%, var(--input-bg) 0); border: 1px solid var(--input-border); display:flex; justify-content:center; align-items:center;">
+                                                                                                <div style="width:10px; height:10px; background:var(--panel-bg); border-radius:50%;"></div>
+                                                                                            </div>
+                                                                                            <span style="font-size:10px; font-weight:bold; color:var(--text-main); opacity:0.9;">Pace: ${valNum} / ${targetNum} ${displayLabel} (${Math.round(pct)}%)</span>
+                                                                                        </div>`;
+                                                                                    }
+                                                                                }
                                                                             }
                                                                         });
 
-                                                                        if(displayStats.length > 0) {
-                                                                            foundStats.push(`<div style="font-size: 9.5px; opacity: 0.85; font-weight: normal; margin-top: 2px;">👤 ${athleteObj.athlete.displayName}: ${displayStats.join(', ')}</div>`);
+                                                                        if (displayStats.length > 0) {
+                                                                            foundStatsObj[athleteObj.athlete.id].statsList.push(...displayStats);
                                                                         }
                                                                     }
                                                                 });
@@ -879,12 +956,29 @@ if (req.sport === 'NCAAF') url += '&groups=80';
                                                 });
                                             }
                                             
-                                            if (foundStats.length > 0) {
+                                            let combinedStatsHtml = [];
+                                            Object.values(foundStatsObj).forEach(p => {
+                                                if (p.statsList.length > 0) {
+                                                    let uniqueStats = [...new Set(p.statsList)];
+                                                    combinedStatsHtml.push(`<div style="font-size: 9.5px; opacity: 0.85; font-weight: normal; margin-top: 2px;">👤 ${p.name}: ${uniqueStats.join(', ')}</div>`);
+                                                }
+                                            });
+
+                                            if (combinedStatsHtml.length > 0) {
                                                 let statDiv = document.createElement('div');
                                                 statDiv.style.color = 'var(--text-main)';
-                                                statDiv.innerHTML = foundStats.join('');
+                                                statDiv.innerHTML = combinedStatsHtml.join('');
                                                 lineDiv.appendChild(statDiv);
                                             }
+
+                                            // Render Hybrid Wheel (Pace overrides Win Prob)
+                                            let finalWheelHtml = paceHtml || winProbHtml;
+                                            if (finalWheelHtml && (isLive || isPost)) {
+                                                let wheelDiv = document.createElement('div');
+                                                wheelDiv.innerHTML = finalWheelHtml;
+                                                lineDiv.appendChild(wheelDiv);
+                                            }
+
                                         }).catch(e => console.log("ESPN Summary Error", e));
                                     }
                                 });
@@ -898,7 +992,6 @@ if (req.sport === 'NCAAF') url += '&groups=80';
                 }).catch(e => console.log("ESPN API Error for " + req.sport, e));
             });
         }
-
         function addParlayLeg(val = '', isChecked = false) {
             let isSpawns = document.getElementById('team1').value.trim().toUpperCase() === 'SPAWNS';
             let picker = '';
