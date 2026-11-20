@@ -891,6 +891,33 @@ if (sport === 'NCAAF') url += '&groups=80';
                                                 </div>`;
                                             }
 
+// Spread Cover Wheel Logic
+                                            let spreadWheelHtml = '';
+                                            let spreadMatch = cleanDetails.match(/(?:^|\s)([+-]\d+(\.\d+)?)(?:\s|$)/);
+                                            let isHomeTeam = isTeamMatch(home?.team, t1);
+                                            let isAwayTeam = isTeamMatch(away?.team, t1);
+
+                                            if (spreadMatch && home && away && (isHomeTeam || isAwayTeam) && !totalWheelHtml) {
+                                                let spreadVal = parseFloat(spreadMatch[1]);
+                                                let myScore = isHomeTeam ? (parseInt(home.score) || 0) : (parseInt(away.score) || 0);
+                                                let oppScore = isHomeTeam ? (parseInt(away.score) || 0) : (parseInt(home.score) || 0);
+                                                let margin = (myScore + spreadVal) - oppScore;
+
+                                                // 50% = Push, scales +5% per point covering (caps at 100%) / -5% per point behind
+                                                let pct = Math.max(5, Math.min(100, 50 + (margin * 5)));
+                                                let ringColor = margin > 0 ? 'var(--win-text)' : (margin === 0 ? '#ffc107' : 'var(--loss-text)');
+                                                let statusWord = margin > 0 ? 'Covering' : (margin === 0 ? 'Push' : 'Behind');
+                                                let marginDisplay = (margin > 0 ? '+' : '') + Number(margin.toFixed(1));
+
+                                                spreadWheelHtml = `
+                                                <div style="display:flex; align-items:center; gap:6px; margin-top:6px; margin-bottom:2px;">
+                                                    <div style="width:16px; height:16px; border-radius:50%; background:conic-gradient(${ringColor} ${pct}%, var(--input-bg) 0); border: 1px solid var(--input-border); display:flex; justify-content:center; align-items:center;">
+                                                        <div style="width:10px; height:10px; background:var(--panel-bg); border-radius:50%;"></div>
+                                                    </div>
+                                                    <span style="font-size:10px; font-weight:bold; color:var(--text-main); opacity:0.9;">Spread (${spreadMatch[1]}): ${statusWord} (${marginDisplay})</span>
+                                                </div>`;
+                                            }
+
                                             // Smart Parser: Determine Categories
                                             let targetCategories = [];
                                             if (req.sport === 'NFL' || req.sport === 'NCAAF') {
@@ -1018,7 +1045,7 @@ if (sport === 'NCAAF') url += '&groups=80';
                                             }
 
                                             // Render Hybrid Wheel (Pace overrides Win Prob)
-                                            let finalWheelHtml = paceHtml || totalWheelHtml || winProbHtml;
+                                            let finalWheelHtml = paceHtml || totalWheelHtml || spreadWheelHtml || winProbHtml;
                                             if (finalWheelHtml && (isLive || isPost)) {
                                                 let wheelDiv = document.createElement('div');
                                                 wheelDiv.innerHTML = finalWheelHtml;
