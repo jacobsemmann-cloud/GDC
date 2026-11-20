@@ -844,6 +844,33 @@ if (sport === 'NCAAF') url += '&groups=80';
                                             let targetNum = null;
                                             let lineMatch = cleanDetails.match(/(?:o|u|over|under)?\s*(\d+(\.\d+)?)/i);
                                             if (lineMatch) targetNum = parseFloat(lineMatch[1]);
+						// Game Total (Over/Under) Wheel Logic
+                                            let totalWheelHtml = '';
+                                            let ouMatch = cleanDetails.match(/\b(o|u|over|under)\s*(\d+(\.\d+)?)\b/i);
+                                            if (ouMatch && home && away && !/pts|reb|ast|yds|rec|td|sog|3pm/i.test(cleanDetails)) {
+                                                let isUnder = ouMatch[1].toLowerCase().startsWith('u');
+                                                let targetTotal = parseFloat(ouMatch[2]);
+                                                let currentTotal = (parseInt(home.score) || 0) + (parseInt(away.score) || 0);
+                                                let pct = Math.min((currentTotal / targetTotal) * 100, 100);
+                                                
+                                                let ringColor = '';
+                                                if (isUnder) {
+                                                    ringColor = currentTotal > targetTotal ? 'var(--loss-text)' : (pct >= 85 ? '#ffc107' : 'var(--win-text)');
+                                                } else {
+                                                    ringColor = currentTotal >= targetTotal ? 'var(--win-text)' : (pct >= 50 ? '#ffc107' : 'var(--loss-text)');
+                                                }
+                                                
+                                                let label = isUnder 
+                                                    ? `Total: ${currentTotal} / u${targetTotal} (${Math.max(0, targetTotal - currentTotal).toFixed(1)} left)` 
+                                                    : `Total: ${currentTotal} / o${targetTotal} (${Math.round(pct)}%)`;
+                                                totalWheelHtml = `
+                                                <div style="display:flex; align-items:center; gap:6px; margin-top:6px; margin-bottom:2px;">
+                                                    <div style="width:16px; height:16px; border-radius:50%; background:conic-gradient(${ringColor} ${pct}%, var(--input-bg) 0); border: 1px solid var(--input-border); display:flex; justify-content:center; align-items:center;">
+                                                        <div style="width:10px; height:10px; background:var(--panel-bg); border-radius:50%;"></div>
+                                                    </div>
+                                                    <span style="font-size:10px; font-weight:bold; color:var(--text-main); opacity:0.9;">${label}</span>
+                                                </div>`;
+                                            }
 
                                             // Smart Parser: Determine Categories
                                             let targetCategories = [];
@@ -972,7 +999,7 @@ if (sport === 'NCAAF') url += '&groups=80';
                                             }
 
                                             // Render Hybrid Wheel (Pace overrides Win Prob)
-                                            let finalWheelHtml = paceHtml || winProbHtml;
+                                            let finalWheelHtml = paceHtml || totalWheelHtml || winProbHtml;
                                             if (finalWheelHtml && (isLive || isPost)) {
                                                 let wheelDiv = document.createElement('div');
                                                 wheelDiv.innerHTML = finalWheelHtml;
