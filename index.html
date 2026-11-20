@@ -631,6 +631,25 @@ if (sport === 'NCAAF') url += '&groups=80';
             document.getElementById('gameLinkModal').style.display = 'none';
         }
 
+	function isTeamMatch(teamObj, inputStr) {
+            if (!teamObj || !inputStr) return false;
+            let t = inputStr.toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
+            if (t.length < 2) return false;
+
+            let name = (teamObj.displayName || '').toLowerCase();
+            let shortName = (teamObj.shortDisplayName || '').toLowerCase();
+            let abbr = (teamObj.abbreviation || '').toLowerCase();
+            let initials = name.split(/\s+/).map(w => w[0]).join('');
+
+            // 1. Direct or partial name/abbr match
+            if (name.includes(t) || shortName.includes(t) || abbr === t) return true;
+            // 2. Reverse abbr match (e.g. "uwgb" contains "gb")
+            if (abbr.length >= 2 && t.includes(abbr)) return true;
+            // 3. Acronym match (e.g. "ncsu" or "ncs" matches initials)
+            if (initials.length >= 2 && (initials.startsWith(t) || t.startsWith(initials))) return true;
+
+            return false;
+        }
         function fetchLiveScores(pendingItems) {
             let fetchMap = {}; 
             
@@ -823,8 +842,8 @@ if (sport === 'NCAAF') url += '&groups=80';
                                                 let homeProb = latestProb.homeWinPercentage * 100;
                                                 let awayProb = 100 - homeProb;
                                                 
-                                                let betOnHome = (home && (home.team.abbreviation.toLowerCase() === t1 || home.team.displayName.toLowerCase().includes(t1)));
-                                                let betOnAway = (away && (away.team.abbreviation.toLowerCase() === t1 || away.team.displayName.toLowerCase().includes(t1)));
+                                               let betOnHome = isTeamMatch(home?.team, t1);
+						let betOnAway = isTeamMatch(away?.team, t1);
                                                 
                                                 if (betOnHome || betOnAway) {
                                                     let prob = betOnHome ? homeProb : awayProb;
