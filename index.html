@@ -657,8 +657,8 @@ if (sport === 'NCAAF') url += '&groups=80';
                         if (card.getAttribute('data-date') !== req.fullDate) return;
 
                         let eIdStr = card.getAttribute('data-espn-id');
-                        let t1 = card.getAttribute('data-team1').toLowerCase();
-                        let t2 = card.getAttribute('data-team2').toLowerCase();
+                        let t1 = card.getAttribute('data-team1').toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
+			let t2 = card.getAttribute('data-team2').toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
                         let idx = card.getAttribute('data-bet-idx');
 
                         let matchedEvents = [];
