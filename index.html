@@ -400,7 +400,16 @@
             </div>
         </div>
     </div>
-
+<!-- CONDENSED SHARE CARD MODAL -->
+    <div id="shareCardModal" class="modal-overlay" style="z-index: 2500;">
+        <div class="modal-content" style="padding: 16px; max-width: 400px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:11px; font-weight:bold; opacity:0.6; text-transform:uppercase;">Screenshot Ready</span>
+                <button class="modal-close" onclick="document.getElementById('shareCardModal').style.display='none'" style="font-size:22px;">×</button>
+            </div>
+            <div id="shareCardBody" style="background: var(--bg-base); border: 2px solid var(--border-accent); border-radius: 10px; padding: 12px;"></div>
+        </div>
+    </div>
     <script>
         let today = new Date();
         document.getElementById('date').value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
@@ -2051,7 +2060,10 @@ function renderTrueStraights() {
                     html += `<div class="pending-sport-group">`;
                     html += `<h4 onclick="togglePendingGroup(this)" style="cursor:pointer; color: var(--text-label); font-size: 14px; border-bottom: 1px solid var(--input-border); padding-bottom: 4px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase; display:flex; justify-content:space-between; align-items:center;">`;
                     html += `<div style="display:flex; align-items:center;"><span>📅 ${displayDate}</span><span class="group-stats" style="display:none; font-size:11px; font-weight:bold; margin-left:8px; opacity:0.8; text-transform:none; color:var(--text-main);">(${stats.count} Bets | $${stats.wager.toFixed(2)} Risked)</span></div>`;
-                    html += `<span class="toggle-icon" style="font-size:10px;">▼</span></h4>`;
+                    html += `<div style="display:flex; align-items:center; gap:8px;">
+                                <button onclick="event.stopPropagation(); openShareCard('${currentDate}', true)" style="background:transparent; border:1px solid var(--text-label); color:var(--text-label); border-radius:4px; font-size:10px; padding:2px 6px; cursor:pointer; font-weight:bold;">📸 CARD</button>
+                                <span class="toggle-icon" style="font-size:10px;">▼</span>
+                             </div></h4>`;
                     html += `<div class="pending-cards-container" style="display:flex; flex-direction:column;">`;
                 }
                 
@@ -2287,6 +2299,10 @@ function renderTrueStraights() {
             
             let html = '';
             if (isDayView) {
+let html = '';
+            if (isDayView) {
+                html += `<button onclick="openShareCard(window.currentDayModalDate, false)" style="width:100%; margin-bottom:10px; padding:6px; background:transparent; border:1px solid var(--text-label); color:var(--text-label); border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; text-transform:uppercase;">📸 Condensed Action Card</button>`;
+                let settledPL = 0, w = 0, l = 0, p = 0;
                 let settledPL = 0, w = 0, l = 0, p = 0;
                 let pendingPotential = 0;
                 let sportSummary = {}; 
@@ -2312,6 +2328,7 @@ function renderTrueStraights() {
                         }
                         pendingPotential += pProfit;
                     }
+
                 });
                 let maxProfit = settledPL + pendingPotential;
                 
@@ -2429,7 +2446,10 @@ function renderTrueStraights() {
             document.getElementById('sportModalBetsList').innerHTML = betsHtml;
         }
 
-        function showDayBets(dateStr) { const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d); openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true); }
+        function showDayBets(dateStr) { 
+            window.currentDayModalDate = dateStr;
+            const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d); openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true); 
+        }
         
         function showEntityBets(entity) { 
             const filter = document.getElementById('lbSportFilter').value;
@@ -2452,12 +2472,90 @@ function renderTrueStraights() {
             
             openModal(`#${tag} History`, bets, false);
         }
+function openShareCard(dateStr, pendingOnly) {
+            if (!dateStr) return;
+            let bets = rawBetsData.filter(b => {
+                if (b.date !== dateStr) return false;
+                if (pendingOnly) return (!b.result || b.result === 'Pending' || b.result === '');
+                return true;
+            });
 
+            if (bets.length === 0) return;
+
+            let parts = dateStr.split('-');
+            let displayDate = parts.length === 3 ? `${parts[1]}/${parts[2]}/${parts[0]}` : dateStr;
+            let totalRisk = 0;
+
+            let rowsHtml = bets.map(b => {
+                let isFB = (b.details || '').includes('🎁');
+                let wagerAmt = parseFloat(b.wager) || 0;
+                if (!isFB) totalRisk += wagerAmt;
+
+                let cleanDet = (b.details || '')
+                    .replace(/\|ESPN:[\d,]+\|/g, '')
+                    .replace(/\|TAGS:[^|]+\|/g, '')
+                    .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '')
+                    .trim();
+
+                let oddsStr = b.odds > 0 ? `+${b.odds}` : `${b.odds}`;
+                let wagerStr = wagerAmt % 1 === 0 ? `$${wagerAmt}` : `$${wagerAmt.toFixed(2)}`;
+                if (isFB) wagerStr += ' 🎁';
+
+                // Optional W/L/P badge when viewing past days from Calendar
+                let resBadge = '';
+                if (!pendingOnly && (b.result === 'W' || b.result === 'L' || b.result === 'P')) {
+                    let bCol = b.result === 'W' ? 'var(--win-text)' : (b.result === 'L' ? 'var(--loss-text)' : '#ffc107');
+                    resBadge = `<span style="color:${bCol}; font-weight:800; margin-right:4px;">[${b.result}]</span>`;
+                }
+
+                let titleHtml = `${resBadge}${b.team1}${b.team2 ? ' vs ' + b.team2 : ''}`;
+                let detHtml = '';
+
+                if (b.parlay && cleanDet.includes('~~')) {
+                    let legs = cleanDet.split('~~').map(leg => {
+                        let txt = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                        if (txt.includes('::')) txt = txt.replace('::', '-');
+                        return `<div style="font-size:10.5px; opacity:0.85; padding-left:6px;">• ${txt}</div>`;
+                    }).join('');
+                    detHtml = `<div style="margin-top:2px;">${legs}</div>`;
+                } else {
+                    detHtml = `<div style="font-size:11px; opacity:0.85;">${cleanDet || 'Moneyline'}</div>`;
+                }
+
+                return `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:7px 0; border-bottom:1px solid var(--input-border);">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:12.5px; font-weight:bold; color:var(--text-main); line-height:1.2;">${titleHtml}</div>
+                        ${detHtml}
+                    </div>
+                    <div style="text-align:right; white-space:nowrap;">
+                        <div style="font-size:12.5px; font-weight:bold; color:var(--text-label);">${oddsStr}</div>
+                        <div style="font-size:11px; font-weight:bold; color:var(--text-main); opacity:0.8;">${wagerStr}</div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            let riskStr = totalRisk % 1 === 0 ? `$${totalRisk}` : `$${totalRisk.toFixed(2)}`;
+            let cardHtml = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border-accent); padding-bottom:6px; margin-bottom:4px;">
+                    <div style="font-size:13px; font-weight:800; color:var(--text-label); text-transform:uppercase; letter-spacing:0.5px;">Green Dot City</div>
+                    <div style="font-size:12px; font-weight:bold; color:var(--text-main);">${displayDate}</div>
+                </div>
+                ${rowsHtml}
+                <div style="display:flex; justify-content:space-between; align-items:center; padding-top:8px; font-size:11.5px; font-weight:bold; color:var(--text-main);">
+                    <span>${bets.length} Play${bets.length === 1 ? '' : 's'}</span>
+                    <span>Total Risked: <span style="color:var(--text-label);">${riskStr}</span></span>
+                </div>`;
+
+            document.getElementById('shareCardBody').innerHTML = cardHtml;
+            document.getElementById('shareCardModal').style.display = 'flex';
+        }
         function closeModal() { document.getElementById('betsModal').style.display = 'none'; }
         window.onclick = function(e) { 
             if (e.target == document.getElementById('betsModal')) closeModal(); 
             if (e.target == document.getElementById('gameLinkModal')) document.getElementById('gameLinkModal').style.display='none';
             if (e.target == document.getElementById('sportModal')) document.getElementById('sportModal').style.display='none';
+if (e.target == document.getElementById('shareCardModal')) document.getElementById('shareCardModal').style.display='none';
         }
 
         function buildPivotTable(dataArray) {
