@@ -303,6 +303,15 @@
                     <div class="stat-row"><span class="stat-label">Straight Rec:</span><span class="stat-value" id="valStrRec">--</span></div>
                     <div class="stat-row" style="margin-top:8px;"><span class="stat-label">Parlay P/L:</span><span class="stat-value" id="valParPL">--</span></div>
                     <div class="stat-row"><span class="stat-label">Parlay Rec:</span><span class="stat-value" id="valParRec">--</span></div>
+<div class="dash-card">
+                    <h3 class="dash-title">Bet Style</h3>
+                    <div class="stat-row"><span class="stat-label">Straight P/L:</span><span class="stat-value" id="valStrPL">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Straight Rec:</span><span class="stat-value" id="valStrRec">--</span></div>
+                    <div class="stat-row" style="margin-top:8px;"><span class="stat-label">True Straight P/L (-130 to +150):</span><span class="stat-value" id="valTrueStrPL">--</span></div>
+                    <div class="stat-row"><span class="stat-label">True Straight Rec:</span><span class="stat-value" id="valTrueStrRec">--</span></div>
+                    <div class="stat-row" style="margin-top:8px;"><span class="stat-label">Parlay P/L:</span><span class="stat-value" id="valParPL">--</span></div>
+                    <div class="stat-row"><span class="stat-label">Parlay Rec:</span><span class="stat-value" id="valParRec">--</span></div>
+                </div>
                 </div>
 
                 <div class="dash-card">
@@ -1445,6 +1454,28 @@ let autoSettlingIndices = new Set();
             html += '</table></div>';
             container.innerHTML = html;
         }
+function renderTrueStraights() {
+            let pl = 0, w = 0, l = 0, p = 0;
+
+            rawBetsData.forEach(b => {
+                if (b.parlay) return;
+                if (b.result !== 'W' && b.result !== 'L' && b.result !== 'P') return;
+
+                let o = parseFloat(b.odds);
+                if (!isNaN(o) && o >= -130 && o <= 150) {
+                    pl += (parseFloat(b.pl) || 0);
+                    if (b.result === 'W') w++;
+                    else if (b.result === 'L') l++;
+                    else if (b.result === 'P') p++;
+                }
+            });
+
+            let plStr = formatPL(pl);
+            let plEl = document.getElementById('valTrueStrPL');
+            plEl.textContent = plStr;
+            plEl.style.color = getColor(plStr);
+            document.getElementById('valTrueStrRec').textContent = `${w}W - ${l}L - ${p}P`;
+        }
 	function getUniqueTags() {
             let tags = new Set();
             rawBetsData.forEach(b => {
@@ -2528,6 +2559,8 @@ let autoSettlingIndices = new Set();
 
                     renderTagGrid(); 
                     renderSpawnsTracker();
+		    renderSpawnsTracker();
+		    renderTrueStraights();	
                     drawDowChart(); 
                     renderLeaderboard(); 
                     renderPendingBets(); 
