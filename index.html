@@ -664,13 +664,36 @@ if (sport === 'NCAAF') url += '&groups=80';
 
 let autoSettlingIndices = new Set();
 
-        function attemptAutoSettle(idx, home, away, t1) {
+        function get1HData(matchedEvent, sport, home, away) {
+            let hLines = home?.linescores || [];
+            let aLines = away?.linescores || [];
+            let period = matchedEvent?.status?.period || 0;
+            let shortDet = (matchedEvent?.status?.type?.shortDetail || '').toLowerCase();
+            let isPost = matchedEvent?.status?.type?.state === 'post';
+
+            let is1HOver = false;
+            let hScore = 0, aScore = 0;
+
+            if (sport === 'NCAAB') {
+                hScore = parseInt(hLines[0]?.value) || 0;
+                aScore = parseInt(aLines[0]?.value) || 0;
+                is1HOver = isPost || period >= 2 || shortDet.includes('half');
+            } else if (['NBA', 'NFL', 'NCAAF'].includes(sport)) {
+                hScore = (parseInt(hLines[0]?.value) || 0) + (parseInt(hLines[1]?.value) || 0);
+                aScore = (parseInt(aLines[0]?.value) || 0) + (parseInt(aLines[1]?.value) || 0);
+                is1HOver = isPost || period >= 3 || shortDet.includes('half');
+            } else {
+                return null; // 1H not supported for NHL/MLB
+            }
+
+            return { hScore, aScore, is1HOver };
+        }
+
+        function attemptAutoSettle(idx, home, away, t1, matchedEvent, sport) {
             if (autoSettlingIndices.has(idx)) return;
             let bet = rawBetsData[idx];
-            if (!bet || bet.result) return; // Already settled
-            if (bet.parlay) return; // Guardrail: Skip parlays
-
-            // Guardrail: Straight Spreads, Totals, and Moneylines only
+            if (!bet || bet.result) return;
+            if (bet.parlay) return;
             if (!['Spread', 'Total', 'Moneyline'].includes(bet.betType)) return;
 
             let cleanDet = (bet.details || '')
@@ -679,11 +702,23 @@ let autoSettlingIndices = new Set();
                 .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '')
                 .trim().toLowerCase();
 
-            // Guardrail: Skip partial-game bets (halves, quarters, periods, F5)
-            if (/\b(1h|2h|1st half|2nd half|1q|2q|3q|4q|q1|q2|q3|q4|1p|2p|3p|f5|first 5|inning|period|quarter|half)\b/i.test(cleanDet)) return;
+            let is1H = /\b(1h|1st half|first half)\b/i.test(cleanDet);
 
-            let hScore = parseInt(home?.score);
-            let aScore = parseInt(away?.score);
+            // Guardrail: Still skip 2H, quarters, periods, F5, etc.
+            if (!is1H && /\b(2h|2nd half|second half|1q|2q|3q|4q|q1|q2|q3|q4|1p|2p|3p|f5|first 5|inning|period|quarter|half)\b/i.test(cleanDet)) return;
+
+            let hScore, aScore;
+            if (is1H) {
+                let fh = get1HData(matchedEvent, sport, home, away);
+                if (!fh || !fh.is1HOver) return; // Wait until Halftime
+                hScore = fh.hScore;
+                aScore = fh.aScore;
+            } else {
+                if (matchedEvent?.status?.type?.state !== 'post') return; // Wait until Final
+                hScore = parseInt(home?.score);
+                aScore = parseInt(away?.score);
+            }
+
             if (isNaN(hScore) || isNaN(aScore)) return;
 
             let isHome = isTeamMatch(home?.team, t1);
@@ -721,7 +756,6 @@ let autoSettlingIndices = new Set();
             autoSettlingIndices.add(idx);
             let payload = { ...bet, result: res };
 
-            // Zero out Free Bet wager on Loss or Push
             if ((res === 'L' || res === 'P') && (payload.details || '').includes('🎁')) {
                 payload.wager = 0;
             }
@@ -732,7 +766,6 @@ let autoSettlingIndices = new Set();
             })
             .then(r => r.json())
             .then(() => {
-                // Debounce refresh so multiple finished games settle cleanly in one reload
                 clearTimeout(window.autoSettleTimer);
                 window.autoSettleTimer = setTimeout(() => {
                     autoSettlingIndices.clear();
@@ -831,16 +864,19 @@ let autoSettlingIndices = new Set();
                                     let color = 'var(--text-main)';
                                     let displayStr = '';
                                     
-                                    if (isLive) {
+                                if (isLive) {
                                         displayStr = `🔴 LIVE: ${scoreStr} (${status})`;
                                         color = '#dc3545';
+                                        if (matchedEvents.length === 1) {
+                                            attemptAutoSettle(idx, home, away, t1, matchedEvent, req.sport);
+                                        }
                                     } else if (isPre) {
                                         let time = new Date(matchedEvent.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                                         displayStr = `📅 Starts at ${time} (${away.team.abbreviation} @ ${home.team.abbreviation})`;
-                                   } else if (isPost) {
+                                    } else if (isPost) {
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                         if (matchedEvents.length === 1) {
-                                            attemptAutoSettle(idx, home, away, t1);
+                                            attemptAutoSettle(idx, home, away, t1, matchedEvent, req.sport);
                                         }
                                     }
                                     
@@ -960,13 +996,18 @@ let autoSettlingIndices = new Set();
                                             let targetNum = null;
                                             let lineMatch = cleanDetails.match(/(?:o|u|over|under)?\s*(\d+(\.\d+)?)/i);
                                             if (lineMatch) targetNum = parseFloat(lineMatch[1]);
+					    let is1HBet = /\b(1h|1st half|first half)\b/i.test(cleanDetails);
+                                            let fhData = is1HBet ? get1HData(matchedEvent, req.sport, home, away) : null;
+                                            let wheelHomeScore = fhData ? fhData.hScore : (parseInt(home?.score) || 0);
+                                            let wheelAwayScore = fhData ? fhData.aScore : (parseInt(away?.score) || 0);
+                                            let wheelPrefix = fhData ? '1H ' : '';
 						// Game Total (Over/Under) Wheel Logic
                                             let totalWheelHtml = '';
                                             let ouMatch = cleanDetails.match(/\b(o|u|over|under)\s*(\d+(\.\d+)?)\b/i);
                                             if (ouMatch && home && away && !/pts|reb|ast|yds|rec|td|sog|3pm/i.test(cleanDetails)) {
                                                 let isUnder = ouMatch[1].toLowerCase().startsWith('u');
                                                 let targetTotal = parseFloat(ouMatch[2]);
-                                                let currentTotal = (parseInt(home.score) || 0) + (parseInt(away.score) || 0);
+                                                let currentTotal = wheelHomeScore + wheelAwayScore;
                                                 let pct = Math.min((currentTotal / targetTotal) * 100, 100);
                                                 
                                                 let ringColor = '';
@@ -976,9 +1017,9 @@ let autoSettlingIndices = new Set();
                                                     ringColor = currentTotal >= targetTotal ? 'var(--win-text)' : (pct >= 50 ? '#ffc107' : 'var(--loss-text)');
                                                 }
                                                 
-                                                let label = isUnder 
-                                                    ? `Total: ${currentTotal} / u${targetTotal} (${Math.max(0, targetTotal - currentTotal).toFixed(1)} left)` 
-                                                    : `Total: ${currentTotal} / o${targetTotal} (${Math.round(pct)}%)`;
+                                                    let label = isUnder 
+    ? `${wheelPrefix}Total: ${currentTotal} / u${targetTotal} (${Math.max(0, targetTotal - currentTotal).toFixed(1)} left)` 
+    : `${wheelPrefix}Total: ${currentTotal} / o${targetTotal} (${Math.round(pct)}%)`;
                                                 totalWheelHtml = `
                                                 <div style="display:flex; align-items:center; gap:6px; margin-top:6px; margin-bottom:2px;">
                                                     <div style="width:16px; height:16px; border-radius:50%; background:conic-gradient(${ringColor} ${pct}%, var(--input-bg) 0); border: 1px solid var(--input-border); display:flex; justify-content:center; align-items:center;">
@@ -996,8 +1037,8 @@ let autoSettlingIndices = new Set();
 
                                             if (spreadMatch && home && away && (isHomeTeam || isAwayTeam) && !totalWheelHtml) {
                                                 let spreadVal = parseFloat(spreadMatch[1]);
-                                                let myScore = isHomeTeam ? (parseInt(home.score) || 0) : (parseInt(away.score) || 0);
-                                                let oppScore = isHomeTeam ? (parseInt(away.score) || 0) : (parseInt(home.score) || 0);
+let myScore = isHomeTeam ? wheelHomeScore : wheelAwayScore;
+let oppScore = isHomeTeam ? wheelAwayScore : wheelHomeScore;
                                                 let margin = (myScore + spreadVal) - oppScore;
 
                                                 // 50% = Push, scales +5% per point covering (caps at 100%) / -5% per point behind
@@ -1011,7 +1052,7 @@ let autoSettlingIndices = new Set();
                                                     <div style="width:16px; height:16px; border-radius:50%; background:conic-gradient(${ringColor} ${pct}%, var(--input-bg) 0); border: 1px solid var(--input-border); display:flex; justify-content:center; align-items:center;">
                                                         <div style="width:10px; height:10px; background:var(--panel-bg); border-radius:50%;"></div>
                                                     </div>
-                                                    <span style="font-size:10px; font-weight:bold; color:var(--text-main); opacity:0.9;">Spread (${spreadMatch[1]}): ${statusWord} (${marginDisplay})</span>
+                                                    <span style="font-size:10px; font-weight:bold; color:var(--text-main); opacity:0.9;">${wheelPrefix}Spread (${spreadMatch[1]}): ${statusWord} (${marginDisplay})</span>
                                                 </div>`;
                                             }
 
