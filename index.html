@@ -864,15 +864,27 @@ let autoSettlingIndices = new Set();
                                     let color = 'var(--text-main)';
                                     let displayStr = '';
                                     
-                                if (isLive) {
-                                        displayStr = `🔴 LIVE: ${scoreStr} (${status})`;
+                                    // Pull TV broadcast channel(s) from ESPN
+                                    let tvNames = [];
+                                    let comp = matchedEvent.competitions[0];
+                                    if (comp.broadcasts && comp.broadcasts.length > 0) {
+                                        comp.broadcasts.forEach(b => { if (b.names) tvNames.push(...b.names); });
+                                    } else if (comp.geoBroadcasts && comp.geoBroadcasts.length > 0) {
+                                        comp.geoBroadcasts.forEach(gb => { if (gb.media && gb.media.shortName) tvNames.push(gb.media.shortName); });
+                                    } else if (comp.broadcast) {
+                                        tvNames.push(comp.broadcast);
+                                    }
+                                    let tvStr = tvNames.length > 0 ? ` • 📺 ${[...new Set(tvNames)].slice(0, 2).join('/')}` : '';
+
+                                    if (isLive) {
+                                        displayStr = `🔴 LIVE: ${scoreStr} (${status})${tvStr}`;
                                         color = '#dc3545';
                                         if (matchedEvents.length === 1) {
                                             attemptAutoSettle(idx, home, away, t1, matchedEvent, req.sport);
                                         }
                                     } else if (isPre) {
                                         let time = new Date(matchedEvent.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                                        displayStr = `📅 Starts at ${time} (${away.team.abbreviation} @ ${home.team.abbreviation})`;
+                                        displayStr = `📅 Starts at ${time} (${away.team.abbreviation} @ ${home.team.abbreviation})${tvStr}`;
                                     } else if (isPost) {
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                         if (matchedEvents.length === 1) {
