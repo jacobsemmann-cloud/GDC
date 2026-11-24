@@ -2501,10 +2501,46 @@ function renderTrueStraights() {
             const bets = rawBetsData.filter(b => b.date === dateStr); const [y, m, d] = dateStr.split('-'); const dObj = new Date(y, m-1, d); openModal(dObj.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}), bets, true); 
         }
         
+    function getBetEntities(bet) {
+            let entities = new Set();
+            if (bet.team1 && bet.team1.trim() !== "") entities.add(bet.team1.trim());
+            if (bet.team2 && bet.team2.trim() !== "") entities.add(bet.team2.trim());
+
+            if (bet.parlay && bet.details && bet.details.includes('~~')) {
+                let cleanDet = bet.details
+                    .replace(/\|ESPN:[\d,]+\|/g, '')
+                    .replace(/\|TAGS:[^|]+\|/g, '')
+                    .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '')
+                    .trim();
+
+                cleanDet.split('~~').forEach(leg => {
+                    let text = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                    let isSpawns = (bet.team1 || '').trim().toUpperCase() === 'SPAWNS';
+
+                    // Strip Spawns picker/odds prefix if present
+                    if (isSpawns) {
+                        if (text.includes('|')) {
+                            let parts = text.split('|');
+                            text = parts.length >= 3 ? parts.slice(2).join('|').trim() : parts.slice(1).join('|').trim();
+                        } else if (text.includes(':') && !text.includes('::')) {
+                            text = text.split(':').slice(1).join(':').trim();
+                        }
+                    }
+
+                    // Extract Player/Team before '::'
+                    if (text.includes('::')) {
+                        let entity = text.split('::')[0].trim();
+                        if (entity.length >= 2) entities.add(entity);
+                    }
+                });
+            }
+            return entities;
+        }
+
         function showEntityBets(entity) { 
             const filter = document.getElementById('lbSportFilter').value;
             const bets = rawBetsData.filter(b => 
-                ((b.team1 && b.team1.trim() === entity) || (b.team2 && b.team2.trim() === entity)) &&
+                getBetEntities(b).has(entity) &&
                 (filter === 'ALL' || b.sport === filter)
             ).sort((a, b) => new Date(b.date) - new Date(a.date)); 
             openModal(entity + " History", bets, false); 
@@ -2642,9 +2678,7 @@ if (e.target == document.getElementById('shareCardModal')) document.getElementBy
             rawBetsData.forEach(bet => { 
                 if (filter !== 'ALL' && bet.sport !== filter) return; 
                 
-                let teamsInBet = new Set();
-                if (bet.team1 && bet.team1.trim() !== "") teamsInBet.add(bet.team1.trim());
-                if (bet.team2 && bet.team2.trim() !== "") teamsInBet.add(bet.team2.trim());
+               let teamsInBet = getBetEntities(bet);
 
                 teamsInBet.forEach(team => {
                     if (!entities[team]) entities[team] = { bets: 0, pl: 0 }; 
