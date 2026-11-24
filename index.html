@@ -700,39 +700,76 @@
             return false;
         }
 
-let autoSettlingIndices = new Set();
+let autoSettlingKeys = new Set();
+        let betsDataGeneration = 0;
+
+        function getBetIdentityKey(bet) {
+            if (!bet) return '';
+            return [
+                bet.date || '',
+                bet.book || '',
+                bet.sport || '',
+                bet.betType || '',
+                bet.parlay ? 'P' : 'S',
+                (bet.team1 || '').trim().toLowerCase(),
+                (bet.team2 || '').trim().toLowerCase(),
+                bet.odds ?? '',
+                bet.wager ?? '',
+                (bet.details || '').trim()
+            ].join('||');
+        }
+
+        function resolveLiveBetByIdx(idx, expectedKey) {
+            const numIdx = Number(idx);
+            const bet = rawBetsData[numIdx];
+            if (!bet) return null;
+            if (expectedKey && getBetIdentityKey(bet) !== expectedKey) return null;
+            if (bet.result && String(bet.result).trim() !== '' && String(bet.result).trim() !== 'Pending') return null;
+            return bet;
+        }
 
         function get1HData(matchedEvent, sport, home, away) {
             let hLines = home?.linescores || [];
             let aLines = away?.linescores || [];
             let period = matchedEvent?.status?.period || 0;
             let shortDet = (matchedEvent?.status?.type?.shortDetail || '').toLowerCase();
-            let isPost = matchedEvent?.status?.type?.state === 'post';
+            let state = matchedEvent?.status?.type?.state;
+            let isPost = state === 'post';
+
+            // Never treat pre-game events as 1H finished
+            if (state === 'pre') return null;
 
             let is1HOver = false;
-            let hScore = 0, aScore = 0;
+            let hScore = null, aScore = null;
 
-           if (sport === 'NCAAB') {
-                hScore = parseInt(hLines[0]?.value) || 0;
-                aScore = parseInt(aLines[0]?.value) || 0;
+            if (sport === 'NCAAB') {
+                if (!hLines[0] || !aLines[0]) return null;
+                hScore = parseInt(hLines[0].value, 10);
+                aScore = parseInt(aLines[0].value, 10);
                 is1HOver = isPost || period >= 2 || shortDet.includes('halftime');
             } else if (['NBA', 'NFL', 'NCAAF'].includes(sport)) {
-                hScore = (parseInt(hLines[0]?.value) || 0) + (parseInt(hLines[1]?.value) || 0);
-                aScore = (parseInt(aLines[0]?.value) || 0) + (parseInt(aLines[1]?.value) || 0);
+                if (!hLines[0] || !hLines[1] || !aLines[0] || !aLines[1]) return null;
+                hScore = (parseInt(hLines[0].value, 10) || 0) + (parseInt(hLines[1].value, 10) || 0);
+                aScore = (parseInt(aLines[0].value, 10) || 0) + (parseInt(aLines[1].value, 10) || 0);
                 is1HOver = isPost || period >= 3 || shortDet.includes('halftime');
-            }else {
-                return null; // 1H not supported for NHL/MLB
+            } else {
+                return null;
             }
 
+            if (isNaN(hScore) || isNaN(aScore)) return null;
             return { hScore, aScore, is1HOver };
         }
 
-        function attemptAutoSettle(idx, home, away, t1, matchedEvent, sport) {
-            if (autoSettlingIndices.has(idx)) return;
-            let bet = rawBetsData[idx];
-            if (!bet || bet.result) return;
-            if (bet.parlay) return;
+        function attemptAutoSettle(idx, home, away, t1, matchedEvent, sport, expectedKey) {
+            let eventState = matchedEvent?.status?.type?.state;
+            if (eventState !== 'in' && eventState !== 'post') return;
+
+            let bet = resolveLiveBetByIdx(idx, expectedKey);
+            if (!bet || bet.parlay) return;
             if (!['Spread', 'Total', 'Moneyline'].includes(bet.betType)) return;
+
+            let key = expectedKey || getBetIdentityKey(bet);
+            if (autoSettlingKeys.has(key)) return;
 
             let cleanDet = (bet.details || '')
                 .replace(/\|ESPN:[A-Za-z0-9:,]+\|/g, '')
@@ -742,25 +779,25 @@ let autoSettlingIndices = new Set();
 
             let is1H = /\b(1h|1st half|first half)\b/i.test(cleanDet);
 
-            // Guardrail: Still skip 2H, quarters, periods, F5, etc.
             if (!is1H && /\b(2h|2nd half|second half|1q|2q|3q|4q|q1|q2|q3|q4|1p|2p|3p|f5|first 5|inning|period|quarter|half)\b/i.test(cleanDet)) return;
 
             let hScore, aScore;
             if (is1H) {
                 let fh = get1HData(matchedEvent, sport, home, away);
-                if (!fh || !fh.is1HOver) return; // Wait until Halftime
+                if (!fh || !fh.is1HOver) return;
                 hScore = fh.hScore;
                 aScore = fh.aScore;
             } else {
-                if (matchedEvent?.status?.type?.state !== 'post') return; // Wait until Final
-                hScore = parseInt(home?.score);
-                aScore = parseInt(away?.score);
+                if (eventState !== 'post') return;
+                hScore = parseInt(home?.score, 10);
+                aScore = parseInt(away?.score, 10);
             }
 
             if (isNaN(hScore) || isNaN(aScore)) return;
 
-            let isHome = isTeamMatch(home?.team, t1);
-            let isAway = isTeamMatch(away?.team, t1);
+            let betEntity = (bet.team1 || t1 || '').toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
+            let isHome = isTeamMatch(home?.team, betEntity);
+            let isAway = isTeamMatch(away?.team, betEntity);
             let res = null;
 
             if (bet.betType === 'Total') {
@@ -790,36 +827,19 @@ let autoSettlingIndices = new Set();
             }
 
             if (!res) return;
-
-            autoSettlingIndices.add(idx);
-            let payload = { ...bet, result: res };
-
-            if ((res === 'L' || res === 'P') && (payload.details || '').includes('🎁')) {
-                payload.wager = 0;
-            }
-
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'edit', old: bet, new: payload })
-            })
-            .then(r => r.json())
-            .then(() => {
-                clearTimeout(window.autoSettleTimer);
-                window.autoSettleTimer = setTimeout(() => {
-                    autoSettlingIndices.clear();
-                    fetchMasterData(true);
-                }, 1500);
-            })
-            .catch(e => {
-                autoSettlingIndices.delete(idx);
-                console.log("Auto-settle error:", e);
-            });
+            submitAutoSettle(idx, bet, res, undefined, key);
         }
-function submitAutoSettle(idx, bet, res, newDetails) {
-            if (autoSettlingIndices.has(idx)) return;
-            autoSettlingIndices.add(idx);
 
-            let payload = { ...bet };
+        function submitAutoSettle(idx, betSnapshot, res, newDetails, explicitKey) {
+            let key = explicitKey || getBetIdentityKey(betSnapshot);
+            if (!key || autoSettlingKeys.has(key)) return;
+
+            let liveBet = resolveLiveBetByIdx(idx, key);
+            if (!liveBet) return;
+
+            autoSettlingKeys.add(key);
+
+            let payload = { ...liveBet };
             if (newDetails !== undefined) payload.details = newDetails;
             if (res) {
                 payload.result = res;
@@ -830,22 +850,21 @@ function submitAutoSettle(idx, bet, res, newDetails) {
 
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'edit', old: bet, new: payload })
+                body: JSON.stringify({ action: 'edit', old: liveBet, new: payload })
             })
             .then(r => r.json())
             .then(() => {
                 clearTimeout(window.autoSettleTimer);
                 window.autoSettleTimer = setTimeout(() => {
-                    autoSettlingIndices.clear();
+                    autoSettlingKeys.clear();
                     fetchMasterData(true);
                 }, 1500);
             })
             .catch(e => {
-                autoSettlingIndices.delete(idx);
+                autoSettlingKeys.delete(key);
                 console.log("Auto-settle error:", e);
             });
         }
-
         function gradePlayerProp(playerName, playStr, summaryData, sport) {
             if (!playerName || !playStr || !summaryData?.boxscore?.players) return null;
             let cleanPlay = playStr.toLowerCase().trim();
@@ -1026,10 +1045,11 @@ function submitAutoSettle(idx, bet, res, newDetails) {
             return null;
         }
 
-        function evaluatePropOrParlay(idx, matchedEntries, summariesByKey) {
-            if (autoSettlingIndices.has(idx)) return;
-            let bet = rawBetsData[idx];
-            if (!bet || bet.result) return;
+   function evaluatePropOrParlay(idx, matchedEntries, summariesByKey, expectedKey) {
+            let bet = resolveLiveBetByIdx(idx, expectedKey);
+            if (!bet) return;
+            let key = expectedKey || getBetIdentityKey(bet);
+            if (autoSettlingKeys.has(key)) return;
 
             let rawDet = bet.details || '';
             let eIdMatch = rawDet.match(/\|ESPN:[A-Za-z0-9:,]+\|/g);
@@ -1119,17 +1139,18 @@ function submitAutoSettle(idx, bet, res, newDetails) {
                 if (tagMatch) rebuiltDet += ' ' + tagMatch.join(' ');
 
                 if (anyLoss) {
-                    submitAutoSettle(idx, bet, 'L', rebuiltDet);
-                } else if (allWin && !anyPush) {
-                    submitAutoSettle(idx, bet, 'W', rebuiltDet);
-                } else if (legsUpdated) {
-                    submitAutoSettle(idx, bet, null, rebuiltDet);
-                }
+                  submitAutoSettle(idx, bet, 'L', rebuiltDet, key);
+              } else if (allWin && !anyPush) {
+                  submitAutoSettle(idx, bet, 'W', rebuiltDet, key);
+              } else if (legsUpdated) {
+                  submitAutoSettle(idx, bet, null, rebuiltDet, key);
+              }
             }
         }
 
         function fetchLiveScores(pendingItems) {
             let fetchMap = {}; 
+const gen = betsDataGeneration;
             
             pendingItems.forEach(item => {
                 if (!item.bet.date) return;
@@ -1154,7 +1175,7 @@ function submitAutoSettle(idx, bet, res, newDetails) {
                 if (req.sport === 'NCAAF') url += '&groups=80';
 
                 fetch(url).then(r => r.json()).then(data => {
-                    if (!data.events) return;
+                    if (gen !== betsDataGeneration || !data.events) return;
                     
                  let cards = document.querySelectorAll(`.bet-card[data-sport="${req.sport}"], .bet-card[data-sport="MULTI"]`);
                     
@@ -1165,6 +1186,7 @@ function submitAutoSettle(idx, bet, res, newDetails) {
                         let t1 = card.getAttribute('data-team1').toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
                         let t2 = card.getAttribute('data-team2').toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
                         let idx = card.getAttribute('data-bet-idx');
+let cardKey = card.getAttribute('data-bet-key') || '';
 
                         let matchedEvents = [];
 
@@ -1241,7 +1263,7 @@ function submitAutoSettle(idx, bet, res, newDetails) {
                                         displayStr = `🔴 LIVE: ${scoreStr} (${status})${tvStr}`;
                                         color = '#dc3545';
                                         if (matchedEvents.length === 1) {
-                                            attemptAutoSettle(idx, home, away, t1, matchedEvent, req.sport);
+                                            attemptAutoSettle(idx, home, away, t1, matchedEvent, req.sport, cardKey);
                                         }
                                     } else if (isPre) {
                                         let time = new Date(matchedEvent.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -1249,7 +1271,7 @@ function submitAutoSettle(idx, bet, res, newDetails) {
                                     } else if (isPost) {
                                         displayStr = `🏁 FINAL: ${scoreStr}`;
                                         if (matchedEvents.length === 1) {
-                                            attemptAutoSettle(idx, home, away, t1, matchedEvent, req.sport);
+                                            attemptAutoSettle(idx, home, away, t1, matchedEvent, req.sport, cardKey);
                                         }
                                     }
                                     
@@ -1315,12 +1337,13 @@ function submitAutoSettle(idx, bet, res, newDetails) {
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
-                                            if (!window._liveSummaries) window._liveSummaries = {};
-                                            window._liveSummaries[`${req.sport}_${matchedEvent.id}`] = summaryData;
-                                            if (isPost) {
-                                                let entries = matchedEvents.map(ev => ({ event: ev, sport: req.sport }));
-                                                evaluatePropOrParlay(idx, entries, window._liveSummaries);
-                                            }
+                                          if (gen !== betsDataGeneration) return;
+                                          if (!window._liveSummaries) window._liveSummaries = {};
+                                          window._liveSummaries[`${req.sport}_${matchedEvent.id}`] = summaryData;
+                                          if (isPost) {
+                                              let entries = matchedEvents.map(ev => ({ event: ev, sport: req.sport }));
+                                              evaluatePropOrParlay(idx, entries, window._liveSummaries, cardKey);
+                                          }
                                             let targetNames = [t1, t2].filter(t => t);
                                             let detailsEl = card.querySelector('.bet-card-details:nth-child(3)');
                                             let cleanDetails = detailsEl ? detailsEl.textContent.toLowerCase() : '';
@@ -2398,7 +2421,7 @@ function renderTrueStraights() {
             }
 
             return `
-            <div class="bet-card clickable-row" data-bet-idx="${idx}" data-sport="${b.sport}" data-date="${b.date}" data-team1="${(b.team1||'').replace(/"/g, '&quot;')}" data-team2="${(b.team2||'').replace(/"/g, '&quot;')}" data-espn-id="${eIds.join(',')}" style="border-left-color: ${borderCol}; background-color: ${getBookBgColor(b.book)}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
+            <div class="bet-card clickable-row" data-bet-idx="${idx}" data-bet-key="${getBetIdentityKey(b).replace(/"/g, '\x26quot;')}" data-sport="${b.sport}" data-date="${b.date}" data-team1="${(b.team1||'').replace(/"/g, '&quot;')}" data-team2="${(b.team2||'').replace(/"/g, '&quot;')}" data-espn-id="${eIds.join(',')}" style="border-left-color: ${borderCol}; background-color: ${getBookBgColor(b.book)}; margin-bottom: 8px; padding: 10px;" onclick="editBet(${idx})">
                 <div class="bet-card-header" style="font-size: 12px; margin-bottom: 4px;">
                     <span>${dStr} | ${b.book} | ${b.sport}</span>
                     <span>${odds}</span>
@@ -3118,6 +3141,8 @@ if (e.target == document.getElementById('shareCardModal')) document.getElementBy
                     document.getElementById('tableBetTypeSport').innerHTML = buildPivotTable(data.betTypeSport); document.getElementById('tableBetTypeBook').innerHTML = buildPivotTable(data.betTypeBook);
 
                     rawBetsData = data.rawBets || []; rawBetsData.forEach(b => { b.pl = parseFloat(b.pl) || 0; b.wager = parseFloat(b.wager) || 0; });
+betsDataGeneration++;
+                  autoSettlingKeys.clear();
                     dailyPLData = data.dailyData || {}; for (let key in dailyPLData) { dailyPLData[key] = parseFloat(dailyPLData[key]) || 0; }
 
                     renderTagGrid(); 
