@@ -674,15 +674,15 @@ let autoSettlingIndices = new Set();
             let is1HOver = false;
             let hScore = 0, aScore = 0;
 
-            if (sport === 'NCAAB') {
+           if (sport === 'NCAAB') {
                 hScore = parseInt(hLines[0]?.value) || 0;
                 aScore = parseInt(aLines[0]?.value) || 0;
-                is1HOver = isPost || period >= 2 || shortDet.includes('half');
+                is1HOver = isPost || period >= 2 || shortDet.includes('halftime');
             } else if (['NBA', 'NFL', 'NCAAF'].includes(sport)) {
                 hScore = (parseInt(hLines[0]?.value) || 0) + (parseInt(hLines[1]?.value) || 0);
                 aScore = (parseInt(aLines[0]?.value) || 0) + (parseInt(aLines[1]?.value) || 0);
-                is1HOver = isPost || period >= 3 || shortDet.includes('half');
-            } else {
+                is1HOver = isPost || period >= 3 || shortDet.includes('halftime');
+            }else {
                 return null; // 1H not supported for NHL/MLB
             }
 
