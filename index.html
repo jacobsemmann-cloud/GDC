@@ -2160,7 +2160,9 @@ function renderTrueStraights() {
                 if (start && item.bet.date < start) return false;
                 if (end && item.bet.date > end) return false;
                 
-                if (searchQ) {
+                if (searchQ === 'oldparlay') {
+                    if (!item.bet.parlay || (item.bet.details || '').includes('::')) return false;
+                } else if (searchQ) {
                     let searchable = `${item.bet.team1} ${item.bet.team2} ${item.bet.details} ${item.bet.sport} ${item.bet.book}`.toLowerCase();
                     if (!searchable.includes(searchQ)) return false;
                 }
