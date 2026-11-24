@@ -387,12 +387,23 @@
         </div>
     </div>
 
-    <!-- GAME LINKER MODAL -->
+ <!-- GAME LINKER MODAL -->
     <div id="gameLinkModal" class="modal-overlay" style="z-index: 2000;">
         <div class="modal-content" style="display: flex; flex-direction: column; max-height: 80vh;">
-            <div class="modal-header">
+            <div class="modal-header" style="margin-bottom: 10px;">
                 <h3 id="gameLinkTitle">Select Game</h3>
                 <button class="modal-close" onclick="document.getElementById('gameLinkModal').style.display='none'">×</button>
+            </div>
+            <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                <select id="linkerSportSelect" onchange="loadLinkerGames()" style="width: 110px; min-height: 34px; padding: 4px 8px; font-size: 13px; font-weight: bold;">
+                    <option value="NFL">NFL</option>
+                    <option value="NBA">NBA</option>
+                    <option value="MLB">MLB</option>
+                    <option value="NHL">NHL</option>
+                    <option value="NCAAB">NCAAB</option>
+                    <option value="NCAAF">NCAAF</option>
+                </select>
+                <input type="text" id="linkerSearchInput" oninput="filterLinkerGames()" placeholder="Search team..." style="flex: 1; min-height: 34px; padding: 4px 8px; font-size: 13px;" autocomplete="off">
             </div>
             <div id="gameLinkList" style="overflow-y: auto; flex: 1;"></div>
             <div id="gameLinkFooter" style="display: none; padding-top: 10px; border-top: 1px solid var(--input-border); margin-top: 10px;">
@@ -533,25 +544,31 @@
             });
         }
 
+        let currentLinkerEvents = [];
+
+        function parseEspnLinks(eIdStr, fallbackSport) {
+            if (!eIdStr) return [];
+            return eIdStr.split(',').filter(Boolean).map(entry => {
+                if (entry.includes(':')) {
+                    let [sp, id] = entry.split(':');
+                    return { sport: sp, id: id, raw: entry };
+                }
+                return { sport: fallbackSport, id: entry, raw: entry };
+            });
+        }
+
         function openGameLinker() {
-            let sport = document.getElementById('sport').value;
-            let dateStr = document.getElementById('date').value.replace(/-/g, '');
+            let formSport = document.getElementById('sport').value;
             let isParlay = document.getElementById('parlay').checked;
             let currentIds = document.getElementById('espnId').value ? document.getElementById('espnId').value.split(',').filter(Boolean) : [];
-            tempLinkedGameIds = new Set(currentIds);
 
-            if (!espnSportMap[sport]) { 
-                alert("ESPN live linking is not supported for " + sport + " yet."); 
-                return; 
-            }
-            
-            let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[sport]}/scoreboard?dates=${dateStr}&limit=500`;
-if (sport === 'NCAAB') url += '&groups=50';
-if (sport === 'NCAAF') url += '&groups=80';
-            
-            document.getElementById('gameLinkTitle').textContent = isParlay ? `Select ${sport} Games` : `Select ${sport} Game`;
-            document.getElementById('gameLinkList').innerHTML = '<div style="text-align:center; padding:20px; font-weight:bold; color:var(--text-label);">Fetching Games...</div>';
-            
+            // Normalize any legacy numeric IDs to SPORT:ID when editing
+            tempLinkedGameIds = new Set(currentIds.map(id => id.includes(':') ? id : `${formSport}:${id}`));
+
+            let sportSel = document.getElementById('linkerSportSelect');
+            sportSel.value = espnSportMap[formSport] ? formSport : 'NBA';
+            document.getElementById('linkerSearchInput').value = '';
+
             let footer = document.getElementById('gameLinkFooter');
             if (isParlay) {
                 footer.style.display = 'block';
@@ -561,63 +578,85 @@ if (sport === 'NCAAF') url += '&groups=80';
             }
 
             document.getElementById('gameLinkModal').style.display = 'flex';
-            
+            loadLinkerGames();
+        }
+
+        function loadLinkerGames() {
+            let sport = document.getElementById('linkerSportSelect').value;
+            let dateStr = document.getElementById('date').value.replace(/-/g, '');
+            let isParlay = document.getElementById('parlay').checked;
+
+            document.getElementById('gameLinkTitle').textContent = isParlay ? `Select Games` : `Select ${sport} Game`;
+            document.getElementById('gameLinkList').innerHTML = '<div style="text-align:center; padding:20px; font-weight:bold; color:var(--text-label);">Fetching Games...</div>';
+            document.getElementById('linkerSearchInput').value = '';
+
+            let url = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[sport]}/scoreboard?dates=${dateStr}&limit=500`;
+            if (sport === 'NCAAB') url += '&groups=50';
+            if (sport === 'NCAAF') url += '&groups=80';
+
             fetch(url).then(res => res.json()).then(data => {
-                if(!data.events || data.events.length === 0) { 
-                    document.getElementById('gameLinkList').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.7;">No games found on this date.</div>'; 
-                    return; 
-                }
-                let html = '';
-                data.events.forEach(ev => {
-                    let time = new Date(ev.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    let isSelected = tempLinkedGameIds.has(String(ev.id));
-                    
-                    if (isParlay) {
-                        html += `
-                        <div class="clickable-row" onclick="toggleGameSelection('${ev.id}', this)" style="padding:12px; border-bottom:1px solid var(--input-border); font-size:14px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; ${isSelected ? 'background-color: var(--win-color);' : ''}">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" ${isSelected ? 'checked' : ''} style="width:16px; height:16px; pointer-events:none; accent-color:var(--text-label);">
-                                <span>${ev.name}</span>
-                            </div>
-                            <span style="opacity:0.6; font-weight:normal; font-size:12px;">${time}</span>
-                        </div>`;
-                    } else {
-                        html += `
-                        <div class="clickable-row" onclick="selectSingleEspnGame('${ev.id}')" style="padding:12px; border-bottom:1px solid var(--input-border); font-size:14px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
-                            <span>${ev.name}</span>
-                            <span style="opacity:0.6; font-weight:normal; font-size:12px;">${time}</span>
-                        </div>`;
-                    }
-                });
-                document.getElementById('gameLinkList').innerHTML = html;
+                currentLinkerEvents = (data.events || []).map(ev => ({ ...ev, _sport: sport }));
+                filterLinkerGames();
             }).catch(e => {
                 document.getElementById('gameLinkList').innerHTML = '<div style="text-align:center; padding:20px; color:var(--loss-text);">Failed to load ESPN data.</div>';
             });
         }
 
-        function toggleGameSelection(id, el) {
-            let strId = String(id);
-            if (tempLinkedGameIds.has(strId)) {
-                tempLinkedGameIds.delete(strId);
+        function filterLinkerGames() {
+            let q = (document.getElementById('linkerSearchInput').value || '').toLowerCase().trim();
+            let isParlay = document.getElementById('parlay').checked;
+            let filtered = currentLinkerEvents.filter(ev => !q || (ev.name || '').toLowerCase().includes(q) || (ev.shortName || '').toLowerCase().includes(q));
+
+            if (filtered.length === 0) {
+                document.getElementById('gameLinkList').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.7;">No games found.</div>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(ev => {
+                let time = new Date(ev.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                let key = `${ev._sport}:${ev.id}`;
+                let isSelected = tempLinkedGameIds.has(key);
+
+                if (isParlay) {
+                    html += `
+                    <div class="clickable-row" onclick="toggleGameSelection('${key}', this)" style="padding:12px; border-bottom:1px solid var(--input-border); font-size:14px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; ${isSelected ? 'background-color: var(--win-color);' : ''}">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} style="width:16px; height:16px; pointer-events:none; accent-color:var(--text-label);">
+                            <span>${ev.name}</span>
+                        </div>
+                        <span style="opacity:0.6; font-weight:normal; font-size:12px;">${time}</span>
+                    </div>`;
+                } else {
+                    html += `
+                    <div class="clickable-row" onclick="selectSingleEspnGame('${key}')" style="padding:12px; border-bottom:1px solid var(--input-border); font-size:14px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${ev.name}</span>
+                        <span style="opacity:0.6; font-weight:normal; font-size:12px;">${time}</span>
+                    </div>`;
+                }
+            });
+            document.getElementById('gameLinkList').innerHTML = html;
+        }
+
+        function toggleGameSelection(key, el) {
+            if (tempLinkedGameIds.has(key)) {
+                tempLinkedGameIds.delete(key);
                 el.style.backgroundColor = '';
                 let chk = el.querySelector('input[type="checkbox"]');
                 if (chk) chk.checked = false;
             } else {
-                tempLinkedGameIds.add(strId);
+                tempLinkedGameIds.add(key);
                 el.style.backgroundColor = 'var(--win-color)';
                 let chk = el.querySelector('input[type="checkbox"]');
                 if (chk) chk.checked = true;
             }
             let saveBtn = document.getElementById('btnSaveLinkedGames');
-            if (saveBtn) {
-                saveBtn.textContent = `DONE (${tempLinkedGameIds.size} SELECTED)`;
-            }
+            if (saveBtn) saveBtn.textContent = `DONE (${tempLinkedGameIds.size} SELECTED)`;
         }
 
         function saveSelectedGames() {
             let ids = Array.from(tempLinkedGameIds);
-            let espnInput = document.getElementById('espnId');
-            espnInput.value = ids.join(',');
+            document.getElementById('espnId').value = ids.join(',');
             let btn = document.getElementById('btnLinkGameParlay');
             if (btn) {
                 if (ids.length > 0) {
@@ -631,9 +670,8 @@ if (sport === 'NCAAF') url += '&groups=80';
             document.getElementById('gameLinkModal').style.display = 'none';
         }
 
-        function selectSingleEspnGame(id) {
-            let espnInput = document.getElementById('espnId');
-            espnInput.value = id;
+        function selectSingleEspnGame(key) {
+            document.getElementById('espnId').value = key;
             let btn = document.getElementById('btnLinkGame');
             if (btn) {
                 btn.textContent = "✅ Linked";
@@ -697,7 +735,7 @@ let autoSettlingIndices = new Set();
             if (!['Spread', 'Total', 'Moneyline'].includes(bet.betType)) return;
 
             let cleanDet = (bet.details || '')
-                .replace(/\|ESPN:[\d,]+\|/g, '')
+                .replace(/\|ESPN:[A-Za-z0-9:,]+\|/g, '')
                 .replace(/\|TAGS:[^|]+\|/g, '')
                 .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '')
                 .trim().toLowerCase();
@@ -777,15 +815,336 @@ let autoSettlingIndices = new Set();
                 console.log("Auto-settle error:", e);
             });
         }
+function submitAutoSettle(idx, bet, res, newDetails) {
+            if (autoSettlingIndices.has(idx)) return;
+            autoSettlingIndices.add(idx);
+
+            let payload = { ...bet };
+            if (newDetails !== undefined) payload.details = newDetails;
+            if (res) {
+                payload.result = res;
+                if ((res === 'L' || res === 'P') && (payload.details || '').includes('🎁')) {
+                    payload.wager = 0;
+                }
+            }
+
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'edit', old: bet, new: payload })
+            })
+            .then(r => r.json())
+            .then(() => {
+                clearTimeout(window.autoSettleTimer);
+                window.autoSettleTimer = setTimeout(() => {
+                    autoSettlingIndices.clear();
+                    fetchMasterData(true);
+                }, 1500);
+            })
+            .catch(e => {
+                autoSettlingIndices.delete(idx);
+                console.log("Auto-settle error:", e);
+            });
+        }
+
+        function gradePlayerProp(playerName, playStr, summaryData, sport) {
+            if (!playerName || !playStr || !summaryData?.boxscore?.players) return null;
+            let cleanPlay = playStr.toLowerCase().trim();
+
+            // Guardrail: Explicitly skip 1st Touchdown
+            if (/\b(1td|1st td|first td|first touchdown)\b/i.test(cleanPlay)) return null;
+
+            let targetLower = playerName.toLowerCase().trim();
+            let statsObj = null;
+
+            summaryData.boxscore.players.forEach(teamBox => {
+                (teamBox.statistics || []).forEach(cat => {
+                    let catName = (cat.name || '').toLowerCase();
+                    let labels = (cat.labels || []).map(l => l.toUpperCase());
+                    (cat.athletes || []).forEach(ath => {
+                        let dName = (ath.athlete?.displayName || '').toLowerCase();
+                        let sName = (ath.athlete?.shortName || '').toLowerCase();
+                        let isMatch = (dName === targetLower || sName === targetLower) ||
+                                      (targetLower.length >= 4 && (dName.includes(targetLower) || sName.includes(targetLower)));
+
+                        if (isMatch && ath.stats) {
+                            if (!statsObj) statsObj = {};
+                            labels.forEach((lbl, i) => {
+                                let rawVal = ath.stats[i];
+                                if (lbl === '3PT' && String(rawVal).includes('-')) {
+                                    statsObj['3PM'] = parseFloat(String(rawVal).split('-')[0]) || 0;
+                                    return;
+                                }
+                                let num = parseFloat(rawVal);
+                                if (isNaN(num)) return;
+
+                                if (sport === 'NFL' || sport === 'NCAAF') {
+                                    if (catName === 'passing') {
+                                        if (lbl === 'YDS') statsObj.pass_yds = num;
+                                        if (lbl === 'TD') statsObj.pass_td = num;
+                                        if (lbl === 'INT') statsObj.int = num;
+                                    } else if (catName === 'rushing') {
+                                        if (lbl === 'YDS') statsObj.rush_yds = num;
+                                        if (lbl === 'TD') statsObj.rush_td = num;
+                                    } else if (catName === 'receiving') {
+                                        if (lbl === 'YDS') statsObj.rec_yds = num;
+                                        if (lbl === 'REC') statsObj.rec = num;
+                                        if (lbl === 'TD') statsObj.rec_td = num;
+                                    }
+                                } else {
+                                    statsObj[lbl] = num;
+                                }
+                            });
+                        }
+                    });
+                });
+            });
+
+            // Guardrail: Player not in boxscore (DNP / Void) -> skip
+            if (!statsObj) return null;
+
+            // Compute combo stats
+            if (sport === 'NFL' || sport === 'NCAAF') {
+                statsObj.td = (statsObj.rush_td || 0) + (statsObj.rec_td || 0);
+            } else if (sport === 'MLB') {
+                statsObj.hrr = (statsObj.H || 0) + (statsObj.R || 0) + (statsObj.RBI || 0);
+            } else if (sport === 'NBA' || sport === 'NCAAB') {
+                statsObj.pra = (statsObj.PTS || 0) + (statsObj.REB || 0) + (statsObj.AST || 0);
+                statsObj.pr = (statsObj.PTS || 0) + (statsObj.REB || 0);
+                statsObj.pa = (statsObj.PTS || 0) + (statsObj.AST || 0);
+                statsObj.ra = (statsObj.REB || 0) + (statsObj.AST || 0);
+            }
+
+            // Map play text to stat value
+            let statVal = undefined;
+            let defaultAnytime = false;
+
+            if (sport === 'NFL' || sport === 'NCAAF') {
+                if (/\b(pass|passing)\b/i.test(cleanPlay) && /\b(td|tds)\b/i.test(cleanPlay)) statVal = statsObj.pass_td || 0;
+                else if (/\b(atd|anytime|td|tds|touchdown|touchdowns)\b/i.test(cleanPlay)) { statVal = statsObj.td || 0; defaultAnytime = true; }
+                else if (/\b(rush|rushing)\b/i.test(cleanPlay)) statVal = statsObj.rush_yds || 0;
+                else if (/\b(receiving)\b/i.test(cleanPlay) || (/\brec\b/i.test(cleanPlay) && /\b(yds|yards)\b/i.test(cleanPlay))) statVal = statsObj.rec_yds || 0;
+                else if (/\b(rec|receptions|catches)\b/i.test(cleanPlay)) statVal = statsObj.rec || 0;
+                else if (/\b(pass|passing)\b/i.test(cleanPlay)) statVal = statsObj.pass_yds || 0;
+            } else if (sport === 'NHL') {
+                if (/\b(atg|goal|goals)\b/i.test(cleanPlay)) { statVal = statsObj.G || 0; defaultAnytime = true; }
+                else if (/\b(assist|assists|ast)\b/i.test(cleanPlay)) { statVal = statsObj.A || 0; defaultAnytime = true; }
+                else if (/\b(point|points|pts)\b/i.test(cleanPlay)) { statVal = statsObj.PTS || 0; defaultAnytime = true; }
+                else if (/\b(sog|shots)\b/i.test(cleanPlay)) statVal = statsObj.SOG || 0;
+            } else if (sport === 'MLB') {
+                if (/\b(hrr)\b/i.test(cleanPlay)) statVal = statsObj.hrr || 0;
+                else if (/\b(hr|home run|home runs)\b/i.test(cleanPlay)) { statVal = statsObj.HR || 0; defaultAnytime = true; }
+                else if (/\b(rbi|rbis)\b/i.test(cleanPlay)) statVal = statsObj.RBI || 0;
+                else if (/\b(hit|hits)\b/i.test(cleanPlay)) statVal = statsObj.H || 0;
+                else if (/\b(run|runs)\b/i.test(cleanPlay)) statVal = statsObj.R || 0;
+                else if (/\b(so|k|ks|strikeout|strikeouts)\b/i.test(cleanPlay)) statVal = statsObj.K ?? statsObj.SO ?? 0;
+            } else if (sport === 'NBA' || sport === 'NCAAB') {
+                if (/\b(pra)\b/i.test(cleanPlay)) statVal = statsObj.pra || 0;
+                else if (/\b(pr)\b/i.test(cleanPlay)) statVal = statsObj.pr || 0;
+                else if (/\b(pa)\b/i.test(cleanPlay)) statVal = statsObj.pa || 0;
+                else if (/\b(ra)\b/i.test(cleanPlay)) statVal = statsObj.ra || 0;
+                else if (/\b(3pm|3s|threes)\b/i.test(cleanPlay)) statVal = statsObj['3PM'] || 0;
+                else if (/\b(pts|points)\b/i.test(cleanPlay)) statVal = statsObj.PTS || 0;
+                else if (/\b(reb|rebounds)\b/i.test(cleanPlay)) statVal = statsObj.REB || 0;
+                else if (/\b(ast|assists)\b/i.test(cleanPlay)) statVal = statsObj.AST || 0;
+            }
+
+            if (statVal === undefined) return null;
+
+            // Grade threshold
+            let ouMatch = cleanPlay.match(/\b(o|u|over|under)\s*(\d+(\.\d+)?)\b/i);
+            if (ouMatch) {
+                let isUnder = ouMatch[1].startsWith('u');
+                let target = parseFloat(ouMatch[2]);
+                if (statVal === target) return 'P';
+                return isUnder ? (statVal < target ? 'W' : 'L') : (statVal > target ? 'W' : 'L');
+            }
+
+            let plusMatch = cleanPlay.match(/(\d+(\.\d+)?)\+/);
+            if (plusMatch) {
+                let target = parseFloat(plusMatch[1]);
+                return statVal >= target ? 'W' : 'L';
+            }
+
+            if (defaultAnytime) {
+                return statVal >= 1 ? 'W' : 'L';
+            }
+
+            return null;
+        }
+
+        function gradeTeamPlay(teamName, playStr, matchedEvent, sport) {
+            let cleanPlay = (playStr || '').toLowerCase().trim();
+            let home = matchedEvent?.competitions?.[0]?.competitors?.find(c => c.homeAway === 'home');
+            let away = matchedEvent?.competitions?.[0]?.competitors?.find(c => c.homeAway === 'away');
+            if (!home || !away) return null;
+
+            let is1H = /\b(1h|1st half|first half)\b/i.test(cleanPlay);
+            if (!is1H && /\b(2h|2nd half|1q|2q|3q|4q|q1|q2|q3|q4|1p|2p|3p|f5|inning|period|quarter|half)\b/i.test(cleanPlay)) return null;
+
+            let hScore, aScore;
+            if (is1H) {
+                let fh = get1HData(matchedEvent, sport, home, away);
+                if (!fh || !fh.is1HOver) return null;
+                hScore = fh.hScore; aScore = fh.aScore;
+            } else {
+                if (matchedEvent?.status?.type?.state !== 'post') return null;
+                hScore = parseInt(home.score); aScore = parseInt(away.score);
+            }
+            if (isNaN(hScore) || isNaN(aScore)) return null;
+
+            let isHome = isTeamMatch(home.team, teamName);
+            let isAway = isTeamMatch(away.team, teamName);
+
+            // Total
+            let ouMatch = cleanPlay.match(/\b(o|u|over|under)\s*(\d+(\.\d+)?)\b/i);
+            if (ouMatch && !/pts|reb|ast|yds|rec|td|sog|3pm|hit|run|rbi|hrr|goal|assist|point/i.test(cleanPlay)) {
+                let isUnder = ouMatch[1].startsWith('u');
+                let target = parseFloat(ouMatch[2]);
+                let total = hScore + aScore;
+                if (total === target) return 'P';
+                return isUnder ? (total < target ? 'W' : 'L') : (total > target ? 'W' : 'L');
+            }
+
+            if (isHome === isAway) return null;
+            let myScore = isHome ? hScore : aScore;
+            let oppScore = isHome ? aScore : hScore;
+
+            // Spread
+            let spreadMatch = cleanPlay.match(/(?:^|\s)([+-]\d+(\.\d+)?)(?:\s|$)/);
+            if (spreadMatch) {
+                let margin = (myScore + parseFloat(spreadMatch[1])) - oppScore;
+                if (margin === 0) return 'P';
+                return margin > 0 ? 'W' : 'L';
+            }
+
+            // Moneyline
+            if (/\b(ml|moneyline)\b/i.test(cleanPlay) || cleanPlay === '') {
+                if (myScore === oppScore) return 'P';
+                return myScore > oppScore ? 'W' : 'L';
+            }
+
+            return null;
+        }
+
+        function evaluatePropOrParlay(idx, matchedEntries, summariesByKey) {
+            if (autoSettlingIndices.has(idx)) return;
+            let bet = rawBetsData[idx];
+            if (!bet || bet.result) return;
+
+            let rawDet = bet.details || '';
+            let eIdMatch = rawDet.match(/\|ESPN:[A-Za-z0-9:,]+\|/g);
+            let tagMatch = rawDet.match(/\|TAGS:[^|]+\|/g);
+            let fbMatch = rawDet.match(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g);
+
+            let cleanDet = rawDet
+                .replace(/\|ESPN:[A-Za-z0-9:,]+\|/g, '')
+                .replace(/\|TAGS:[^|]+\|/g, '')
+                .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '')
+                .trim();
+
+            // 1. STRAIGHT PROP AUTO-SETTLE
+            if (!bet.parlay && bet.betType === 'Prop' && matchedEntries.length === 1) {
+                let entry = matchedEntries[0];
+                if (entry.event?.status?.type?.state !== 'post') return;
+                let summary = summariesByKey[`${entry.sport}_${entry.event.id}`];
+                if (!summary) return;
+
+                let res = gradePlayerProp(bet.team1, cleanDet, summary, entry.sport);
+                if (res) submitAutoSettle(idx, bet, res);
+                return;
+            }
+
+            // 2. PARLAY AUTO-SETTLE & LEG AUTO-CHECK
+            if (bet.parlay && cleanDet.includes('~~')) {
+                let legs = cleanDet.split('~~');
+                let isSpawns = (bet.team1 || '').trim().toUpperCase() === 'SPAWNS';
+                let legsUpdated = false;
+                let anyLoss = false;
+                let allWin = true;
+                let anyPush = false;
+
+                let updatedLegs = legs.map(leg => {
+                    let isChecked = /^\s*\[\s*x\s*\]/i.test(leg);
+                    let rawLegBody = leg.trim().replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim();
+                    let text = rawLegBody;
+
+                    if (isSpawns) {
+                        if (text.includes('|')) {
+                            let parts = text.split('|');
+                            text = parts.length >= 3 ? parts.slice(2).join('|').trim() : parts.slice(1).join('|').trim();
+                        } else if (text.includes(':') && !text.includes('::')) {
+                            text = text.split(':').slice(1).join(':').trim();
+                        }
+                    }
+
+                    if (!text.includes('::')) {
+                        if (!isChecked) allWin = false;
+                        return leg.trim();
+                    }
+
+                    let [entity, play] = text.split('::').map(s => s.trim());
+                    let legRes = null;
+
+                    for (let entry of matchedEntries) {
+                        let ev = entry.event;
+                        let sp = entry.sport;
+                        legRes = gradeTeamPlay(entity, play, ev, sp);
+                        if (!legRes && ev?.status?.type?.state === 'post') {
+                            let summary = summariesByKey[`${sp}_${ev.id}`];
+                            if (summary) legRes = gradePlayerProp(entity, play, summary, sp);
+                        }
+                        if (legRes) break;
+                    }
+
+                    if (legRes === 'W') {
+                        if (!isChecked) legsUpdated = true;
+                        return `[x] ${rawLegBody}`;
+                    } else if (legRes === 'L') {
+                        anyLoss = true;
+                        allWin = false;
+                        return `[ ] ${rawLegBody}`;
+                    } else if (legRes === 'P') {
+                        anyPush = true;
+                        allWin = false;
+                        return leg.trim();
+                    } else {
+                        if (!isChecked) allWin = false;
+                        return leg.trim();
+                    }
+                });
+
+                let rebuiltDet = updatedLegs.join(' ~~ ');
+                if (fbMatch) rebuiltDet += fbMatch.join('');
+                if (eIdMatch) rebuiltDet += ' ' + eIdMatch.join(' ');
+                if (tagMatch) rebuiltDet += ' ' + tagMatch.join(' ');
+
+                if (anyLoss) {
+                    submitAutoSettle(idx, bet, 'L', rebuiltDet);
+                } else if (allWin && !anyPush) {
+                    submitAutoSettle(idx, bet, 'W', rebuiltDet);
+                } else if (legsUpdated) {
+                    submitAutoSettle(idx, bet, null, rebuiltDet);
+                }
+            }
+        }
+
         function fetchLiveScores(pendingItems) {
             let fetchMap = {}; 
             
             pendingItems.forEach(item => {
-                let s = item.bet.sport;
-                if (!espnSportMap[s] || !item.bet.date) return;
+                if (!item.bet.date) return;
                 let dStr = item.bet.date.replace(/-/g, '');
-                let key = `${s}_${dStr}`;
-                fetchMap[key] = { sport: s, dateStr: dStr, fullDate: item.bet.date };
+                let espnMatch = (item.bet.details || '').match(/\|ESPN:([A-Za-z0-9:,]+)\|/);
+                let links = espnMatch ? parseEspnLinks(espnMatch[1], item.bet.sport) : [];
+
+                if (links.length > 0) {
+                    links.forEach(l => {
+                        if (!espnSportMap[l.sport]) return;
+                        fetchMap[`${l.sport}_${dStr}`] = { sport: l.sport, dateStr: dStr, fullDate: item.bet.date };
+                    });
+                } else if (espnSportMap[item.bet.sport]) {
+                    fetchMap[`${item.bet.sport}_${dStr}`] = { sport: item.bet.sport, dateStr: dStr, fullDate: item.bet.date };
+                }
             });
 
             Object.values(fetchMap).forEach(req => {
@@ -797,24 +1156,26 @@ let autoSettlingIndices = new Set();
                 fetch(url).then(r => r.json()).then(data => {
                     if (!data.events) return;
                     
-                    let cards = document.querySelectorAll(`.bet-card[data-sport="${req.sport}"]`);
+                 let cards = document.querySelectorAll(`.bet-card[data-sport="${req.sport}"], .bet-card[data-sport="MULTI"]`);
                     
                     cards.forEach(card => {
                         if (card.getAttribute('data-date') !== req.fullDate) return;
 
                         let eIdStr = card.getAttribute('data-espn-id');
                         let t1 = card.getAttribute('data-team1').toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
-			let t2 = card.getAttribute('data-team2').toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
+                        let t2 = card.getAttribute('data-team2').toLowerCase().replace(/\s+(bb|fb)$/i, '').trim();
                         let idx = card.getAttribute('data-bet-idx');
 
                         let matchedEvents = [];
 
                         if (eIdStr) {
-                            let eIds = eIdStr.split(',');
-                            eIds.forEach(eId => {
-                                let ev = data.events.find(e => String(e.id) === String(eId));
+                            let links = parseEspnLinks(eIdStr, card.getAttribute('data-sport'));
+                            links.forEach(l => {
+                                if (l.sport !== req.sport) return;
+                                let ev = data.events.find(e => String(e.id) === String(l.id));
                                 if (ev) matchedEvents.push(ev);
                             });
+                    
                         } else {
                             let matchedEvent = data.events.find(ev => {
                                 let match = false;
@@ -954,7 +1315,12 @@ let autoSettlingIndices = new Set();
                                     if (isLive || isPost) { 
                                         let summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${espnSportMap[req.sport]}/summary?event=${matchedEvent.id}`;
                                         fetch(summaryUrl).then(r=>r.json()).then(summaryData => {
-                                            
+                                            if (!window._liveSummaries) window._liveSummaries = {};
+                                            window._liveSummaries[`${req.sport}_${matchedEvent.id}`] = summaryData;
+                                            if (isPost) {
+                                                let entries = matchedEvents.map(ev => ({ event: ev, sport: req.sport }));
+                                                evaluatePropOrParlay(idx, entries, window._liveSummaries);
+                                            }
                                             let targetNames = [t1, t2].filter(t => t);
                                             let detailsEl = card.querySelector('.bet-card-details:nth-child(3)');
                                             let cleanDetails = detailsEl ? detailsEl.textContent.toLowerCase() : '';
@@ -1302,7 +1668,7 @@ let oppScore = isHomeTeam ? wheelAwayScore : wheelHomeScore;
             let bet = rawBetsData[bIdx];
             let cleanDetails = bet.details ? bet.details : '';
             
-            let eIdMatch = cleanDetails.match(/\|ESPN:([\d,]+)\|/);
+            let eIdMatch = cleanDetails.match(/\|ESPN:([A-Za-z0-9:,]+)\|/);
             let tagMatch = cleanDetails.match(/\|TAGS:[^|]+\|/);
             let fbMatch = cleanDetails.match(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/);
             
@@ -1310,7 +1676,7 @@ let oppScore = isHomeTeam ? wheelAwayScore : wheelHomeScore;
             let tagText = tagMatch ? tagMatch[0] : '';
             let fbText = fbMatch ? fbMatch[0] : '';
 
-            cleanDetails = cleanDetails.replace(/\|ESPN:[\d,]+\|/g, '')
+            cleanDetails = cleanDetails.replace(/\|ESPN:[A-Za-z0-9:,]+\|/g, '')
                                        .replace(/\|TAGS:[^|]+\|/g, '')
                                        .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
             
@@ -1445,7 +1811,7 @@ let oppScore = isHomeTeam ? wheelAwayScore : wheelHomeScore;
                 if (b.team1 && b.team1.trim().toUpperCase() === 'SPAWNS') {
                     let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
                     if (isSettled && b.details && b.details.includes('~~')) {
-                        let cleanDet = b.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
+                        let cleanDet = b.details.replace(/\|ESPN:[A-Za-z0-9:,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                         let legs = cleanDet.split('~~');
                         
                         legs.forEach(leg => {
@@ -1579,7 +1945,7 @@ function renderTrueStraights() {
 
                 // 2. Check Parlay Legs
                 if (bet.parlay && bet.details && bet.details.includes('~~')) {
-                    let cleanDet = bet.details.replace(/\|ESPN:[\d,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
+                    let cleanDet = bet.details.replace(/\|ESPN:[A-Za-z0-9:,]+\|/g, '').replace(/\|TAGS:[^|]+\|/g, '').replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '').trim();
                     cleanDet.split('~~').forEach(leg => {
                         let text = leg.replace(/^(?:\[\s*[xX]?\s*\]\s*)+/i, '').trim(); 
                         
@@ -1919,10 +2285,10 @@ function renderTrueStraights() {
             let isFB = cleanDetails.includes('🎁');
             
             let eIds = [];
-            let espnMatch = cleanDetails.match(/\|ESPN:([\d,]+)\|/);
+            let espnMatch = cleanDetails.match(/\|ESPN:([A-Za-z0-9:,]+)\|/);
             if (espnMatch) {
                 eIds = espnMatch[1].split(',');
-                cleanDetails = cleanDetails.replace(/\|ESPN:[\d,]+\|/, '').trim();
+                cleanDetails = cleanDetails.replace(/\|ESPN:[A-Za-z0-9:,]+\|/, '').trim();
             }
 
             let tagsHtml = '';
@@ -2204,11 +2570,11 @@ function renderTrueStraights() {
             let w = editingBet.wager;
             let det = editingBet.details || '';
             
-            let espnMatch = det.match(/\|ESPN:([\d,]+)\|/);
+            let espnMatch = det.match(/\|ESPN:([A-Za-z0-9:,]+)\|/);
             if (espnMatch) {
                 document.getElementById('espnId').value = espnMatch[1];
                 let ids = espnMatch[1].split(',');
-                det = det.replace(/\|ESPN:[\d,]+\|/, '').trim();
+                det = det.replace(/\|ESPN:[A-Za-z0-9:,]+\|/, '').trim();
                 
                 let btnGame = document.getElementById('btnLinkGame');
                 if(btnGame) { btnGame.textContent = "✅ Linked"; btnGame.style.backgroundColor = "#32CD32"; }
@@ -2510,7 +2876,7 @@ function renderTrueStraights() {
 
             if (bet.parlay && bet.details && bet.details.includes('~~')) {
                 let cleanDet = bet.details
-                    .replace(/\|ESPN:[\d,]+\|/g, '')
+                    .replace(/\|ESPN:[A-Za-z0-9:,]+\|/g, '')
                     .replace(/\|TAGS:[^|]+\|/g, '')
                     .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '')
                     .trim();
@@ -2583,7 +2949,7 @@ function openShareCard(dateStr, pendingOnly) {
                 if (isSettled) totalPL += (parseFloat(b.pl) || 0);
 
                 let cleanDet = (b.details || '')
-                    .replace(/\|ESPN:[\d,]+\|/g, '')
+                    .replace(/\|ESPN:[A-Za-z0-9:,]+\|/g, '')
                     .replace(/\|TAGS:[^|]+\|/g, '')
                     .replace(/\s*\(?\s*🎁 \$[0-9.]+\s*Free Bet\s*\)?/g, '')
                     .trim();
@@ -2706,7 +3072,7 @@ if (e.target == document.getElementById('shareCardModal')) document.getElementBy
             let bestWeek = null, bestWeekVal = -Infinity; for (const [w, pl] of Object.entries(weeklyTotals)) { if (pl > bestWeekVal) { bestWeekVal = pl; bestWeek = w; } }
             document.getElementById('hofBestDay').textContent = bestDayVal > 0 ? `${bestDay} (${formatPL(bestDayVal)})` : '--'; document.getElementById('hofBestDay').style.color = bestDayVal > 0 ? getColor(formatPL(bestDayVal)) : ''; document.getElementById('hofBestWeek').textContent = bestWeekVal > 0 ? `Week of ${bestWeek} (${formatPL(bestWeekVal)})` : '--'; document.getElementById('hofBestWeek').style.color = bestWeekVal > 0 ? getColor(formatPL(bestWeekVal)) : '';
             let monsters = rawBetsData.filter(b => b.pl >= 300).sort((a,b) => b.pl - a.pl);
-            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { let cleanDet = m.details ? m.details.replace(/\|ESPN:[\d,]+\|/, '').replace(/\|TAGS:[^|]+\|/g, '') : ''; html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${cleanDet}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
+            if (monsters.length === 0) { document.getElementById('hofMonsterBets').innerHTML = '<p style="font-size:13px;">No monster hits yet.</p>'; } else { let html = '<div class="table-wrapper"><table><tr><th>Date</th><th>Player/Team</th><th>Details</th><th class="text-right">Wager</th><th class="text-right">Won</th></tr>'; monsters.forEach(m => { let cleanDet = m.details ? m.details.replace(/\|ESPN:[A-Za-z0-9:,]+\|/, '').replace(/\|TAGS:[^|]+\|/g, '') : ''; html += `<tr><td>${m.date.substring(5)}</td><td>${m.team1}</td><td>${cleanDet}</td><td class="text-right">$${m.wager.toFixed(2)}</td><td class="text-right" style="color:var(--win-text); font-weight:bold;">${formatPL(m.pl)}</td></tr>`; }); document.getElementById('hofMonsterBets').innerHTML = html + '</table></div>'; }
         }
 
         function updateCalendarSummaries(month, year) {
