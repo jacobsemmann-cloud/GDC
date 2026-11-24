@@ -2482,7 +2482,7 @@ function renderTrueStraights() {
             if (bets.length === 0) {
                 betsHtml = '<p style="text-align:center; opacity:0.7; font-size:13px;">No bets found for this timeframe.</p>';
             } else {
-                bets.sort((a,b) => (b.date < a.date) ? 1 : ((a.date < b.date) ? -1 : 0));
+                bets.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
                 bets.forEach(b => {
                     let rawIdx = rawBetsData.indexOf(b);
                     let isSettled = (b.result === 'W' || b.result === 'L' || b.result === 'P');
